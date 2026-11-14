@@ -479,6 +479,7 @@ const THEME =
   ".lcl-root[data-golden]{--lime:#f6b444}" +
   ".lcl-img.lcl-prod{background:transparent;padding:6%;filter:drop-shadow(0 16px 18px rgba(0,0,0,.16))}" +
   ".lcl-th>img,.lcl-ft>img,.lcl-sc,.lcl-tile,.lcl-fly{box-shadow:none}" +
+  ".lcl-th{pointer-events:none}" +   // the hero's flying products are decoration; never block clicks/hover underneath
   ".lcl-pic{border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}" +
   ".lcl-nav,.lcl-chip,.lcl-fcard,.lcl-plus,.lcl-grid{backdrop-filter:blur(26px) saturate(1.1);-webkit-backdrop-filter:blur(26px) saturate(1.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 12px 34px rgba(0,0,0,.08)}" +
   ".lcl-nav{border-radius:999px;padding-left:20px}.lcl-btn{border-radius:999px}.lcl-chip{border-radius:999px}.lcl-plus{border-radius:50%}" +
@@ -495,8 +496,8 @@ const THEME =
   ".lcl-tm-fig{position:relative;display:block;width:100%;aspect-ratio:3/4;max-height:52vh;border-radius:22px;overflow:hidden;" +
   "background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 34px rgba(0,0,0,.06);" +
   "transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}" +
-  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
-  ".lcl-tm-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);transition:opacity .35s,transform .6s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
   ".lcl-tm-card:hover .lcl-tm-fig,.lcl-tm-card:focus-visible .lcl-tm-fig{transform:translateY(-8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 30px 60px rgba(0,0,0,.16)}" +
   ".lcl-tm-card:hover .lcl-tm-photo,.lcl-tm-card:focus-visible .lcl-tm-photo{opacity:1;transform:none}" +
   ".lcl-tm-card:hover .lcl-tm-cut,.lcl-tm-card:focus-visible .lcl-tm-cut{opacity:0;transform:scale(.96)}" +
@@ -645,6 +646,15 @@ export default function LoupeCuratorLanding({
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast((t) => ({ ...t, on: false })), 2600)
   }
+
+  // decode the team photos up front so hovering a card swaps instantly
+  useEffect(() => {
+    TEAM.forEach((m) => {
+      const im = new Image()
+      im.src = "/img/team-" + m.key + ".jpg"
+      im.decode?.().catch(() => {})
+    })
+  }, [])
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return
@@ -1159,7 +1169,7 @@ export default function LoupeCuratorLanding({
                     <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
                       <span className="lcl-tm-fig">
                         <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
-                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} loading="lazy" draggable={false} />
+                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
                       </span>
                       <b>{m.name}</b>
                     </a>
