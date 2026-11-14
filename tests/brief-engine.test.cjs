@@ -32,3 +32,8 @@ test('correction to width changes the selected SKU',()=>{
  const after=E.plan(candidates,[template[0]],{requirements:[requirement('max_width','sofa','75')]},200,144);
  assert.equal(before.items[0].pid,'wide');assert.equal(after.items[0].pid,'small');
 });
+test('candidate feedback cannot filter unrelated products',()=>{
+ const p=products.find(p=>p.category==='sofa');const r={...requirement('max_width','sofa','1'),scope:'candidate',productId:'a-different-sofa'};
+ assert.equal(E.assess(p,'sofa',{requirements:[r]}).eligible,true);
+ r.productId=p.id;assert.equal(E.assess(p,'sofa',{requirements:[r]}).eligible,false);
+});

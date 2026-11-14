@@ -5,14 +5,14 @@ function sofaCandidates(){
  const otherCost=sceneTotal((S.scene||[]).filter(it=>it.cat!=='sofa'));
  const available=BriefEngine.budget(B,S.needs.budget)-otherCost;
  const slot=current||{cat:'sofa'};
- return P.filter(p=>p.category==='sofa'&&p.sofa?.eligible&&fits(p,slot)&&p.price.amount<=available).map(p=>({p,a:BriefEngine.assess(p,'sofa',B)})).filter(x=>x.a.eligible).sort((a,b)=>b.a.score-a.a.score||a.p.price.amount-b.p.price.amount);
+ return P.filter(p=>p.category==='sofa'&&p.sofa?.eligible&&fits(p,slot)&&p.price.amount<=available&&(!current||eligibleSwap(p,current))).map(p=>({p,a:BriefEngine.assess(p,'sofa',B)})).filter(x=>x.a.eligible).sort((a,b)=>b.a.score-a.a.score||a.p.price.amount-b.p.price.amount);
 }
 function sofaReason(result){
  const goal=result.goals[0];if(!goal)return '';
  const keys={side_lounge:'seat_width',cross_legged:'seat_depth',upright_chat:'seat_depth',frequent_rising:'seat_height',overnight_guests:'sleeper',easy_clean:'washable_cover'};
  const fact=result.evidence.find(e=>e.requirement===goal.id&&e.key===keys[goal.value]);
  if(!fact)return 'The feature that matters to you still needs checking.';
- const reasons={side_lounge:'More seat width for stretching out',cross_legged:'More seat depth for sitting cross-legged',upright_chat:'A shallower seat for sitting upright',frequent_rising:'A higher seat for getting up',overnight_guests:'Converts to a bed for overnight guests',easy_clean:'A machine-washable cover for easier cleaning'};
+ const reasons={side_lounge:'侧靠阅读：优先较宽可用座面',cross_legged:'盘腿阅读：比较后优先较深座面',upright_chat:'端正交谈：优先较浅座面',frequent_rising:'经常起身：优先较高座面',overnight_guests:'留宿：可展开为床',easy_clean:'清洁：厂商标注面套可机洗'};
  if(fact.alignment>=.5)return reasons[goal.value]+(typeof fact.value==='number'?` — ${inch(fact.value)}.`:'.');
  return `${SOFA_LABELS[fact.key]}: ${typeof fact.value==='boolean'?(fact.value?'yes':'no'):inch(fact.value)} — a compromise for this habit.`;
 }
@@ -41,7 +41,7 @@ document.addEventListener('click',e=>{
   const match=sofaCandidates().find(x=>x.p.id===a.dataset.pid);if(!match)return;
   const slot=S.scene?.find(it=>it.cat==='sofa');if(!slot)return toast('Create a design with a sofa first.');
   const previous=view(slot).name;if(slot.own&&exById(slot.own))exById(slot.own).keep=false;
-  slot.pid=match.p.id;slot.vid=null;delete slot.own;S.last=null;S.options[S.opt].items=structuredClone(S.scene);
+  slot.pid=match.p.id;slot.vid=null;delete slot.own;S.last=null;S.options[S.opt].items=structuredClone(S.scene);syncLayout();saveBrief();
   sofaExplorerOpen=false;render();renderSofaExplorer();recordEdit(`I chose ${match.p.name} instead of ${previous}.`);
  }
 });

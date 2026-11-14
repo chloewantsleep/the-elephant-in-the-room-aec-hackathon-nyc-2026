@@ -16,5 +16,28 @@ class DesignerValidation(unittest.TestCase):
         self.assertEqual(len(self.check(p)['proposals']),1)
         self.assertEqual(self.check({**p,'scope':'candidate'})['proposals'],[])
         self.assertEqual(self.check({**p,'value':'magical_comfort'})['proposals'],[])
+    def test_room_facts_are_distinct_from_product_limits(self):
+        p={**self.p,'category':'all','effect':'room_width','value':'157.48'}
+        self.assertEqual(self.check(p)['proposals'][0]['effect'],'room_width')
+        self.assertEqual(self.check({**p,'category':'sofa'})['proposals'],[])
+        self.assertEqual(self.check({**p,'effect':'room_type','value':'imaginary'})['proposals'],[])
+    def test_safe_service_error(self):
+        self.assertEqual(d.client_error(RuntimeError('Gemini HTTP 429: spending cap'))['code'],'quota')
+        self.assertEqual(d.client_error(TimeoutError())['code'],'timeout')
+        self.assertNotIn('secret',d.client_error(RuntimeError('secret'))['error'])
     def test_unknown_replacement(self):self.assertEqual(self.check({**self.p,'supersedes':'does-not-exist'})['proposals'],[])
 if __name__=='__main__':unittest.main()
+
+class DesignerActions(unittest.TestCase):
+    def test_actions_are_bounded_to_supplied_choices_and_latest_quote(self):
+        req={'messages':[{'role':'user','text':'换成蓝色'}], 'editable':{'productId':'sofa','variants':[{'id':'blue'}],'alternatives':[{'id':'alt'}]}}
+        result={'reply':'待执行','actions':[{'type':'color','productId':'sofa','variantId':'blue','quote':'换成蓝色'},{'type':'replace','productId':'invented','variantId':'','quote':'换成蓝色'},{'type':'render','quote':'旧消息'}]}
+        self.assertEqual(len(d.validate(result,req)['actions']),1)
+    def test_photo_inference_cannot_become_binding_requirement(self):
+        t=DesignerValidation();t.setUp();self.assertEqual(t.check({**t.p,'evidence_kind':'agent_inference','certainty':'tentative'})['proposals'],[])
+
+class RoomUnits(unittest.TestCase):
+    def test_metric_room_size_is_not_rounded_by_model(self):
+        t=DesignerValidation();t.setUp();t.req['messages']=[{'role':'user','text':'实测宽400厘米、深500厘米'}]
+        p={**t.p,'quote':'实测宽400厘米、深500厘米','category':'all','effect':'room_width','value':'157'}
+        self.assertAlmostEqual(float(t.check(p)['proposals'][0]['value'])*2.54,400)

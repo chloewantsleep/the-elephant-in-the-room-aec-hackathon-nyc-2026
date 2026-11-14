@@ -6,7 +6,7 @@
   function assess(product, category, brief) {
     const reasons = [], blocked = [], unknown = []; let score = 0;
     const materials = (product.materials || []).join(' ').toLowerCase();
-    for (const r of active(brief).filter(r => applies(r, category))) {
+    for (const r of active(brief).filter(r => applies(r, category) && (r.scope!=='candidate'||r.productId===product.id))) {
       const n = Number(r.value); let match = null;
       if (r.effect === 'max_width') match = Number.isFinite(product.dims_in?.width) ? product.dims_in.width <= n : null;
       if (r.effect === 'max_depth') match = Number.isFinite(product.dims_in?.depth) ? product.dims_in.depth <= n : null;
@@ -15,7 +15,7 @@
       if (r.effect === 'prefer_compact') { score -= (product.dims_in?.width || 100) / 100; reasons.push(r.id); continue; }
       if (['design_note', 'require_category'].includes(r.effect)) continue;
       if (r.effect === 'exclude_category') match = false;
-      if (r.effect === 'budget' || r.effect === 'sofa_lifestyle') continue;
+      if (r.effect === 'budget' || ['room_width','room_depth','room_type','sofa_lifestyle'].includes(r.effect)) continue;
       if (match === null) { unknown.push(r.id); if (r.priority === 'must' && r.effect !== 'design_note') blocked.push(r.id); }
       else if (match) { score += r.priority === 'must' ? 3 : 2; reasons.push(r.id); }
       else if (r.priority === 'must') blocked.push(r.id);
@@ -26,12 +26,12 @@
     return { eligible: !blocked.length, score, reasons, blocked, unknown, lifestyle };
   }
   function budget(brief, fallback) {
-    const r = active(brief).filter(r => r.effect === 'budget').at(-1);
+    const r = active(brief).filter(r => r.effect === 'budget'&&r.scope!=='candidate').at(-1);
     return r ? Number(r.value) : fallback;
   }
   function slots(template, brief, templates) {
-    let result = template.filter(s => !active(brief).some(r => r.effect === 'exclude_category' && r.category === s.cat));
-    for (const r of active(brief).filter(r => r.effect === 'require_category')) {
+    let result = template.filter(s => !active(brief).some(r => r.scope!=='candidate' && r.effect === 'exclude_category' && r.category === s.cat));
+    for (const r of active(brief).filter(r => r.effect === 'require_category'&&r.scope!=='candidate')) {
       if (!result.some(s => s.cat === r.category)) {
         const slot = Object.values(templates).flat().find(s => s.cat === r.category);
         if (slot) result.push({...slot});

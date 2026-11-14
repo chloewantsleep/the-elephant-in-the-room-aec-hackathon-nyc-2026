@@ -51,7 +51,7 @@ class Handler(SimpleHTTPRequestHandler):
             req = json.loads(self.rfile.read(length))
             return self._json(200, fn(req))
         except Exception as e:  # surface the reason to the UI
-            return self._json(500, {"error": str(e)})
+            return self._json(503, designer.client_error(e)) if self.path == "/api/chat" else self._json(500, {"error": str(e)})
 
     def log_message(self, fmt, *args):
         if "/api/" in str(args[0] if args else ""):

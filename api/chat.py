@@ -15,8 +15,8 @@ class handler(BaseHTTPRequestHandler):
                 length = int(self.headers.get('Content-Length',0))
                 if not 0 < length <= 5000000: raise ValueError('Request too large')
                 result = designer.chat(json.loads(self.rfile.read(length)))
-        except Exception:
-            status, result = 503, {'error':'Designer unavailable. Check server configuration and retry; your conversation is preserved.'}
+        except Exception as e:
+            status, result = 503, designer.client_error(e)
         body = json.dumps(result).encode()
         self.send_response(status)
         self.send_header('Content-Type','application/json')

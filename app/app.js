@@ -149,9 +149,15 @@ function view(item) {
            description: `${p.name} in ${v.variant}` };
 }
 const slotOf = item => TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
-const maxWidthFor = item => Math.min(slotOf(item).maxW * S.space.wallIn, ...BriefEngine.active(B).filter(r=>r.effect==='max_width' && r.priority==='must' && (r.category==='all'||r.category===item.cat)).map(r=>Number(r.value)));
+const maxWidthFor = item => Math.min(slotOf(item).maxW * S.space.wallIn, ...BriefEngine.active(B).filter(r=>r.effect==='max_width' && (r.scope!=='candidate'||r.productId===item.pid||r.productId===item.vid) && r.priority==='must' && (r.category==='all'||r.category===item.cat)).map(r=>Number(r.value)));
 const fits = (p, item) => Number.isFinite(p.dims_in.width) && p.dims_in.width <= maxWidthFor(item);
-function eligibleSwap(p,it) { return BriefEngine.assess(p,it.cat,B).eligible && sceneTotal(S.scene)-view(it).price.amount*(it.qty||1)+p.price.amount*(it.qty||1) <= BriefEngine.budget(B,S.needs.budget); }
+function layoutAllows(items){if(!S.space.confirmed)return true;const l=LayoutEngine.plan(items,S.space,view);return l.ready&&!l.unplaced.some(r=>!r.accessory&&!items[r.i].own);}
+function eligibleSwap(p,it) {
+ if(!p)return false;
+ const base=byId[p.id]||P.find(q=>q.variants.some(v=>v.id===p.id));if(!base)return false;
+ const trial=S.scene.map(item=>item===it?{...item,pid:base.id,vid:base.id===p.id?null:p.id,own:null}:item);
+ return BriefEngine.assess(p,it.cat,B).eligible&&sceneTotal(trial)<=BriefEngine.budget(B,S.needs.budget)&&layoutAllows(trial);
+}
 const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * (it.qty || 1), 0);
 
 function toast(msg) {
@@ -181,40 +187,36 @@ function toImage(x, y) {
   return [((x - g.ox) / g.dw) * 100, ((y - g.oy) / g.dh) * 100];
 }
 
-/* ---------------- ⑤ the planner (MOCK of the AI layout agent) ---------------- */
+/* ---------------- Brief-driven catalogue planner ---------------- */
 const keptPieces = () => S.existing?.photoKey === photoKey() ? S.existing.items.filter(e => e.keep && e.status !== "error") : [];
 const boxCenter = b => [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20];   // box 0-1000 -> image %
 const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ? e.category : "other", qty: 1,
                           own: e.id, pid: null, vid: null, pos: boxCenter(e.box) });
 
 function planOptions() {
-  const slots = BriefEngine.slots(TEMPLATES[S.needs.room], B, TEMPLATES);
+  const slots = BriefEngine.slots(TEMPLATES[S.needs.room], B, TEMPLATES).filter(s=>!S.removedCategories.includes(s.cat));
   const cap = BriefEngine.budget(B, S.needs.budget);
   const kept = keptPieces();
   const newSlots = slots.filter(slot => !kept.some(e => e.category === slot.cat));
   return STRATEGIES.map(strategy => {
     const plan = BriefEngine.plan(P, newSlots, B, cap, S.space.wallIn, strategy.target);
-    return {name:strategy.name, ...plan, items:[...kept.map(ownedItem), ...plan.items]};
+    let items=[...kept.map(ownedItem), ...plan.items];
+    if(S.space.confirmed){
+      const layout=LayoutEngine.plan(items,S.space,view);
+      const blocked=new Set(layout.unplaced.filter(r=>!r.accessory&&!items[r.i].own).map(r=>r.i));
+      for(const i of blocked)plan.gaps.push(items[i].cat);
+      items=items.filter((it,i)=>!blocked.has(i));
+    }
+    return {name:strategy.name, ...plan, items};
   });
 }
 
 function generate() {
-  S.generating = true; S.stage = 0; S.sel = null;
-  render();
-  const n = stagesText().length;
-  const tick = () => {
-    S.stage++;
-    if (S.stage >= n) {
-      S.options = planOptions(); S.opt = 0;
-      S.scene = structuredClone(S.options[0].items);
-      S.generating = false; S.dirty = false;
-      render();
-      return;
-    }
-    renderPanel();
-    setTimeout(tick, 520);
-  };
-  setTimeout(tick, 520);
+  if(typeof designReady==='function' && !designReady()) {chatMode='setup';chatOpen=true;renderDesigner();return;}
+  S.generating=true;renderDesigner();
+  S.options=planOptions();S.opt=0;S.scene=structuredClone(S.options[0].items);
+  S.generating=false;S.dirty=false;S.sel=null;S.step=DESIGN;
+  syncLayout();saveBrief();render();
 }
 function stagesText() {
   return [
@@ -234,13 +236,13 @@ function render() {
   showImage();
   renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart(); renderMode();
   document.body.classList.toggle("photo-first", S.step === NEEDS && S.space.photo !== "upload");
-  renderDesigner(); renderDiagnosis();
+  renderDesigner(); renderDiagnosis(); if(typeof renderLayout==='function')renderLayout();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
 const photoSrc = () => S.space.photo === "demo" ? example().src : S.space.data;
 const sceneSig = () => JSON.stringify([photoKey(), S.space.wallIn,
-  S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty, it.own])]);
+  S.needs.style,S.space.depthIn,S.space.corridor,S.space.clearanceIn,S.space.obstacles,B.revision, S.scene.map(it => [it.pid, it.vid, it.qty, it.own,it.pos])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
 const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
@@ -273,7 +275,7 @@ function editsSinceLast() {
 }
 
 function renderRequest() {
-  const base = { room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style } };
+  const base = { room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style, brief:BriefEngine.active(B).map(r=>({text:r.text,impact:r.impact,scope:r.scope,productId:r.productId,category:r.category})) } };
   const edits = editsSinceLast();
   if (edits) {
     // edit mode: start from the current render and change only these pieces (keeps everything else stable)
@@ -284,13 +286,14 @@ function renderRequest() {
   return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
            items: S.scene.filter(it => !it.own).map(itemPayload),
            keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
-           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
+           remove_existing: ex.filter(e => !e.id.startsWith('picked-')&&!S.scene.some(it => it.own === e.id)).map(here) };
 }
 
 function rememberRender(sig, image) {
   S.renders[sig] = image;
   S.last = { image, photoKey: photoKey(), wallIn: S.space.wallIn, style: S.needs.style,
              items: structuredClone(S.scene) };
+  if(typeof persistRenderedImage==='function')persistRenderedImage(sig,S.last);
 }
 
 // remembered per browser so teammates only type it once
@@ -320,6 +323,7 @@ async function apiPost(path, obj) {
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
+  S.renderError='';
   if (!S.live) {
     // demo mode: show a saved render instead of calling Gemini (saves credits while we build)
     if (S.renders[sig]) { S.before = false; render(); return; }
@@ -339,11 +343,12 @@ async function renderScene() {
   S.rendering = true; S.before = false; render();
   try {
     const j = await apiPost("/api/render", reqObj);
-    rememberRender(sig, j.image);
+    if(sig!==sceneSig()){toast('方案已变化，本次图片未覆盖新方案；请重新生成。');return;}
+    rememberRender(sig, j.image);if(typeof logTransition==='function')logTransition('效果图已更新，使用当前选品与配色。');
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
   } catch (e) {
-    toast(e.message.slice(0, 120));
+    S.renderError=e.message; if(typeof logTransition==='function')logTransition('效果图生成失败；当前选品已保存，可重试。');toast(e.message.slice(0,120));
   } finally {
     S.rendering = false; render();
   }
@@ -468,7 +473,7 @@ function renderTopbar() {
   }
   else action = `<button class="pill" data-action="before">${S.before ? "Show render" : "Before"}</button>`;
   t.hidden = false;
-  t.innerHTML = `<span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
+  t.innerHTML = `<button class="pill" data-action="cart" aria-label="选品清单">${ICON.cart}</button><span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
 }
 
 function renderMeasure() {
@@ -517,12 +522,8 @@ function renderHotspots() {
 }
 
 function renderPanel() {
-  const el = $("#panel");
-  if (S.step === NEEDS) el.innerHTML = needsCard() + existingCard();
-  else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
-  else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
-  else el.innerHTML = "";
-  if (S.step >= DESIGN && S.options[S.opt]?.gaps?.length) el.insertAdjacentHTML('afterbegin', `<div class="plan-gap" role="status">No match for ${S.options[S.opt].gaps.map(c=>esc(CAT_LABEL[c])).join(', ')} within your budget and dimensions.</div>`);
+  const el=$("#panel");
+  el.innerHTML=S.step===NEEDS?existingCard():S.step===EDIT&&S.sel!=null?detailCard():'';
 }
 
 function needsCard() {
@@ -610,8 +611,8 @@ function cartSummary() {
 }
 function cartRow({ it, i }) {
   const p = view(it);
-  return `<li><button class="row-img" data-action="cart-item" data-idx="${i}"><img src="${esc(imgOf(p))}" alt=""></button>
-    <div><b>${esc(p.name)}</b><small>${esc(p.owned ? CAT_LABEL[it.cat] : p.variant || "")}</small><small>${dimsText(p)}</small></div>
+  return `<li><button class="row-img" data-action="cart-item" data-idx="${i}" aria-label="选择 ${esc(p.name)}"><img src="${esc(imgOf(p))}" alt=""></button>
+    <div><b>${esc(p.name)}</b><small>${esc(p.owned ? CAT_LABEL[it.cat] : p.variant || "")}</small><small>${dimsText(p)}</small>${it.cat==='sofa'?`<small>${esc(sofaReason(SofaMatcher.assess(p,B)))}</small>`:''}</div>
     <div class="amt">${p.owned ? "Yours" : `${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a>`}</div></li>`;
 }
 
@@ -638,7 +639,7 @@ function renderCart() {
     </div>
     <p class="sub">${buy.length} to buy${keep.length ? ` · ${keep.length} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
     ${cartSummary()}
-    <div class="drawer-scroll">
+    <div class="drawer-scroll">${S.options[S.opt]?.gaps?.length?`<p class="chat-warning">以下类别未找到满足条件的选项：${S.options[S.opt].gaps.map(c=>CAT_LABEL[c]).join('、')}</p>`:''}
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
       ${keep.length ? `<label class="field">Keeping · ${keep.length}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
     </div>
@@ -682,6 +683,7 @@ function renderCart() {
 
 /* ---------------- actions ---------------- */
 function goto(i) {
+  if(i>=DESIGN && typeof designReady==='function' && !designReady()){chatMode='setup';chatOpen=true;renderDesigner();return;}
   i = Math.max(0, Math.min(STEPS.length - 1, i));
   S.step = i; S.sel = null;
   if (i === SHOP) S.cart = "open";
@@ -695,6 +697,7 @@ function exportScene() {
     room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? example().src : "upload" },
     needs: { ...S.needs, budget_usd: S.needs.budget },
     brief: B,
+    layout: S.layout,
     items: S.scene.map(it => {
       const p = view(it);
       return { slot: it.cat, qty: it.qty, sku: p.id, name: p.name, variant: p.variant, price_usd: p.price.amount,
@@ -720,7 +723,7 @@ document.addEventListener("click", e => {
     S.space.photo = "demo"; S.space.data = null; S.dirty = true;
     S.needs.room = example().room; render();
   }
-  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); }
+  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); syncLayout(); saveBrief(); render(); }
   else if (act === "render") renderScene();
   else if (act === "size") { S.sizeOpen = !S.sizeOpen; renderPanel(); renderMeasure(); }
   else if (act === "scan" || act === "scan-again") { if (act === "scan-again") S.existing = null; scanFurniture(); }
@@ -731,21 +734,14 @@ document.addEventListener("click", e => {
   else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== EDIT) S.step = EDIT; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
-    const it = S.scene[S.sel]; if(!eligibleSwap(byId[a.dataset.pid], it)) return toast("This choice conflicts with the current brief.");
-    recordEdit(`I replaced ${view(it).name} with ${byId[a.dataset.pid].name}.`);
-    if(it.own && exById(it.own)) exById(it.own).keep=false;
-    it.pid = a.dataset.pid; it.vid = null; delete it.own;
-    render(); toast(`Swapped to ${byId[it.pid].name} · click Update render`);
+    try{changeSceneProduct(S.sel,a.dataset.pid,null);toast('已替换，点击 Update render 更新效果图');}catch(e){toast(e.message);}
   } else if (act === "colorway") {
-    const it=S.scene[S.sel], previous=it.vid; it.vid=a.dataset.vid || null;
-    if(!eligibleSwap(view(it),it)){it.vid=previous;return toast("This colorway exceeds budget or conflicts with your brief.");}
-    recordEdit(`I changed the colorway to ${view(it).variant}.`); render();
-    toast(`Color · ${view(S.scene[S.sel]).variant}`);
+    try{changeSceneProduct(S.sel,S.scene[S.sel].pid,a.dataset.vid||null);toast('配色已更新，点击 Update render');}catch(e){toast(e.message);}
   } else if (act === "remove") {
     const [it] = S.scene.splice(S.sel, 1); recordEdit(`I removed ${view(it).name} from this design.`); S.removedCategories.push(it.cat); S.sel = null;
     if (it.own && exById(it.own)) exById(it.own).keep = false;
     render();
-    toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
+    syncLayout();saveBrief();renderDesigner();toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
   else if (act === "live") {
     S.live = !S.live; S.renders = {}; S.last = null; S.before = false;   // don't mix demo images into AI edits
@@ -792,7 +788,8 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.live=true;
+      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.live=true;S.space.confirmed=false;S.scene=null;S.options=[];S.layout=null;layoutOpen=false;S.sel=null;B.setupApproved=false;chatMode='conversation';chatOpen=false;
+      if(typeof selectedObject!=='undefined'){selectedObject=null;objectNotice='';renderObjectSelection();}
       saveBrief(); render(); startPhotoConversation();
     };
     img.src = r.result;
@@ -841,16 +838,17 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
   .then(([d,annotations,ontology]) => {
     SofaMatcher.configure(ontology,annotations,d);
     P = d; byId = Object.fromEntries(d.map(p => [p.id, p]));
+    restoreDesignerProject();
     // deep link for demos: #room=bedroom&step=3&sel=0
     const h = new URLSearchParams(location.hash.slice(1));
-    if (EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
+    if (h.has("ex") && EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
     if (ROOMS[h.get("room")]) S.needs.room = h.get("room");
     const step = +h.get("step") || 0;
-    if (step >= DESIGN) {
+    if (step >= DESIGN && designReady()) {
       S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
-    S.step = Math.min(step, STEPS.length - 1);
+    S.step = S.scene ? Math.min(step||DESIGN, STEPS.length - 1) : NEEDS;
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
@@ -858,7 +856,7 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1
       scanFurniture().then(() => {
-        if (step >= DESIGN) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
+        if (step >= DESIGN && designReady()) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
         after();
       });
     } else after();
