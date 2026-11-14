@@ -29,6 +29,10 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
 - **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.
 - **Demo deep links:** `#step=2&sel=0` opens edit with the first item open. `#room=bedroom&step=3` opens the bedroom list. `#step=0&scan=1` scans the demo room. Add `&render=1` to render on load.
 
+## Pitch deck
+
+**https://elephant-pitch.vercel.app**. A scroll-driven pitch built from `deck/` (its own Vercel project, root directory `deck/`). See [`deck/README.md`](deck/README.md).
+
 ## Live site (Vercel)
 
 Every push to `main` deploys automatically to production on Vercel. Teammates only need the link, no setup.
@@ -43,6 +47,7 @@ Every push to `main` deploys automatically to production on Vercel. Teammates on
 | `app/` | UI MVP (`index.html`, `style.css`, `app.js`) |
 | `server.py` | Local dev server + `/api/render` → Gemini (key from `.env`) |
 | `api/` | `render.py` = Vercel function, `_core.py` = render logic shared with `server.py` |
+| `deck/` | Pitch deck (Vite + React), deployed to elephant-pitch.vercel.app |
 | `vercel.json` | Vercel config: `/` → `/app/`, function timeout, bundled product images |
 | `data/products.json` | 316 real IKEA products. See [`data/README.md`](data/README.md) and [`data/SUMMARY.md`](data/SUMMARY.md) |
 | `data/images/` | White-background product photos for rendering |
