@@ -1121,11 +1121,11 @@ export default function LoupeCuratorLanding({
             </div>
           ))}
           <h1 className="lcl-h1 lcl-l1">
-            <span ref={reg("l1")}>{words("Real furniture", 0.1, 0.16)}</span>
+            <span ref={reg("l1")}>{words("Dream about the space", 0.1, 0.16)}</span>
           </h1>
           <p className="lcl-h1 lcl-l2">
-            <span className="lcl-wl">{words("for your actual", 0.85, 0.16)}</span>
-            <span className="lcl-wr">{words("room", 1.2, 0)}</span>
+            <span className="lcl-wl">{words("and Elephant makes it", 0.85, 0.16)}</span>
+            <span className="lcl-wr">{words("come true", 1.45, 0.16)}</span>
           </p>
           <div className="lcl-full" ref={reg("portrait")} data-v="v0" style={{ clipPath: "inset(50%)" }}>
             <div className="lcl-zin" ref={reg("portraitIn")}>
@@ -1136,8 +1136,8 @@ export default function LoupeCuratorLanding({
               ))}
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
             </div>
-            <p className="lcl-cap" style={{ "--n": 42 } as CSSProperties} aria-label="316 real products. Real sizes, real prices">
-              {letters("316 real products. Real sizes, real prices", "cap")}
+            <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="316 real products plus your own. Real sizes and real prices.">
+              {letters("316 real products plus your own. Real sizes and real prices.", "cap")}
             </p>
             <div className="lcl-co" ref={reg("callouts")}>
               <svg className="lcl-vx" aria-hidden="true">
