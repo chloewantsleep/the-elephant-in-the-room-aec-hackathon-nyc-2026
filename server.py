@@ -14,6 +14,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
 import _core as core  # noqa: E402
+import _designer as designer
 
 ROOT = core.ROOT
 
@@ -39,18 +40,20 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path != "/api/render":
+        if self.path not in ("/api/render", "/api/chat"):
             return self._json(404, {"error": "not found"})
         try:
             if not core.passcode_ok(self.headers):
                 return self._json(401, {"error": "Passcode required", "passcode": True})
-            req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-            return self._json(200, core.render(req))
+            length = int(self.headers.get("Content-Length", 0))
+            if not 0 < length <= 5000000: return self._json(413, {"error": "Request too large"})
+            req = json.loads(self.rfile.read(length))
+            return self._json(200, (designer.chat(req) if self.path == "/api/chat" else core.render(req)))
         except Exception as e:  # surface the reason to the UI
             return self._json(500, {"error": str(e)})
 
     def log_message(self, fmt, *args):
-        if "/api/" in (args[0] if args else ""):
+        if "/api/" in str(args[0] if args else ""):
             super().log_message(fmt, *args)
 
 

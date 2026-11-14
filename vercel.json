@@ -3,11 +3,21 @@
   "framework": null,
   "buildCommand": "",
   "outputDirectory": ".",
-  "redirects": [{ "source": "/", "destination": "/app/", "permanent": false }],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/app/",
+      "permanent": false
+    }
+  ],
   "functions": {
     "api/render.py": {
       "maxDuration": 60,
       "includeFiles": "{api/_core.py,app/assets/**,data/images/**}"
+    },
+    "api/chat.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,api/_designer.py}"
     }
   }
 }

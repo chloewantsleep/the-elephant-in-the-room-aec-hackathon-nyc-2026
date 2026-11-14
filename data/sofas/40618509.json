@@ -1,0 +1,185 @@
+{
+  "sku": "ikea:40618509",
+  "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+  "retrieved_at": "2026-11-14T20:35:30.653017+00:00",
+  "measurements": [
+    {
+      "measure": "16 1/8 \"",
+      "name": "Armrest height",
+      "type": "00138"
+    },
+    {
+      "measure": "31 1/8 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    },
+    {
+      "measure": "32 5/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "5 7/8 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "27 1/2 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "30 3/4 \"",
+      "name": "Height including back cushions",
+      "type": "00414"
+    },
+    {
+      "measure": "18 7/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "16 1/2 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "47 1/4 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "55 7/8 \"",
+      "name": "Width",
+      "type": "00047"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Polypropylene",
+                  "part": "Clip/ Leg:"
+                },
+                {
+                  "material": "Laminated veneer lumber, Plywood, Particleboard, Fiberboard, Solid wood, Polyurethane foam 2.0 lb/cu.ft.",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Cross rail:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back cushion/ Back fabric:"
+                },
+                {
+                  "material": "100 % polypropylene",
+                  "part": "Back fabric:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Cushion cover",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean."
+              ]
+            },
+            {
+              "header": "Frame, non-removable cover",
+              "texts": [
+                "Vacuum clean.",
+                "Wipe clean with a damp cloth."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "406.185.09",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/gullvalla-loveseat-silkeryd-gray-green__AA-2594058-1-100.pdf",
+                  "label": "GULLVALLA Loveseat"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "406.185.09",
+                  "url": "https://www.ikea.com/us/en/manuals/gullvalla-loveseat-silkeryd-gray-green__AA-2666808-2-100.pdf",
+                  "label": "GULLVALLA Loveseat"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "Soft, simple shapes with well-thought-out details, such as wrinkles on the back cushions and rounded legs – creating a timeless sofa that feels both inviting and traditional.",
+        "The seat cushion is built with zig-zag springs and foam, providing medium-firm comfort. The back cushion has foam filling that helps it keep its shape over time.",
+        "The backrest is stored inside the armrests, making the packaging smaller and easier to bring home.",
+        "The cover is made from the chenille fabric Silkeryd. It has a soft, tactile surface with a subtle texture that creates a refined expression and holds up well over time.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "S Fager/E Hallström",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "40618509",
+    "title": "Product details"
+  }
+}

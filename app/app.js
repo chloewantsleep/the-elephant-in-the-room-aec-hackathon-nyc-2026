@@ -71,6 +71,7 @@ const STRATEGIES = [
 
 const S = {
   step: 0,
+  removedCategories: [],
   needs: { room: "living", style: "Warm minimal", budget: 3000, notes: "", mode: "non-pro" },
   space: { wallIn: 144, depthIn: 132, photo: "demo" },
   dirty: true,         // needs/space changed since the last plan
@@ -86,6 +87,7 @@ const S = {
   before: false,       // show the original photo instead of the render
 };
 
+S.needs.budget=BriefEngine.budget(B,S.needs.budget);
 let P = [], byId = {};
 const $ = (s, el = document) => el.querySelector(s);
 const room = $("#room");
@@ -113,11 +115,13 @@ function view(item) {
   if (!v) return p;
   return { ...p, id: v.id, variant: v.variant, price: { amount: v.price ?? p.price.amount, currency: "USD" },
            images: { ...p.images, main_local: null, main: v.image || p.images.main }, url: v.url || p.url,
+           sofa: p.sofa ? {...p.sofa, attributes:{...p.sofa.attributes, washable_cover:{value:null,status:"unknown"},removable_cover:{value:null,status:"unknown"}}} : undefined,
            description: `${p.name} in ${v.variant}` };
 }
 const slotOf = item => TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
-const maxWidthFor = item => slotOf(item).maxW * S.space.wallIn;
-const fits = (p, item) => p.dims_in.width == null || p.dims_in.width <= maxWidthFor(item);
+const maxWidthFor = item => Math.min(slotOf(item).maxW * S.space.wallIn, ...BriefEngine.active(B).filter(r=>r.effect==='max_width' && r.priority==='must' && (r.category==='all'||r.category===item.cat)).map(r=>Number(r.value)));
+const fits = (p, item) => Number.isFinite(p.dims_in.width) && p.dims_in.width <= maxWidthFor(item);
+function eligibleSwap(p,it) { return BriefEngine.assess(p,it.cat,B).eligible && sceneTotal(S.scene)-view(it).price.amount*(it.qty||1)+p.price.amount*(it.qty||1) <= BriefEngine.budget(B,S.needs.budget); }
 const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * (it.qty || 1), 0);
 
 function toast(msg) {
@@ -149,24 +153,9 @@ function toImage(x, y) {
 
 /* ---------------- ⑤ the planner (MOCK of the AI layout agent) ---------------- */
 function planOptions() {
-  const tpl = TEMPLATES[S.needs.room];
-  const used = {};
-  return STRATEGIES.map(strat => {
-    const items = tpl.map(slot => {
-      const budget = S.needs.budget * slot.share / (slot.qty || 1);
-      const maxW = slot.maxW * S.space.wallIn;
-      let pool = P.filter(p => p.category === slot.cat && (p.dims_in.width == null || p.dims_in.width <= maxW));
-      if (!pool.length) pool = P.filter(p => p.category === slot.cat);
-      const fresh = pool.filter(p => !(used[slot.cat] || []).includes(p.id));
-      const cands = (fresh.length ? fresh : pool).filter(p => p.price.amount <= budget * 1.35);
-      const list = cands.length ? cands : pool.slice().sort((a, b) => a.price.amount - b.price.amount).slice(0, 1);
-      const target = budget * strat.target;
-      const pick = list.slice().sort((a, b) => Math.abs(a.price.amount - target) - Math.abs(b.price.amount - target))[0];
-      (used[slot.cat] = used[slot.cat] || []).push(pick.id);
-      return { cat: slot.cat, qty: slot.qty || 1, pid: pick.id, vid: null, pos: slot.pos.slice() };
-    });
-    return { name: strat.name, items };
-  });
+  const slots = BriefEngine.slots(TEMPLATES[S.needs.room], B, TEMPLATES);
+  const cap = BriefEngine.budget(B, S.needs.budget);
+  return STRATEGIES.map(strategy => ({name: strategy.name, ...BriefEngine.plan(P, slots, B, cap, S.space.wallIn, strategy.target)}));
 }
 
 function generate() {
@@ -180,7 +169,6 @@ function generate() {
       S.scene = structuredClone(S.options[0].items);
       S.generating = false; S.dirty = false;
       render();
-      renderScene();
       return;
     }
     renderPanel();
@@ -191,7 +179,7 @@ function generate() {
 function stagesText() {
   return [
     `Reading your needs · ${S.needs.style.toLowerCase()}, ${money(S.needs.budget)}`,
-    `Scaling the room · back wall ${inch(S.space.wallIn)}`,
+    `Width allowance · back wall ${inch(S.space.wallIn)}`,
     `Searching ${P.length} real products`,
     "Checking fit and budget",
     "Composing 3 options",
@@ -204,6 +192,8 @@ function render() {
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
   renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderTopbar();
+  document.body.classList.toggle("photo-first", S.step === 0 && S.space.photo !== "upload");
+  renderDesigner(); renderDiagnosis();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
@@ -367,41 +357,22 @@ function renderHotspots() {
 function renderPanel() {
   const el = $("#panel");
   if (S.step === 0) el.innerHTML = needsCard();
-  else if (S.step === 1) el.innerHTML = spaceCard();
+  else if (S.step === 1) { el.innerHTML = spaceCard(); el.querySelector('.card').insertAdjacentHTML('afterbegin', `<label class="field">Which room are we working on?</label><div class="chips">${Object.entries(ROOMS).map(([k,v])=>`<button class="chip ${S.needs.room===k?'on':''}" data-action="set" data-key="room" data-val="${k}">${v}</button>`).join('')}</div>`); }
   else if (S.step === 2) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === 3) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = shopCard();
+  if (S.step >= 2 && S.options[S.opt]?.gaps?.length) el.insertAdjacentHTML('afterbegin', `<div class="plan-gap" role="status">No verified match within current constraints: ${S.options[S.opt].gaps.map(c=>esc(CAT_LABEL[c])).join(', ')}. These slots are left open; no constraints were relaxed.</div>`);
 }
 
 /* ① needs */
-function needsCard() {
-  const n = S.needs;
-  return `<div class="card card-left">
-    <h2>What do you need?</h2>
-    <p class="sub">Tell us about the room. We only suggest real furniture that fits.</p>
-    <label class="field">Room</label>
-    <div class="chips">${Object.entries(ROOMS).map(([k, v]) => `<button class="chip ${n.room === k ? "on" : ""}" data-action="set" data-key="room" data-val="${k}">${v}</button>`).join("")}</div>
-    <label class="field">Style</label>
-    <div class="chips">${STYLES.map(s => `<button class="chip ${n.style === s ? "on" : ""}" data-action="set" data-key="style" data-val="${s}">${s}</button>`).join("")}</div>
-    <label class="field">Budget</label>
-    <div class="range-row"><input type="range" min="500" max="10000" step="100" value="${n.budget}" data-bind="budget"><output>${money(n.budget)}</output></div>
-    <label class="field">Must-haves</label>
-    <textarea rows="2" data-bind="notes" placeholder="e.g. seats 4, pet-friendly fabric, keep my bookshelf">${esc(n.notes)}</textarea>
-    <label class="field">I am</label>
-    <div class="chips">
-      <button class="chip ${n.mode === "non-pro" ? "on" : ""}" data-action="set" data-key="mode" data-val="non-pro">Furnishing my home</button>
-      <button class="chip ${n.mode === "pro" ? "on" : ""}" data-action="set" data-key="mode" data-val="pro">A design professional</button>
-    </div>
-    <button class="btn block" data-action="next">Next: your space →</button>
-  </div>`;
-}
+function needsCard() { return designerCard(); }
 
 /* ② space */
 function spaceCard() {
   const s = S.space;
   return `<div class="card card-left">
     <h2>Your space</h2>
-    <p class="sub">Upload a photo of the room, then give us one real length so every product is shown at true scale.</p>
+    <p class="sub">Upload a photo of the room, then give us one real length so every product is shown at a preliminary width allowance.</p>
     <button class="drop" data-action="upload" id="drop">
       <b>${s.photo === "demo" ? "Upload a room photo" : "Replace photo"}</b>
       <span>Drop an image here or click to browse</span>
@@ -420,13 +391,13 @@ function spaceCard() {
 function progressCard() {
   return `<div class="card card-center" style="width:400px">
     <h2>Designing…</h2>
-    <p class="sub">Choosing from real, in-stock furniture.</p>
+    <p class="sub">Choosing from the real product catalogue snapshot.</p>
     <ul class="stages">${stagesText().map((t, i) =>
       `<li class="${i < S.stage ? "done" : i === S.stage ? "now" : ""}"><span class="tick">${i < S.stage ? "✓" : ""}</span>${esc(t)}</li>`).join("")}</ul>
   </div>`;
 }
 function optionsView() {
-  return `<div class="options">${S.options.map((o, i) => {
+  return `<button class="btn sofa-browse" data-action="sofa-browse">Find your sofa ↗</button><div class="options">${S.options.map((o, i) => {
     const imgs = o.items.slice(0, 4).map(it => `<img src="${esc(imgOf(view(it)))}" alt="">`).join("");
     return `<button class="opt ${S.opt === i ? "on" : ""}" data-action="option" data-idx="${i}">
       <div class="grid">${imgs}</div>
@@ -448,8 +419,8 @@ function detailCard() {
   const it = S.scene[S.sel], base = byId[it.pid], p = view(it);
   const ok = fits(p, it);
   const colorways = [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))];
-  const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it))
-    .sort((a, b) => Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
+  const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it) && eligibleSwap(q, it))
+    .sort((a, b) => BriefEngine.assess(b,it.cat,B).score-BriefEngine.assess(a,it.cat,B).score || Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
   return `<div class="card card-right">
     <button class="close" data-action="close" aria-label="Close">×</button>
     <img class="p-img" src="${esc(imgOf(p))}" alt="">
@@ -459,9 +430,11 @@ function detailCard() {
     <p class="p-price">${money(p.price.amount)}${it.qty > 1 ? ` <small style="font-size:13px;color:var(--ink-soft)">each · ${money(p.price.amount * it.qty)}</small>` : ""}</p>
     <dl class="facts">
       <dt>Size</dt><dd>${dimsText(p)}</dd>
-      <dt>Fit</dt><dd><span class="fit ${ok ? "" : "no"}">${ok ? "Fits" : "Too wide"} · max ${inch(maxWidthFor(it))} wide</span></dd>
+      <dt>Fit</dt><dd><span class="fit ${ok ? "" : "no"}">${ok ? "Width check passes" : "Too wide"} · max ${inch(maxWidthFor(it))} wide</span></dd>
       ${p.materials.length ? `<dt>Material</dt><dd>${esc(p.materials.slice(0, 4).join(", "))}</dd>` : ""}
     </dl>
+    <div class="selection-reasons"><b>Why this is here</b><p>Within the current budget and width allowance. Width-only check; circulation and depth need verification.</p>${BriefEngine.assess(p,it.cat,B).reasons.map(id=>B.requirements.find(r=>r.id===id)).filter(Boolean).map(r=>`<p>✓ ${esc(r.text)}</p>`).join('')}${BriefEngine.active(B).filter(r=>r.effect==='design_note' && (r.category==='all'||r.category===it.cat)).map(r=>`<p>To verify: ${esc(r.text)}</p>`).join('')}</div>
+    ${it.cat==='sofa'?sofaEvidence(p):''}
     ${colorways.length > 1 ? `<label class="field">Colorways · ${colorways.length}</label>
       <div class="swatches">${colorways.slice(0, 10).map(c =>
         `<button class="swatch ${(it.vid || null) === c.id ? "on" : ""}" data-action="colorway" data-vid="${c.id || ""}" title="${esc(c.variant)}"><img src="${esc(c.image)}" alt=""></button>`).join("")}</div>` : ""}
@@ -510,6 +483,7 @@ function exportScene() {
   return {
     room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? "demo-room.jpg" : "upload" },
     needs: { ...S.needs, budget_usd: S.needs.budget },
+    brief: B,
     items: S.scene.map(it => {
       const p = view(it);
       return { slot: it.cat, qty: it.qty, sku: p.id, name: p.name, variant: p.variant, price_usd: p.price.amount,
@@ -528,20 +502,22 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
-  else if (act === "demo") { S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); renderPanel(); }
-  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); renderScene(); }
+  else if (act === "demo") { B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); renderPanel(); }
+  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); }
   else if (act === "render") renderScene();
   else if (act === "before") { S.before = !S.before; render(); }
   else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== 3) S.step = 3; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
-    const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null;
+    const it = S.scene[S.sel]; if(!eligibleSwap(byId[a.dataset.pid], it)) return toast("This choice conflicts with the current brief."); recordEdit(`I replaced ${view(it).name} with ${byId[a.dataset.pid].name}.`); it.pid = a.dataset.pid; it.vid = null;
     render(); toast(`Swapped to ${byId[it.pid].name} · click Update render`);
   } else if (act === "colorway") {
-    S.scene[S.sel].vid = a.dataset.vid || null; render();
+    const it=S.scene[S.sel], previous=it.vid; it.vid=a.dataset.vid || null;
+    if(!eligibleSwap(view(it),it)){it.vid=previous;return toast("This colorway exceeds budget or conflicts with your brief.");}
+    recordEdit(`I changed the colorway to ${view(it).variant}.`); render();
     toast(`Color · ${view(S.scene[S.sel]).variant}`);
   } else if (act === "remove") {
-    const [it] = S.scene.splice(S.sel, 1); S.sel = null; render();
+    const [it] = S.scene.splice(S.sel, 1); recordEdit(`I removed ${view(it).name} from this design.`); S.removedCategories.push(it.cat); S.sel = null; render();
     toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
   else if (act === "copy") {
@@ -580,7 +556,7 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      showImage(); renderPanel(); toast("Room photo loaded");
+      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; saveBrief(); render(); startPhotoConversation();
     };
     img.src = r.result;
   };
@@ -612,13 +588,13 @@ addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") goto(S.step - 1);
   if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); });
+addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderDiagnosis(); });
+room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
-fetch("../data/products.json")
-  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d => {
+Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))
+  .then(([d,annotations,ontology]) => {
+    SofaMatcher.configure(ontology,annotations,d);
     P = d; byId = Object.fromEntries(d.map(p => [p.id, p]));
     // deep link for demos: #room=bedroom&step=3&sel=0
     const h = new URLSearchParams(location.hash.slice(1));
