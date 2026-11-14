@@ -1,11 +1,33 @@
 # The Elephant in the Room — AEC Hackathon NYC 2026
 
-
 **AI furniture decision platform**
 
 Tell us what you need, show us your room, and get a render of your space furnished with **real, buyable furniture** (real dimensions, real prices). Edit the design by clicking on the image, then leave with a **final render + shopping list**.
 
 ![Whiteboard sketch](docs/whiteboard-sketch.jpg)
+
+## Run the UI MVP
+
+```bash
+python3 -m http.server 8000      # from the repo root
+# open http://localhost:8000/app/
+```
+
+No install needed: plain HTML/CSS/JS reading `data/products.json`. Five steps on one photo: **Needs → Space → Design → Edit → Shop**. Arrow keys move between steps.
+
+- **Real:** all 316 products, prices, dimensions, photos, colorways, the fit check against the wall width, and the shopping list.
+- **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). The "render" is the room photo with product pins on top (P3). Room analysis is the user typing one wall length (P2).
+- **Demo deep links:** `#step=3&sel=0` (edit, first item open), `#room=bedroom&step=4` (bedroom shopping list).
+
+## Repo layout
+
+| Path | What |
+|---|---|
+| `app/` | UI MVP (`index.html`, `style.css`, `app.js`) |
+| `data/products.json` | 316 real IKEA products. See [`data/README.md`](data/README.md) and [`data/SUMMARY.md`](data/SUMMARY.md) |
+| `data/images/` | White-background product photos for rendering |
+| `schema/product.schema.json` | Shared product format |
+| `scraper/` | Scrapers + merge script |
 
 ---
 
@@ -98,7 +120,7 @@ MVP targets **non-professional**. Pro features are stretch goals.
 
 | Person | Track | Owns | Deliverable |
 |---|---|---|---|
-| **P1** | A · Data | Stage ③ ④ | Scraper scripts + normalized product DB snapshot (≥ 500 items, real dims + price + image), search API, compare table data |
+| **P1** | A · Data | Stage ③ ④ | Scraper scripts + normalized product DB snapshot (~300 items, real dims + price + image) ✅ done: 316 items, search API, compare table data |
 | **P2** | B1 · AI: space + decision | Stage ② ⑤ | Room analysis (photo → room JSON with scale), layout agent → 3 scene states |
 | **P3** | B2 · AI: render + edit | Render, edit backend | Scene state → render, click → segment → map to item, re-render after swap |
 | **P4** | C1 · Frontend: input | Stage ① ② UI | Needs form, photo upload + scale input, loading states |
