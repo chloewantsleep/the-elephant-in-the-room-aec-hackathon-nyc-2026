@@ -162,7 +162,24 @@ body.no-labels .hs-pill, body.no-labels .hs-line { display: none; }
 }
 
 /* ---------- needs chat ---------- */
-.chat-card { display: flex; flex-direction: column; height: calc(100% - 150px); max-height: 640px; padding-bottom: 16px; overflow: hidden; }
+.chat-card { display: flex; flex-direction: column; height: calc(100% - 150px); max-height: 660px; padding: 14px; overflow: hidden; }
+.photo-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px; text-align: left;
+  border-radius: 18px; border: 1.5px dashed rgba(31,30,28,.18); transition: border-color .15s, background .15s;
+}
+.photo-row:hover, .photo-row.over { border-color: var(--ink); background: rgba(255,255,255,.5); }
+.photo-row img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; flex: none; }
+.photo-row span { flex: 1; min-width: 0; }
+.photo-row b { display: block; font-size: 14px; font-weight: 600; }
+.photo-row small { display: block; font-size: 12px; color: var(--ink-soft); }
+.photo-row i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(31,30,28,.07); }
+.photo-links { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 6px 0; font-size: 12px; }
+.photo-links .link-btn { font-size: 12px; color: var(--ink-soft); }
+.photo-links .link-btn:hover { color: var(--ink); }
+.muted { color: var(--ink-soft); }
+.size-row { display: flex; gap: 14px; padding: 8px 6px 0; font-size: 12px; color: var(--ink-soft); }
+.size-row input { width: 64px; padding: 6px 8px; border-radius: 10px; font-size: 12px; margin: 0 2px; }
+.restart { width: 42px; height: 42px; border-radius: 50%; background: rgba(31,30,28,.07); color: var(--ink); font-size: 17px; }
 .chat-head { display: flex; justify-content: space-between; align-items: baseline; }
 .chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px 2px 10px; scrollbar-width: thin; }
 .msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 13.5px; line-height: 1.45; }

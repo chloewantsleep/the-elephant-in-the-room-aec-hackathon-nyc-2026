@@ -11,7 +11,8 @@
  *   - pin positions: defaults per slot; drag to line up with the render
  */
 
-const STEPS = ["Space", "Needs", "Design", "Edit", "Shop"];   // start from the user's own room
+const STEPS = ["Needs", "Design", "Edit", "Shop"];   // needs = your room photo + a short chat
+const NEEDS = 0, DESIGN = 1, EDIT = 2, SHOP = 3;
 
 const ROOMS = {
   living: "Living room", bedroom: "Bedroom", dining: "Dining", office: "Office",
@@ -83,6 +84,7 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
+  sizeOpen: false,     // room size inputs are optional and folded away
   chat: null,          // needs conversation {q: current question, log: [{from, text}]}
   existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
@@ -155,7 +157,7 @@ function toScreen([px, py]) {
   const small = innerWidth < 820;
   const fy = small ? 16 : innerHeight * 0.06, fx = small ? 16 : innerWidth * 0.05;
   // keep pins inside the frame so labels never fall off-screen or under the top bar / bottom pills
-  const bottomGap = S.step === 2 && !small ? 330 : 110;
+  const bottomGap = S.step === DESIGN && !small ? 330 : 110;
   const x = Math.min(Math.max(g.ox + px / 100 * g.dw, fx + 80), g.W - fx - 80);
   const y = Math.min(Math.max(g.oy + py / 100 * g.dh, fy + 230), g.H - fy - bottomGap);
   return [x, y];
@@ -232,7 +234,7 @@ function stagesText() {
 
 /* ---------------- rendering ---------------- */
 function render() {
-  document.body.classList.toggle("dim", S.step < 2 || S.generating);
+  document.body.classList.toggle("dim", S.step < DESIGN || S.generating);
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
   renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar();
@@ -248,7 +250,7 @@ const photoKey = () => S.space.photo === "demo" ? "demo" : String(S.space.data.l
 const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
 function showImage() {
-  const r = S.step >= 2 && !S.before && (currentRender() || lastRender()?.image);
+  const r = S.step >= DESIGN && !S.before && (currentRender() || lastRender()?.image);
   const want = r || photoSrc();
   if (room.dataset.src !== want) { room.dataset.src = want; room.src = want; }
 }
@@ -377,7 +379,7 @@ async function scanFurniture() {
           const r = await apiPost("/api/isolate", { crop: e.crop, label: e.label, description: e.description });
           e.iso = r.image; e.status = "done";
         } catch (err) { e.status = "error"; e.error = err.message; }
-        if (alive()) { renderPanel(); if (S.step >= 2) renderHotspots(); }
+        if (alive()) { renderPanel(); if (S.step >= DESIGN) renderHotspots(); }
       }
     };
     await Promise.all([worker(), worker(), worker(), worker()]);
@@ -389,13 +391,7 @@ async function scanFurniture() {
 
 function existingCard() {
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
-  if (!ex) {
-    return `<div class="card card-right ex-card">
-      <h2>Already have furniture?</h2>
-      <p class="sub">We can find the pieces in your photo, turn each into a clean product shot, and you decide what to keep.</p>
-      <button class="btn block" data-action="scan">Find my furniture</button>
-    </div>`;
-  }
+  if (!ex) return "";
   if (ex.status === "detecting") {
     return `<div class="card card-right ex-card"><h2>Your furniture</h2>
       <ul class="stages"><li class="now"><span class="tick"></span>Looking for furniture in your photo…</li></ul></div>`;
@@ -427,7 +423,7 @@ function existingCard() {
 function renderBoxes() {
   const layer = $("#boxes");
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
-  if (S.step !== 0 || !ex || !ex.items.length) { layer.innerHTML = ""; return; }
+  if (S.step !== NEEDS || !ex || !ex.items.length) { layer.innerHTML = ""; return; }
   const g = geom();
   layer.innerHTML = ex.items.map(e => {
     const [y0, x0, y1, x1] = e.box;
@@ -449,7 +445,7 @@ function renderSides() {
 }
 function renderTopbar() {
   const t = $("#topbar");
-  if (S.step < 2 || !S.scene || S.generating) { t.hidden = true; return; }
+  if (S.step < DESIGN || !S.scene || S.generating) { t.hidden = true; return; }
   const tot = sceneTotal(S.scene), has = !!currentRender();
   let action = "";
   if (S.rendering) action = `<span class="pill pill-static rendering-pill"><i class="spin"></i>Rendering with Gemini…</span>`;
@@ -465,7 +461,7 @@ function renderTopbar() {
 
 function renderMeasure() {
   const m = $("#measure");
-  if (S.step !== 0) { m.hidden = true; return; }
+  if (S.step !== NEEDS || !S.sizeOpen) { m.hidden = true; return; }
   const [x1, y] = toScreen([10, 47]), [x2] = toScreen([90, 47]);
   Object.assign(m.style, { left: x1 + "px", top: y + "px", width: (x2 - x1) + "px" });
   m.innerHTML = `<span class="pill">Back wall · ${inch(S.space.wallIn)} (${(S.space.wallIn / 12).toFixed(1)} ft)</span>`;
@@ -474,7 +470,7 @@ function renderMeasure() {
 
 function renderHotspots() {
   const box = $("#hotspots");
-  if (S.step < 2 || !S.scene || S.generating || S.rendering || S.before) { box.innerHTML = ""; return; }
+  if (S.step < DESIGN || !S.scene || S.generating || S.rendering || S.before) { box.innerHTML = ""; return; }
   const placed = [];   // label rectangles already used, to keep labels from covering each other
   const hit = r => placed.some(q => r.l < q.r + 8 && r.r > q.l - 8 && r.t < q.b + 6 && r.b > q.t - 6);
   const order = S.scene.map((it, i) => ({ it, i, xy: toScreen(it.pos) })).sort((a, b) => b.xy[1] - a.xy[1]);
@@ -510,10 +506,9 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === 0) el.innerHTML = spaceCard() + existingCard();
-  else if (S.step === 1) { el.innerHTML = chatCard(); afterChatRender(); }
-  else if (S.step === 2) el.innerHTML = S.generating ? progressCard() : optionsView();
-  else if (S.step === 3) el.innerHTML = S.sel != null ? detailCard() : editHint();
+  if (S.step === NEEDS) { el.innerHTML = needsCard() + existingCard(); afterChatRender(); }
+  else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
+  else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = shopCard();
 }
 
@@ -546,7 +541,9 @@ const say = (from, text) => S.chat.log.push({ from, text });
 function chatStart() {
   S.chat = { q: 0, log: [] };
   const kept = keptPieces().length;
-  say("bot", kept ? `Hi! I see your room and the ${kept} piece${kept > 1 ? "s" : ""} you're keeping. A few quick questions.` : "Hi! A few quick questions about the room.");
+  say("bot", kept ? `Hi! I see your room and the ${kept} piece${kept > 1 ? "s" : ""} you're keeping. A few quick questions.`
+    : S.space.photo === "demo" ? "Hi! Upload a photo of your room above, or try the demo room. A few quick questions:"
+    : "Hi! A few quick questions about the room.");
   say("bot", QUESTIONS[0].ask());
 }
 function chatAnswer(val, label) {
@@ -593,9 +590,15 @@ function chatFree(text) {
   say("bot", nq ? nq.ask() : "Perfect, here's your brief. Ready when you are.");
 }
 
-function chatCard() {
+function needsCard() {
   if (!S.chat || (S.chat.q === 0 && S.chat.log.length === 2)) chatStart();   // opening follows the latest photo scan
-  const q = QUESTIONS[S.chat.q], n = S.needs, kept = keptPieces().length;
+  const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptPieces().length;
+  const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
+  const demo = sp.photo === "demo";
+  const scanText = !ex ? `<button class="link-btn" data-action="scan">Find furniture in this photo</button>`
+    : ex.status === "detecting" ? `<span class="muted">Finding furniture…</span>`
+    : ex.status === "error" ? `<button class="link-btn" data-action="scan-again">Retry furniture scan</button>`
+    : `<span class="muted">${ex.items.length} pieces found</span>`;
   const brief = !q ? `<div class="brief">
       <b>${ROOMS[n.room]} · ${esc(n.style)} · ${money(n.budget)}</b>
       ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
@@ -603,40 +606,34 @@ function chatCard() {
     </div>
     <button class="btn block" data-action="next">Design my room →</button>` : "";
   return `<div class="card card-left chat-card">
-    <div class="chat-head"><h2>What do you need?</h2><button class="link-btn" data-action="chat-reset">Start over</button></div>
+    <button class="photo-row" data-action="upload" id="drop">
+      <img src="${esc(photoSrc())}" alt="">
+      <span><b>${demo ? "Upload your room" : "Your room"}</b><small>${demo ? "Demo room · drop yours here" : "Click or drop to replace"}</small></span>
+      <i>↑</i>
+    </button>
+    <div class="photo-links">
+      ${scanText}
+      <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide room size" : "Room size (optional)"}</button>
+      ${demo ? "" : `<button class="link-btn" data-action="demo">Demo room</button>`}
+    </div>
+    ${S.sizeOpen ? `<div class="size-row">
+      <label>Back wall <input type="number" min="60" max="600" value="${sp.wallIn}" data-bind="wallIn"> in</label>
+      <label>Depth <input type="number" min="60" max="600" value="${sp.depthIn}" data-bind="depthIn"> in</label>
+    </div>` : ""}
     <div class="chat-log">${S.chat.log.map(m => `<div class="msg ${m.from}">${esc(m.text)}</div>`).join("")}
       ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       ${brief}
     </div>
     <form class="chat-input" data-chat>
-      <input type="text" placeholder="${q ? "Or type, e.g. budget 2500, needs to seat 4" : "Add anything else…"}" aria-label="Message">
+      <input type="text" placeholder="${q ? "Or just type: budget 2500, seats 4…" : "Add anything else…"}" aria-label="Message">
       <button class="send" aria-label="Send">↑</button>
+      ${S.chat.log.length > 2 ? `<button type="button" class="restart" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
     </form>
   </div>`;
 }
 function afterChatRender() {
   const log = $(".chat-log");
   if (log) log.scrollTop = log.scrollHeight;
-}
-
-/* ② space */
-function spaceCard() {
-  const s = S.space;
-  return `<div class="card card-left">
-    <h2>Your space</h2>
-    <p class="sub">Upload a photo of the room, then give us one real length so every product is shown at true scale.</p>
-    <button class="drop" data-action="upload" id="drop">
-      <b>${s.photo === "demo" ? "Upload a room photo" : "Replace photo"}</b>
-      <span>Drop an image here or click to browse</span>
-    </button>
-    ${s.photo !== "demo" ? `<button class="btn ghost block" style="margin-top:10px" data-action="demo">Use the demo room</button>` : ""}
-    <label class="field">Back wall width</label>
-    <div class="num-row"><input type="number" min="60" max="600" value="${s.wallIn}" data-bind="wallIn"><span>inches · ${(s.wallIn / 12).toFixed(1)} ft</span></div>
-    <label class="field">Room depth (approx.)</label>
-    <div class="num-row"><input type="number" min="60" max="600" value="${s.depthIn}" data-bind="depthIn"><span>inches · ${(s.depthIn / 12).toFixed(1)} ft</span></div>
-    <p class="hint">The dashed line shows the wall we measure. Later this step can use a vision model, depth estimation or a LiDAR scan instead of typing.</p>
-    <button class="btn block" data-action="next">Next: tell us what you need →</button>
-  </div>`;
 }
 
 /* ⑤ design */
@@ -725,7 +722,7 @@ function shopCard() {
 function goto(i) {
   i = Math.max(0, Math.min(STEPS.length - 1, i));
   S.step = i; S.sel = null;
-  if (i >= 2 && (S.dirty || !S.options.length) && !S.generating) { S.step = 2; generate(); return; }
+  if (i >= DESIGN && (S.dirty || !S.options.length) && !S.generating) { S.step = DESIGN; generate(); return; }
   render();
 }
 
@@ -759,12 +756,13 @@ document.addEventListener("click", e => {
     const v = a.dataset.val, q = QUESTIONS[S.chat.q];
     chatAnswer(q?.key === "budget" ? +v : v, v === "__done" ? null : a.dataset.label); renderPanel();
   } else if (act === "chat-reset") { S.chat = null; renderPanel(); }
+  else if (act === "size") { S.sizeOpen = !S.sizeOpen; renderPanel(); renderMeasure(); }
   else if (act === "scan" || act === "scan-again") { if (act === "scan-again") S.existing = null; scanFurniture(); }
   else if (act === "keep") {
     const e = exById(a.dataset.id); e.keep = a.dataset.keep === "1"; S.dirty = true; renderPanel(); renderBoxes();
   }
   else if (act === "before") { S.before = !S.before; render(); }
-  else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== 3) S.step = 3; render(); }
+  else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== EDIT) S.step = EDIT; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
     const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null; delete it.own;
@@ -797,7 +795,6 @@ document.addEventListener("input", e => {
   if (k === "wallIn" || k === "depthIn") {
     const v = +e.target.value; if (!v) return;
     S.space[k] = v; S.dirty = true;
-    e.target.nextElementSibling.textContent = `inches · ${(v / 12).toFixed(1)} ft`;
     renderMeasure();
   }
 });
@@ -822,9 +819,9 @@ function loadPhoto(file) {
   r.readAsDataURL(file);
 }
 $("#file").addEventListener("change", e => loadPhoto(e.target.files[0]));
-addEventListener("dragover", e => { if (S.step === 0) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
+addEventListener("dragover", e => { if (S.step === NEEDS) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
-addEventListener("drop", e => { if (S.step === 0) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
+addEventListener("drop", e => { if (S.step === NEEDS) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
 
 document.addEventListener("submit", e => {
   if (!e.target.matches("[data-chat]")) return;
@@ -875,7 +872,7 @@ fetch("../data/products.json")
     const h = new URLSearchParams(location.hash.slice(1));
     if (ROOMS[h.get("room")]) S.needs.room = h.get("room");
     const step = +h.get("step") || 0;
-    if (step >= 2) {
+    if (step >= DESIGN) {
       S.options = planOptions(); S.scene = structuredClone(S.options[0].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
@@ -884,7 +881,7 @@ fetch("../data/products.json")
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1
       scanFurniture().then(() => {
-        if (step >= 2) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
+        if (step >= DESIGN) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
         after();
       });
     } else after();
