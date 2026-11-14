@@ -14,7 +14,7 @@ python3 server.py                # from the repo root, no install needed
 # open http://localhost:8000/app/
 ```
 
-Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standard library), which serves the app and calls Gemini. Five steps on one photo: **Needs → Space → Design → Edit → Shop**. Arrow keys move between steps.
+Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standard library), which serves the app and calls Gemini. Five steps on one photo: **Space → Needs (chat) → Design → Edit → Shop**. Arrow keys move between steps.
 
 - **Real:**
   - all 316 products, prices, dimensions, photos and colorways
@@ -25,7 +25,7 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
 - **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). Room analysis is the user typing one wall length (P2). Pin positions are per-slot defaults; drag them onto the render.
 - **Cost control:** identical requests are cached in `renders/cache/` (gitignored), so reloading or re-selecting an option is free.
 - **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.
-- **Demo deep links:** `#step=3&sel=0` opens edit with the first item open. `#room=bedroom&step=4` opens the bedroom list. Add `&render=1` to render on load.
+- **Demo deep links:** `#step=3&sel=0` opens edit with the first item open. `#room=bedroom&step=4` opens the bedroom list. `#step=0&scan=1` scans the demo room. Add `&render=1` to render on load.
 
 ## Live site (Vercel)
 

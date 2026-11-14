@@ -11,7 +11,7 @@
  *   - pin positions: defaults per slot; drag to line up with the render
  */
 
-const STEPS = ["Needs", "Space", "Design", "Edit", "Shop"];
+const STEPS = ["Space", "Needs", "Design", "Edit", "Shop"];   // start from the user's own room
 
 const ROOMS = {
   living: "Living room", bedroom: "Bedroom", dining: "Dining", office: "Office",
@@ -83,6 +83,7 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
+  chat: null,          // needs conversation {q: current question, log: [{from, text}]}
   existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
 };
@@ -426,7 +427,7 @@ function existingCard() {
 function renderBoxes() {
   const layer = $("#boxes");
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
-  if (S.step !== 1 || !ex || !ex.items.length) { layer.innerHTML = ""; return; }
+  if (S.step !== 0 || !ex || !ex.items.length) { layer.innerHTML = ""; return; }
   const g = geom();
   layer.innerHTML = ex.items.map(e => {
     const [y0, x0, y1, x1] = e.box;
@@ -464,7 +465,7 @@ function renderTopbar() {
 
 function renderMeasure() {
   const m = $("#measure");
-  if (S.step !== 1) { m.hidden = true; return; }
+  if (S.step !== 0) { m.hidden = true; return; }
   const [x1, y] = toScreen([10, 47]), [x2] = toScreen([90, 47]);
   Object.assign(m.style, { left: x1 + "px", top: y + "px", width: (x2 - x1) + "px" });
   m.innerHTML = `<span class="pill">Back wall · ${inch(S.space.wallIn)} (${(S.space.wallIn / 12).toFixed(1)} ft)</span>`;
@@ -509,34 +510,113 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === 0) el.innerHTML = needsCard();
-  else if (S.step === 1) el.innerHTML = spaceCard() + existingCard();
+  if (S.step === 0) el.innerHTML = spaceCard() + existingCard();
+  else if (S.step === 1) { el.innerHTML = chatCard(); afterChatRender(); }
   else if (S.step === 2) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === 3) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = shopCard();
 }
 
-/* ① needs */
-function needsCard() {
-  const n = S.needs;
-  return `<div class="card card-left">
-    <h2>What do you need?</h2>
-    <p class="sub">Tell us about the room. We only suggest real furniture that fits.</p>
-    <label class="field">Room</label>
-    <div class="chips">${Object.entries(ROOMS).map(([k, v]) => `<button class="chip ${n.room === k ? "on" : ""}" data-action="set" data-key="room" data-val="${k}">${v}</button>`).join("")}</div>
-    <label class="field">Style</label>
-    <div class="chips">${STYLES.map(s => `<button class="chip ${n.style === s ? "on" : ""}" data-action="set" data-key="style" data-val="${s}">${s}</button>`).join("")}</div>
-    <label class="field">Budget</label>
-    <div class="range-row"><input type="range" min="500" max="10000" step="100" value="${n.budget}" data-bind="budget"><output>${money(n.budget)}</output></div>
-    <label class="field">Must-haves</label>
-    <textarea rows="2" data-bind="notes" placeholder="e.g. seats 4, pet-friendly fabric, keep my bookshelf">${esc(n.notes)}</textarea>
-    <label class="field">I am</label>
-    <div class="chips">
-      <button class="chip ${n.mode === "non-pro" ? "on" : ""}" data-action="set" data-key="mode" data-val="non-pro">Furnishing my home</button>
-      <button class="chip ${n.mode === "pro" ? "on" : ""}" data-action="set" data-key="mode" data-val="pro">A design professional</button>
+/* ① needs, as a chat: one question at a time, quick-reply buttons, or just type */
+const guessRoom = () => {
+  const cats = (S.existing?.photoKey === photoKey() ? S.existing.items : []).map(e => e.category);
+  if (!cats.length) return null;
+  if (cats.includes("bed") || cats.includes("nightstand") || cats.includes("wardrobe")) return "bedroom";
+  if (cats.includes("dining_table") || cats.filter(c => c === "dining_chair").length > 1) return "dining";
+  if (cats.includes("desk") || cats.includes("office_chair")) return "office";
+  return "living";
+};
+const NOTE_CHIPS = ["Seats 4+", "Pet-friendly", "Kid-friendly", "Lots of storage", "Small space", "Easy to clean"];
+const QUESTIONS = [
+  { key: "room",
+    ask: () => { const g = guessRoom(); return g ? `From your photo this looks like a ${ROOMS[g].toLowerCase()}. Is that the room we're designing?` : "Which room are we designing?"; },
+    chips: () => { const g = guessRoom(); return Object.entries(ROOMS).sort(([a], [b]) => (b === g) - (a === g)).map(([k, v]) => ({ label: k === g ? `Yes, ${v.toLowerCase()}` : v, val: k })); },
+    apply: v => { S.needs.room = v; return ROOMS[v]; } },
+  { key: "style", ask: () => "Nice. What style are you going for?",
+    chips: () => STYLES.map(x => ({ label: x, val: x })), apply: v => (S.needs.style = v) },
+  { key: "budget", ask: () => "What's your budget for new pieces?",
+    chips: () => [1000, 2000, 3000, 5000, 8000].map(n => ({ label: money(n), val: n })),
+    apply: v => { S.needs.budget = +v; return money(+v); } },
+  { key: "notes", ask: () => "Anything you need or want to avoid? Tap a few, or type it.",
+    chips: () => NOTE_CHIPS.filter(t => !S.needs.notes.includes(t)).map(t => ({ label: t, val: t }))
+      .concat([{ label: "That's it →", val: "__done", strong: true }]),
+    apply: v => { S.needs.notes = S.needs.notes ? `${S.needs.notes}, ${v}` : v; return v; }, multi: true },
+];
+const say = (from, text) => S.chat.log.push({ from, text });
+function chatStart() {
+  S.chat = { q: 0, log: [] };
+  const kept = keptPieces().length;
+  say("bot", kept ? `Hi! I see your room and the ${kept} piece${kept > 1 ? "s" : ""} you're keeping. A few quick questions.` : "Hi! A few quick questions about the room.");
+  say("bot", QUESTIONS[0].ask());
+}
+function chatAnswer(val, label) {
+  const q = QUESTIONS[S.chat.q];
+  if (!q) return;
+  S.dirty = true;
+  if (val === "__done") { say("me", "That's it"); return chatNext(); }
+  say("me", label ?? q.apply(val));
+  if (label != null) q.apply(val);
+  if (!q.multi) chatNext(); else say("bot", "Got it. Anything else?");
+}
+function chatNext() {
+  S.chat.q++;
+  const q = QUESTIONS[S.chat.q];
+  if (q) say("bot", q.ask());
+  else say("bot", "Perfect, here's your brief. Ready when you are.");
+}
+// free text: pull out what we can recognize (room, style, budget); everything else becomes a note
+function chatFree(text) {
+  const t = text.toLowerCase(), q = QUESTIONS[S.chat.q];
+  const got = [];
+  const room = /bed ?room/.test(t) ? "bedroom" : /dining|kitchen/.test(t) ? "dining" : /office|study|work/.test(t) ? "office" : /living|lounge/.test(t) ? "living" : null;
+  if (room) { S.needs.room = room; got.push("room"); }
+  const style = STYLES.find(x => t.includes(x.toLowerCase().split(" ")[0].replace("-century", ""))) ||
+    (t.includes("scandi") ? "Scandinavian" : t.includes("minimal") ? "Warm minimal" : t.includes("cozy") || t.includes("cosy") ? "Cozy eclectic" : null);
+  if (style) { S.needs.style = style; got.push("style"); }
+  // budget: first amount >= 300 ("2500", "$3k", "1,800 dollars"); small numbers like "seats 4" are left alone
+  const amt = [...t.matchAll(/\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/g)]
+    .map(x => parseFloat(x[1].replace(/,/g, "")) * (x[2] ? 1000 : 1)).find(v => v >= 300);
+  if (amt) { S.needs.budget = Math.round(amt); got.push("budget"); }
+  say("me", text);
+  S.dirty = true;
+  if (!got.length || q?.key === "notes") {
+    if (!got.length) S.needs.notes = S.needs.notes ? `${S.needs.notes}, ${text}` : text;
+    if (q?.key === "notes") { say("bot", "Noted. Anything else?"); return; }
+    say("bot", "Noted, I'll keep that in mind.");
+    say("bot", q ? q.ask() : "Anything else, or shall we design?");
+    return;
+  }
+  // skip questions the message already answered
+  say("bot", "Got it: " + got.map(k => k === "budget" ? money(S.needs.budget) : k === "room" ? ROOMS[S.needs.room].toLowerCase() : S.needs.style).join(", ") + ".");
+  while (QUESTIONS[S.chat.q] && got.includes(QUESTIONS[S.chat.q].key)) S.chat.q++;
+  const nq = QUESTIONS[S.chat.q];
+  say("bot", nq ? nq.ask() : "Perfect, here's your brief. Ready when you are.");
+}
+
+function chatCard() {
+  if (!S.chat || (S.chat.q === 0 && S.chat.log.length === 2)) chatStart();   // opening follows the latest photo scan
+  const q = QUESTIONS[S.chat.q], n = S.needs, kept = keptPieces().length;
+  const brief = !q ? `<div class="brief">
+      <b>${ROOMS[n.room]} · ${esc(n.style)} · ${money(n.budget)}</b>
+      ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
+      ${kept ? `<small>Designing around ${kept} piece${kept > 1 ? "s" : ""} you keep</small>` : ""}
     </div>
-    <button class="btn block" data-action="next">Next: your space →</button>
+    <button class="btn block" data-action="next">Design my room →</button>` : "";
+  return `<div class="card card-left chat-card">
+    <div class="chat-head"><h2>What do you need?</h2><button class="link-btn" data-action="chat-reset">Start over</button></div>
+    <div class="chat-log">${S.chat.log.map(m => `<div class="msg ${m.from}">${esc(m.text)}</div>`).join("")}
+      ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
+      ${brief}
+    </div>
+    <form class="chat-input" data-chat>
+      <input type="text" placeholder="${q ? "Or type, e.g. budget 2500, needs to seat 4" : "Add anything else…"}" aria-label="Message">
+      <button class="send" aria-label="Send">↑</button>
+    </form>
   </div>`;
+}
+function afterChatRender() {
+  const log = $(".chat-log");
+  if (log) log.scrollTop = log.scrollHeight;
 }
 
 /* ② space */
@@ -555,7 +635,7 @@ function spaceCard() {
     <label class="field">Room depth (approx.)</label>
     <div class="num-row"><input type="number" min="60" max="600" value="${s.depthIn}" data-bind="depthIn"><span>inches · ${(s.depthIn / 12).toFixed(1)} ft</span></div>
     <p class="hint">The dashed line shows the wall we measure. Later this step can use a vision model, depth estimation or a LiDAR scan instead of typing.</p>
-    <button class="btn block" data-action="next">Design my room →</button>
+    <button class="btn block" data-action="next">Next: tell us what you need →</button>
   </div>`;
 }
 
@@ -675,6 +755,10 @@ document.addEventListener("click", e => {
   else if (act === "demo") { S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); render(); }
   else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); renderScene(); }
   else if (act === "render") renderScene();
+  else if (act === "chat") {
+    const v = a.dataset.val, q = QUESTIONS[S.chat.q];
+    chatAnswer(q?.key === "budget" ? +v : v, v === "__done" ? null : a.dataset.label); renderPanel();
+  } else if (act === "chat-reset") { S.chat = null; renderPanel(); }
   else if (act === "scan" || act === "scan-again") { if (act === "scan-again") S.existing = null; scanFurniture(); }
   else if (act === "keep") {
     const e = exById(a.dataset.id); e.keep = a.dataset.keep === "1"; S.dirty = true; renderPanel(); renderBoxes();
@@ -738,9 +822,18 @@ function loadPhoto(file) {
   r.readAsDataURL(file);
 }
 $("#file").addEventListener("change", e => loadPhoto(e.target.files[0]));
-addEventListener("dragover", e => { if (S.step === 1) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
+addEventListener("dragover", e => { if (S.step === 0) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
-addEventListener("drop", e => { if (S.step === 1) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
+addEventListener("drop", e => { if (S.step === 0) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
+
+document.addEventListener("submit", e => {
+  if (!e.target.matches("[data-chat]")) return;
+  e.preventDefault();
+  const input = e.target.querySelector("input"), text = input.value.trim();
+  if (!text) return;
+  chatFree(text); renderPanel();
+  $(".chat-input input")?.focus();
+});
 
 /* hover a piece in the panel -> highlight its box on the photo */
 document.addEventListener("mouseover", e => {
