@@ -1,0 +1,210 @@
+{
+ "photo": "assets/example-lounge.jpg",
+ "baked": "2026-11-14",
+ "items": [
+  {
+   "id": "e0",
+   "label": "grey modern lounge chair",
+   "category": "armchair",
+   "count": 3,
+   "box": [
+    674,
+    384,
+    1000,
+    998
+   ],
+   "boxes": [
+    [
+     674,
+     384,
+     1000,
+     998
+    ],
+    [
+     510,
+     378,
+     793,
+     672
+    ],
+    [
+     498,
+     17,
+     742,
+     267
+    ]
+   ],
+   "description": "Curved bucket-style grey upholstered lounge chair with a padded seat cushion and pedestal swivel base.",
+   "dims_in": {
+    "width": 32,
+    "depth": 33,
+    "height": 33
+   },
+   "iso": "assets/examples/lounge/e0.jpg"
+  },
+  {
+   "id": "e1",
+   "label": "round glass coffee table",
+   "category": "coffee_table",
+   "count": 1,
+   "box": [
+    668,
+    41,
+    946,
+    513
+   ],
+   "boxes": [
+    [
+     668,
+     41,
+     946,
+     513
+    ]
+   ],
+   "description": "Contemporary round coffee table with a frosted glass top and polished cross-style metal pedestal base.",
+   "dims_in": {
+    "width": 38,
+    "depth": 38,
+    "height": 16
+   },
+   "iso": "assets/examples/lounge/e1.jpg"
+  },
+  {
+   "id": "e2",
+   "label": "grey upholstered side chair",
+   "category": "dining_chair",
+   "count": 1,
+   "box": [
+    594,
+    734,
+    874,
+    999
+   ],
+   "boxes": [
+    [
+     594,
+     734,
+     874,
+     999
+    ]
+   ],
+   "description": "Grey fabric side chair with a scoop seat and angled natural wood legs.",
+   "dims_in": {
+    "width": 22,
+    "depth": 22,
+    "height": 32
+   },
+   "iso": "assets/examples/lounge/e2.jpg"
+  },
+  {
+   "id": "e3",
+   "label": "black counter stool",
+   "category": "stool_bench",
+   "count": 6,
+   "box": [
+    433,
+    735,
+    570,
+    829
+   ],
+   "boxes": [
+    [
+     430,
+     474,
+     573,
+     557
+    ],
+    [
+     432,
+     626,
+     572,
+     711
+    ],
+    [
+     428,
+     404,
+     543,
+     476
+    ],
+    [
+     423,
+     287,
+     543,
+     349
+    ],
+    [
+     433,
+     735,
+     570,
+     829
+    ],
+    [
+     423,
+     585,
+     554,
+     655
+    ]
+   ],
+   "description": "Modern black bar stool with an upholstered shell seat and slender metal legs.",
+   "dims_in": {
+    "width": 18,
+    "depth": 19,
+    "height": 38
+   },
+   "iso": "assets/examples/lounge/e3.jpg"
+  },
+  {
+   "id": "e4",
+   "label": "long standing high table",
+   "category": "dining_table",
+   "count": 1,
+   "box": [
+    404,
+    295,
+    566,
+    769
+   ],
+   "boxes": [
+    [
+     404,
+     295,
+     566,
+     769
+    ]
+   ],
+   "description": "Long communal high-top counter table with a wooden tabletop and black industrial base on castors.",
+   "dims_in": {
+    "width": 140,
+    "depth": 36,
+    "height": 42
+   },
+   "iso": "assets/examples/lounge/e4.jpg"
+  },
+  {
+   "id": "e5",
+   "label": "brown patchwork area rug",
+   "category": "rug",
+   "count": 1,
+   "box": [
+    676,
+    0,
+    1000,
+    993
+   ],
+   "boxes": [
+    [
+     676,
+     0,
+     1000,
+     993
+    ]
+   ],
+   "description": "Large vintage-style brown patchwork rug placed under the lounge seating area.",
+   "dims_in": {
+    "width": 120,
+    "depth": 144,
+    "height": 1
+   },
+   "iso": "assets/examples/lounge/e5.jpg"
+  }
+ ]
+}

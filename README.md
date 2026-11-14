@@ -25,10 +25,15 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
 - **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). Room analysis is the user typing one wall length (P2). Pin positions are per-slot defaults; drag them onto the render.
 - **Sketch Ideas (draw your furniture):** the white pen ball in the top-left corner (Needs, Design, Edit) opens a clean board. Draw rough shapes where you want pieces with the glowing white pen: a long box for a sofa, a tall line for a floor lamp, a blob up top for a pendant. Strokes drawn right after each other in the same spot join one shape. Naming a shape is optional: pick a type on its chip, tap **✦ Guess with AI**, or just press **Done** and each unnamed shape gets a free, instant guess from its size and place (no AI). Once a sketch is saved, the design contains **only the sketched pieces** (plus furniture you keep), each a real product placed where you drew it at about the size you drew. Live renders get a layout guide (the photo with the outlines labeled) so Gemini puts each piece inside its outline. Pieces only appear in the picture with AI renders on. **Remove sketch** under the photo goes back to a full room design. The AI guess uses Claude if `ANTHROPIC_API_KEY` is set, else Gemini (the render key, about a cent and ~10 s), else free shape rules; if an AI reader fails, the rules answer instead. Force one with `SKETCH_ENGINE=claude|gemini|rules` in `.env`.
 - **Shopping list:** a left icon rail (from Design on) opens the list as its own column and pushes the room view aside (To buy / Keeping, total vs budget). **Expand** pushes the view off-screen and shows a full-page grid of everything in the room, with filters (All / To buy / Keeping / category). Clicking a card jumps to that piece in Edit. Deep link: `#step=3&cart=expanded`.
-- **Demo renders (default):** to save credits, renders show a saved image (`app/assets/demo-render.jpg`) instead of calling Gemini. Click **Demo renders · AI off** (top right) or open with `#live=1` to switch to real AI renders. Furniture detection and isometric shots still use the API but are cached.
+- **Demo renders (default):** to save credits, renders show a saved image (`app/assets/demo-render-*.jpg`) instead of calling Gemini. Click **Demo renders · AI off** (top right) or open with `#live=1` to switch to real AI renders. Furniture detection and isometric shots still use the API but are cached.
 - **Cost control:** identical requests are cached in `renders/cache/` (gitignored), so reloading or re-selecting an option is free.
 - **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.
+- **Example rooms:** two photos from the hackathon venue (`app/assets/example-lounge.jpg`, `example-bar.jpg`), switchable with *Next example*. The lounge photo is cropped so no one is identifiable.
 - **Demo deep links:** `#step=2&sel=0` opens edit with the first item open. `#room=bedroom&step=3` opens the bedroom list. `#step=0&scan=1` scans the demo room. Add `&render=1` to render on load.
+
+## Pitch deck
+
+**https://elephant-pitch.vercel.app**. A scroll-driven pitch built from `deck/` (its own Vercel project, root directory `deck/`). See [`deck/README.md`](deck/README.md).
 
 ## Live site (Vercel)
 
@@ -45,6 +50,7 @@ Every push to `main` deploys automatically to production on Vercel. Teammates on
 | `server.py` | Local dev server + `/api/render` → Gemini, `/api/sketch` → sketch reader (keys from `.env`) |
 | `sketch_ai.py` | Reads sketched shapes → furniture types + sizes (Claude, Gemini or rules) |
 | `api/` | Vercel functions (`render.py`, `detect.py`, `isolate.py`, `sketch.py`), `_core.py` = logic shared with `server.py` |
+| `deck/` | Pitch deck (Vite + React), deployed to elephant-pitch.vercel.app |
 | `vercel.json` | Vercel config: `/` → `/app/`, function timeout, bundled product images |
 | `data/products.json` | 316 real IKEA products. See [`data/README.md`](data/README.md) and [`data/SUMMARY.md`](data/SUMMARY.md) |
 | `data/images/` | White-background product photos for rendering |
