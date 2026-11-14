@@ -749,7 +749,7 @@ export default function LoupeCuratorLanding({
     }
 
     // 3 · giant words over the lime sweep
-    if (seen("words")) {
+    if (st.words.length && seen("words")) {   // section removed from the deck; kept guarded
       const q = clamp01((H - at("words")) / H)
       const p = st.still ? 0.4 : pin("words")
       const n = st.words.length
@@ -956,7 +956,7 @@ export default function LoupeCuratorLanding({
       base + st.off.intro + 0.72 * travel("intro"),
       base + st.off.mani + st.H,
       base + st.off.grid + st.H * 0.3,
-      base + st.off.words + 0.45 * travel("words"),
+      ...(st.len.words ? [base + st.off.words + 0.45 * travel("words")] : []),
       base + st.off.zoom + 0.06 * travel("zoom"),
       base + st.off.zoom + drumHold(0, COLLECTIONS.length) * travel("zoom"),
       base + st.off.pile + 0.3 * travel("pile"),
@@ -1248,29 +1248,6 @@ export default function LoupeCuratorLanding({
               {GRID.map((it, i) => (i % 4 === cIdx ? card(it, "grid" + i, i === 0 ? "flyDst" : undefined) : null))}
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* 3 · keep good company */}
-      <section className="lcl-track lcl-words" ref={reg("words")} style={{ "--len": TRACK.words } as CSSProperties}>
-        <div className="lcl-stage">
-          <div className="lcl-sweep" ref={reg("sweep")} />
-          <div className="lcl-wclip">
-            <div className="lcl-wcol" ref={reg("wcol")}>
-              {BIG_WORDS.map(([w, x], k) => (
-                <h2 key={w} className="lcl-big" data-word="" style={{ top: "calc(var(--h) * " + k * WORDS.gap + ")", "--x": x } as CSSProperties}>
-                  <span>
-                    {letters(w, "w" + k)}
-                    {k === BIG_WORDS.length - 1 && (
-                      <svg className="lcl-doodle" viewBox="0 0 40 40" aria-hidden="true">
-                        <path pathLength={1} d="M8 30C4 22 10 10 20 9C30 8 35 18 29 24C24 29 15 25 17 19C19 13 27 15 26 20M30 6L34 2M36 12L39 10" />
-                      </svg>
-                    )}
-                  </span>
-                </h2>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
