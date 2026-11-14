@@ -84,6 +84,7 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
+  live: false,         // false = demo renders (no Gemini spend); flip with the top-right toggle or #live=1
   cart: "closed",      // closed | open (left drawer) | expanded (big grid)
   cartFilter: "all",
   sizeOpen: false,     // room size inputs are optional and folded away
@@ -239,7 +240,7 @@ function render() {
   document.body.classList.toggle("dim", S.step < DESIGN || S.generating);
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
-  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart();
+  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart(); renderMode();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
@@ -321,9 +322,21 @@ async function apiPost(path, obj) {
   return j;
 }
 
+const DEMO_RENDER = "assets/demo-render.jpg";
+
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
+  if (!S.live) {
+    // demo mode: show a saved render instead of calling Gemini (saves credits while we build)
+    if (S.renders[sig]) { S.before = false; render(); return; }
+    S.rendering = true; S.before = false; render();
+    setTimeout(() => {
+      rememberRender(sig, DEMO_RENDER); S.rendering = false; render();
+      toast("Demo render · AI renders are off (top right to turn on)");
+    }, 700);
+    return;
+  }
   if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
   const reqObj = renderRequest();
   if (reqObj.mode !== "edit" && !reqObj.items.length && !(reqObj.remove_existing || []).length) {
@@ -445,6 +458,10 @@ function renderSides() {
   b.innerHTML = `<span class="chev">‹</span>${STEPS[S.step - 1] || ""}`;
   n.innerHTML = `${STEPS[S.step + 1] || ""}<span class="chev">›</span>`;
 }
+function renderMode() {
+  $("#mode").textContent = S.live ? "AI renders on · Gemini" : "Demo renders · AI off";
+}
+
 function renderTopbar() {
   const t = $("#topbar");
   if (S.step < DESIGN || !S.scene || S.generating) { t.hidden = true; return; }
@@ -730,6 +747,7 @@ function renderCart() {
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
+  document.body.classList.toggle("cart-open", S.cart === "open");
   if (!on) return;
   const buy = toBuy(), keep = keeping();
   rail.innerHTML = `
@@ -764,8 +782,8 @@ function renderCart() {
         <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keep.length} you keep` : ""}</p></div>
       <div class="x-actions">
         <button class="xchip" data-action="copy">Copy list</button>
-        <button class="icon-btn light" data-action="cart-collapse" title="Collapse" aria-label="Collapse">⤡</button>
-        <button class="icon-btn light" data-action="cart-close" title="Close" aria-label="Close">×</button>
+        <button class="icon-btn" data-action="cart-collapse" title="Collapse" aria-label="Collapse">⤡</button>
+        <button class="icon-btn" data-action="cart-close" title="Close" aria-label="Close">×</button>
       </div>
     </div>
     <div class="x-chips">${chip("all", "All")}${chip("buy", `To buy · ${buy.length}`)}${keep.length ? chip("keep", `Keeping · ${keep.length}`) : ""}
@@ -779,8 +797,8 @@ function renderCart() {
         <small>${dimsText(p)}</small>
         <div class="x-foot">
           <span class="x-price">${p.owned ? "Already yours" : `${money(p.price.amount)}<em> / piece${it.qty > 1 ? " · ×" + it.qty : ""}</em>`}</span>
-          <span class="x-btns">${p.url ? `<a class="icon-btn light" href="${esc(p.url)}" target="_blank" rel="noopener" title="View product">${ICON.out}</a>` : ""}
-            <button class="icon-btn light" data-action="cart-item" data-idx="${i}" title="Show in room">${ICON.look}</button></span>
+          <span class="x-btns">${p.url ? `<a class="icon-btn" href="${esc(p.url)}" target="_blank" rel="noopener" title="View product">${ICON.out}</a>` : ""}
+            <button class="icon-btn" data-action="cart-item" data-idx="${i}" title="Show in room">${ICON.look}</button></span>
         </div>
       </article>`;
     }).join("")}</div>`;
@@ -846,6 +864,10 @@ document.addEventListener("click", e => {
     render();
     toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
+  else if (act === "live") {
+    S.live = !S.live; S.renders = {}; S.last = null; S.before = false;   // don't mix demo images into AI edits
+    render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
+  }
   else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
   else if (act === "cart-expand") { S.cart = "expanded"; renderCart(); }
   else if (act === "cart-collapse") { S.cart = "open"; renderCart(); }
@@ -955,6 +977,7 @@ fetch("../data/products.json")
     }
     S.step = Math.min(step, STEPS.length - 1);
     if (S.step === SHOP) S.cart = "open";
+    if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
     render();
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
