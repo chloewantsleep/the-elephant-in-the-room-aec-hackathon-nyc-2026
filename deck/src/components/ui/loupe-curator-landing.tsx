@@ -193,7 +193,7 @@ const CURATORS: Curator[] = [
   {
     name: "01 · Needs",
     bio: "Snap your room and chat. We find what you already own and turn each piece into a product shot. Keep it or ditch it.",
-    tags: ["Room photo", "Chat", "Keep / Ditch"],
+    tags: ["Take a photo", "Chat your needs", "What to keep"],
     deck: ["armchair", "coffee", "floorlamp", "rug", "pendant"],
   },
   {
@@ -242,14 +242,14 @@ const GRID: [string, string, string][] = [
   ["stool", "TJUSIG Bench with shoe storage", "IKEA \u00b7 $69.99"],
   ["dchair", "TEODORES Chair", "IKEA \u00b7 $55"]
 ]
-// Meet the team: one tape collage, names placed under each figure (left to right)
-const TEAM: { name: string; url: string; x: number }[] = [
-  { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", x: 13.5 },        // chandelier
-  { name: "Yu Chen", url: "https://www.linkedin.com/in/yu-chen-2a586b249/", x: 27 },         // orchid vase
-  { name: "Chloe", url: "https://www.linkedin.com/in/jiayueni/", x: 40 },                    // bookshelf
-  { name: "Jiahao Li", url: "https://www.linkedin.com/in/jiahao-li-no-on/", x: 62.5 },       // chair at the desk
-  { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", x: 74 },          // cat tree
-  { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", x: 92.5 },     // office chair
+// Meet the team: each member's cut-out (from the tape collage) on a glass card; hover shows their photo
+const TEAM: { name: string; url: string; key: string }[] = [
+  { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", key: "yimeng" },
+  { name: "Yu Chen", url: "https://www.linkedin.com/in/yu-chen-2a586b249/", key: "yu" },
+  { name: "Chloe", url: "https://www.linkedin.com/in/jiayueni/", key: "chloe" },
+  { name: "Jiahao Li", url: "https://www.linkedin.com/in/jiahao-li-no-on/", key: "jiahao" },
+  { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
+  { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },
 ]
 const GRID_TOTAL = "$2,492"
 const COL_SPEED = [0, 0.2, 0.07, 0.28]
@@ -487,18 +487,22 @@ const THEME =
   ".lcl-clab{border-radius:999px}" +
   // meet the team: a layer inside the growing gap photo, then it fades into the room photo
   ".lcl-track{position:relative}.lcl-anchor{position:absolute;left:0;width:1px;height:1px}" +
-  ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(10px,2vh,22px);padding:0 clamp(16px,5vw,80px);background:#f6f4f0;opacity:var(--tm,1);pointer-events:none}" +
-  ".lcl-tm-label{color:#8a8a8a;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:var(--tn,0)}" +
-  ".lcl-tm-art{position:relative;width:100%;max-width:min(1500px,calc(70vh * 2.36))}" +
-  ".lcl-tm-art img{display:block;width:100%;height:auto;border-radius:18px}" +
-  ".lcl-tm-pin{position:absolute;top:8%;bottom:6%;width:11%;transform:translateX(-50%);border-radius:16px;transition:background .25s,box-shadow .25s}" +
-  ".lcl-tm-pin:hover{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(20,20,20,.55)}" +
-  ".lcl-tm-names{position:relative;width:100%;max-width:min(1500px,calc(70vh * 2.36));height:46px;margin:0;padding:0;list-style:none;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 10px))}" +
-  ".lcl-tm-names li{position:absolute;left:var(--x);top:0;transform:translateX(-50%);white-space:nowrap}" +
-  ".lcl-tm-names a{display:flex;flex-direction:column;align-items:center;gap:2px;color:#141414;text-decoration:none;font-size:clamp(12px,1.1vw,17px)}" +
-  ".lcl-tm-names a .lcl-mono{color:#8a8a8a;font-size:10px;letter-spacing:.06em;transition:color .2s}" +
-  ".lcl-tm-names a:hover .lcl-mono{color:#141414}" +
-  "@media (max-width:720px){.lcl-tm-pin{display:none}.lcl-tm-names{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}.lcl-tm-names li{position:static;transform:none}.lcl-tm-names a{align-items:flex-start}}" +
+  ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(8px,1.6vh,16px);padding:0 clamp(16px,5vw,80px);background:var(--paper);color:var(--ink);opacity:var(--tm,1);pointer-events:none}" +
+  ".lcl-tm-label{color:var(--soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase}" +
+  ".lcl-tm-title{margin:0 0 clamp(10px,2.4vh,26px);font-weight:400;font-size:clamp(28px,3.6vw,58px);letter-spacing:-.04em;line-height:1}" +
+  ".lcl-tm-row{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(10px,1.4vw,22px);width:100%;max-width:1400px;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 16px))}" +
+  ".lcl-tm-card{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--ink);text-decoration:none}" +
+  ".lcl-tm-fig{position:relative;display:block;width:100%;aspect-ratio:3/4;max-height:52vh;border-radius:22px;overflow:hidden;" +
+  "background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 34px rgba(0,0,0,.06);" +
+  "transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}" +
+  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));transition:opacity .35s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);transition:opacity .35s,transform .6s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-card:hover .lcl-tm-fig,.lcl-tm-card:focus-visible .lcl-tm-fig{transform:translateY(-8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 30px 60px rgba(0,0,0,.16)}" +
+  ".lcl-tm-card:hover .lcl-tm-photo,.lcl-tm-card:focus-visible .lcl-tm-photo{opacity:1;transform:none}" +
+  ".lcl-tm-card:hover .lcl-tm-cut,.lcl-tm-card:focus-visible .lcl-tm-cut{opacity:0;transform:scale(.96)}" +
+  ".lcl-tm-card b{font-weight:400;font-size:clamp(13px,1.15vw,18px);letter-spacing:-.01em;border-bottom:1px solid transparent;transition:border-color .2s}" +
+  ".lcl-tm-card:hover b{border-color:currentColor}" +
+  "@media (max-width:720px){.lcl-tm-row{grid-template-columns:repeat(3,1fr)}.lcl-tm-fig{max-height:24vh}}" +
   ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--lime);color:#141414}"
 
 const FONTS =
@@ -1149,19 +1153,18 @@ export default function LoupeCuratorLanding({
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
               <div className="lcl-tm" ref={reg("team")}>
                 <span className="lcl-mono lcl-tm-label">Meet the team</span>
-                <div className="lcl-tm-art">
-                  <img src="/img/team.jpg" alt="Tape collage of the six team members in a furnished room" draggable={false} />
-                  {TEAM.map((m) => (
-                    <a key={m.name} className="lcl-tm-pin" href={m.url} target="_blank" rel="noopener noreferrer" style={{ left: m.x + "%" } as CSSProperties} data-cursor="LinkedIn" aria-label={m.name + " on LinkedIn"} />
+                <h2 className="lcl-tm-title">The people behind {brand}</h2>
+                <div className="lcl-tm-row">
+                  {TEAM.map((m, k) => (
+                    <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
+                      <span className="lcl-tm-fig">
+                        <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
+                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} loading="lazy" draggable={false} />
+                      </span>
+                      <b>{m.name}</b>
+                    </a>
                   ))}
                 </div>
-                <ul className="lcl-tm-names">
-                  {TEAM.map((m) => (
-                    <li key={m.name} style={{ "--x": m.x + "%" } as CSSProperties}>
-                      <a href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn">{m.name}<span className="lcl-mono">LinkedIn ↗</span></a>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
             <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="316 real products plus your own. Real sizes and real prices.">
