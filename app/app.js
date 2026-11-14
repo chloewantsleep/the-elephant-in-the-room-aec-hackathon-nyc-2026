@@ -4,10 +4,11 @@
  *   ① Needs → ② Space → ⑤ Design (3 options) → Edit (click / swap) → Shop (render + list)
  *
  * What is REAL: every product, price, dimension, image and colorway comes from data/products.json.
+ * What is REAL: the render — server.py sends room photo + product photos to Gemini (/api/render).
  * What is MOCKED (swap in later):
  *   - planOptions(): rule-based picker standing in for the LLM layout agent  (track B1 / P2)
- *   - the "render": we keep the room photo and pin products onto it          (track B2 / P3)
  *   - room analysis: user types one wall length instead of vision + depth    (track B1 / P2)
+ *   - pin positions: defaults per slot; drag to line up with the render
  */
 
 const STEPS = ["Needs", "Space", "Design", "Edit", "Shop"];
@@ -79,6 +80,9 @@ const S = {
   opt: 0,
   scene: null,         // the source of truth: [{cat, qty, pid, vid, pos}]
   sel: null,
+  renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
+  rendering: false,
+  before: false,       // show the original photo instead of the render
 };
 
 let P = [], byId = {};
@@ -107,7 +111,8 @@ function view(item) {
   const v = p.variants.find(x => x.id === item.vid);
   if (!v) return p;
   return { ...p, id: v.id, variant: v.variant, price: { amount: v.price ?? p.price.amount, currency: "USD" },
-           images: { ...p.images, main_local: null, main: v.image || p.images.main }, url: v.url || p.url };
+           images: { ...p.images, main_local: null, main: v.image || p.images.main }, url: v.url || p.url,
+           description: `${p.name} in ${v.variant}` };
 }
 const slotOf = item => TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
 const maxWidthFor = item => slotOf(item).maxW * S.space.wallIn;
@@ -174,6 +179,7 @@ function generate() {
       S.scene = structuredClone(S.options[0].items);
       S.generating = false; S.dirty = false;
       render();
+      renderScene();
       return;
     }
     renderPanel();
@@ -194,7 +200,52 @@ function stagesText() {
 /* ---------------- rendering ---------------- */
 function render() {
   document.body.classList.toggle("dim", S.step < 2 || S.generating);
-  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderTotal();
+  document.body.classList.toggle("rendering", S.rendering);
+  showImage();
+  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderTopbar();
+}
+
+/* ---------------- real render via server.py -> Gemini ---------------- */
+const photoSrc = () => S.space.photo === "demo" ? "assets/demo-room.jpg" : S.space.data;
+const sceneSig = () => JSON.stringify([S.space.photo === "demo" ? "demo" : S.space.data.length, S.space.wallIn,
+  S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty])]);
+const currentRender = () => S.scene && S.renders[sceneSig()];
+
+function showImage() {
+  const want = S.step >= 2 && !S.before && currentRender() || photoSrc();
+  if (room.dataset.src !== want) { room.dataset.src = want; room.src = want; }
+}
+
+function renderRequest() {
+  return {
+    room_image: S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data,
+    room: { width_in: S.space.wallIn, depth_in: S.space.depthIn },
+    needs: { style: S.needs.style },
+    items: S.scene.map(it => {
+      const p = view(it);
+      return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
+               description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round) };
+    }),
+  };
+}
+
+async function renderScene() {
+  if (S.rendering || !S.scene || !S.scene.length) return;
+  const sig = sceneSig();
+  if (S.renders[sig]) { S.before = false; render(); return; }
+  S.rendering = true; S.before = false; render();
+  try {
+    const res = await fetch("/api/render", { method: "POST", headers: { "Content-Type": "application/json" },
+                                             body: JSON.stringify(renderRequest()) });
+    const j = await res.json().catch(() => ({ error: "Render server not running. Start it with: python3 server.py" }));
+    if (!res.ok || j.error) throw new Error(j.error || "Render failed");
+    S.renders[sig] = j.image;
+    toast(j.cached ? "Loaded saved render" : `Rendered in ${(j.ms / 1000).toFixed(1)}s · ${j.model}`);
+  } catch (e) {
+    toast(e.message.slice(0, 120));
+  } finally {
+    S.rendering = false; render();
+  }
 }
 
 function renderSteps() {
@@ -207,13 +258,16 @@ function renderSides() {
   b.innerHTML = `<span class="chev">‹</span>${STEPS[S.step - 1] || ""}`;
   n.innerHTML = `${STEPS[S.step + 1] || ""}<span class="chev">›</span>`;
 }
-function renderTotal() {
-  const t = $("#total");
+function renderTopbar() {
+  const t = $("#topbar");
   if (S.step < 2 || !S.scene || S.generating) { t.hidden = true; return; }
-  const tot = sceneTotal(S.scene);
+  const tot = sceneTotal(S.scene), has = !!currentRender();
+  let action = "";
+  if (S.rendering) action = `<span class="pill pill-static rendering-pill"><i class="spin"></i>Rendering with Gemini…</span>`;
+  else if (!has) action = `<button class="pill pill-cta" data-action="render">✦ ${Object.keys(S.renders).length ? "Re-render" : "Render"}</button>`;
+  else action = `<button class="pill" data-action="before">${S.before ? "Show render" : "Before"}</button>`;
   t.hidden = false;
-  t.classList.toggle("over", tot > S.needs.budget);
-  t.innerHTML = `Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span>`;
+  t.innerHTML = `<span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
 }
 
 function renderMeasure() {
@@ -227,7 +281,7 @@ function renderMeasure() {
 
 function renderHotspots() {
   const box = $("#hotspots");
-  if (S.step < 2 || !S.scene || S.generating) { box.innerHTML = ""; return; }
+  if (S.step < 2 || !S.scene || S.generating || S.rendering || S.before) { box.innerHTML = ""; return; }
   const placed = [];   // label rectangles already used, to keep labels from covering each other
   const hit = r => placed.some(q => r.l < q.r + 8 && r.r > q.l - 8 && r.t < q.b + 6 && r.b > q.t - 6);
   const order = S.scene.map((it, i) => ({ it, i, xy: toScreen(it.pos) })).sort((a, b) => b.xy[1] - a.xy[1]);
@@ -425,13 +479,15 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
-  else if (act === "demo") { room.src = "assets/demo-room.jpg"; S.space.photo = "demo"; S.dirty = true; renderPanel(); }
-  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); }
+  else if (act === "demo") { S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); renderPanel(); }
+  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); renderScene(); }
+  else if (act === "render") renderScene();
+  else if (act === "before") { S.before = !S.before; render(); }
   else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== 3) S.step = 3; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
     const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null;
-    render(); toast(`Swapped to ${byId[it.pid].name}`);
+    render(); toast(`Swapped to ${byId[it.pid].name} · click Re-render to update the image`);
   } else if (act === "colorway") {
     S.scene[S.sel].vid = a.dataset.vid || null; render();
     toast(`Color · ${view(S.scene[S.sel]).variant}`);
@@ -467,7 +523,18 @@ document.addEventListener("input", e => {
 function loadPhoto(file) {
   if (!file || !file.type.startsWith("image/")) return;
   const r = new FileReader();
-  r.onload = () => { room.src = r.result; S.space.photo = "upload"; S.dirty = true; renderPanel(); toast("Room photo loaded"); };
+  r.onload = () => {
+    // downscale big phone photos before they go to the render API
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
+      showImage(); renderPanel(); toast("Room photo loaded");
+    };
+    img.src = r.result;
+  };
   r.readAsDataURL(file);
 }
 $("#file").addEventListener("change", e => loadPhoto(e.target.files[0]));
@@ -514,6 +581,7 @@ fetch("../data/products.json")
     }
     S.step = Math.min(step, STEPS.length - 1);
     render();
+    if (h.has("render") && S.scene) renderScene();   // #step=3&render=1
   })
   .catch(() => {
     $("#panel").innerHTML = `<div class="card card-center"><h2>Can't load product data</h2>

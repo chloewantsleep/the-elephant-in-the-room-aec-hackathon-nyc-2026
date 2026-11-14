@@ -81,11 +81,19 @@ button.pill:hover { background: var(--glass-hover); }
 }
 .pill-row .num { font-size: 11px; opacity: .65; }
 
-#total {
+.topbar {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
-  font-size: 13px;
+  display: flex; gap: 8px; align-items: center;
 }
-#total.over b { color: #ffd2c4; }
+.topbar .pill { font-size: 13px; }
+.topbar .over b { color: #ffd2c4; }
+.pill-cta { background: #fff; color: var(--ink); font-weight: 500; }
+button.pill-cta:hover { background: #f1eee9; }
+.rendering-pill .spin {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+  animation: spin .8s linear infinite;
+}
+body.rendering #room { filter: brightness(.75) blur(3px); transition: filter .4s ease; }
 
 .round-btn {
   position: absolute; right: 22px; bottom: 22px;

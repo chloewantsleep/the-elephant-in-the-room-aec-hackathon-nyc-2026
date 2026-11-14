@@ -9,21 +9,29 @@ Tell us what you need, show us your room, and get a render of your space furnish
 ## Run the UI MVP
 
 ```bash
-python3 -m http.server 8000      # from the repo root
+cp .env.example .env             # then paste your Gemini API key into .env (never commit it)
+python3 server.py                # from the repo root, no install needed
 # open http://localhost:8000/app/
 ```
 
-No install needed: plain HTML/CSS/JS reading `data/products.json`. Five steps on one photo: **Needs → Space → Design → Edit → Shop**. Arrow keys move between steps.
+Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standard library), which serves the app and calls Gemini. Five steps on one photo: **Needs → Space → Design → Edit → Shop**. Arrow keys move between steps.
 
-- **Real:** all 316 products, prices, dimensions, photos, colorways, the fit check against the wall width, and the shopping list.
-- **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). The "render" is the room photo with product pins on top (P3). Room analysis is the user typing one wall length (P2).
-- **Demo deep links:** `#step=3&sel=0` (edit, first item open), `#room=bedroom&step=4` (bedroom shopping list).
+- **Real:**
+  - all 316 products, prices, dimensions, photos and colorways
+  - the fit check against the wall width
+  - the shopping list
+  - **the render.** `server.py` sends the room photo and the white-background product photos to Gemini (`gemini-3.1-flash-image`, about 8 s and about $0.07 per image). Selecting an option renders it. After edits, click **Re-render**. **Before** toggles back to the original photo.
+- **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). Room analysis is the user typing one wall length (P2). Pin positions are per-slot defaults; drag them onto the render.
+- **Cost control:** identical requests are cached in `renders/cache/` (gitignored), so reloading or re-selecting an option is free.
+- **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.
+- **Demo deep links:** `#step=3&sel=0` opens edit with the first item open. `#room=bedroom&step=4` opens the bedroom list. Add `&render=1` to render on load.
 
 ## Repo layout
 
 | Path | What |
 |---|---|
 | `app/` | UI MVP (`index.html`, `style.css`, `app.js`) |
+| `server.py` | Dev server + `/api/render` → Gemini (key from `.env`) |
 | `data/products.json` | 316 real IKEA products. See [`data/README.md`](data/README.md) and [`data/SUMMARY.md`](data/SUMMARY.md) |
 | `data/images/` | White-background product photos for rendering |
 | `schema/product.schema.json` | Shared product format |
