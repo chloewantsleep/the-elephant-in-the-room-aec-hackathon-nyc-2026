@@ -84,6 +84,8 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
+  cart: "closed",      // closed | open (left drawer) | expanded (big grid)
+  cartFilter: "all",
   sizeOpen: false,     // room size inputs are optional and folded away
   chat: null,          // needs conversation {q: current question, log: [{from, text}]}
   existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
@@ -237,7 +239,7 @@ function render() {
   document.body.classList.toggle("dim", S.step < DESIGN || S.generating);
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
-  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar();
+  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
@@ -509,7 +511,7 @@ function renderPanel() {
   if (S.step === NEEDS) { el.innerHTML = needsCard() + existingCard(); afterChatRender(); }
   else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
-  else el.innerHTML = shopCard();
+  else el.innerHTML = "";   // shop lives in the left drawer
 }
 
 /* ① needs, as a chat: one question at a time, quick-reply buttons, or just type */
@@ -696,32 +698,100 @@ function detailCard() {
 }
 
 /* shop */
-function shopCard() {
-  if (!S.scene) return `<div class="card card-right"><h2>Shopping list</h2><p class="sub">Design a room first.</p><button class="btn block" data-action="goto" data-step="2">Design my room →</button></div>`;
+/* ---------------- cart: left rail -> slide-out list -> expanded grid ---------------- */
+const ICON = {
+  cart: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-1.5 11.5a2 2 0 0 1-2 1.5H7.5a2 2 0 0 1-2-1.5L4 7z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/></svg>`,
+  grid: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg>`,
+  look: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`,
+  out: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>`,
+};
+const toBuy = () => (S.scene || []).map((it, i) => ({ it, i })).filter(x => !x.it.own);
+const keeping = () => (S.scene || []).map((it, i) => ({ it, i })).filter(x => x.it.own);
+
+function cartSummary() {
   const tot = sceneTotal(S.scene), b = S.needs.budget, over = tot > b;
-  return `<div class="card card-right">
-    <h2>Shopping list</h2>
-    <p class="sub">${S.scene.filter(it => !it.own).length} to buy${S.scene.some(it => it.own) ? ` · ${S.scene.filter(it => it.own).length} you keep` : ""} · ${ROOMS[S.needs.room].toLowerCase()} · ${S.needs.style.toLowerCase()}</p>
-    <div class="sum"><span>Total</span><span>${money(tot)}</span></div>
+  return `<div class="sum"><span>Total</span><span>${money(tot)}</span></div>
     <div class="budget ${over ? "over" : ""}"><span>Budget ${money(b)}</span><span>${over ? money(tot - b) + " over" : money(b - tot) + " left"}</span></div>
-    <div class="bar ${over ? "over" : ""}"><i style="width:${Math.min(100, tot / b * 100)}%"></i></div>
+    <div class="bar ${over ? "over" : ""}"><i style="width:${Math.min(100, tot / b * 100)}%"></i></div>`;
+}
+function cartRow({ it, i }) {
+  const p = view(it);
+  return `<li><button class="row-img" data-action="cart-item" data-idx="${i}"><img src="${esc(imgOf(p))}" alt=""></button>
+    <div><b>${esc(p.name)}</b><small>${esc(p.owned ? CAT_LABEL[it.cat] : p.variant || "")}</small><small>${dimsText(p)}</small></div>
+    <div class="amt">${p.owned ? "Yours" : `${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a>`}</div></li>`;
+}
+
+function renderCart() {
+  const on = S.step >= DESIGN && S.scene && !S.generating;
+  const rail = $("#rail"), drawer = $("#drawer"), big = $("#cartx");
+  if (!on) S.cart = "closed";
+  rail.hidden = !on;
+  drawer.classList.toggle("open", S.cart === "open");
+  big.classList.toggle("open", S.cart === "expanded");
+  document.body.classList.toggle("cart-expanded", S.cart === "expanded");
+  if (!on) return;
+  const buy = toBuy(), keep = keeping();
+  rail.innerHTML = `
+    <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
+    <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
+    <button class="rail-btn ${S.cart === "expanded" ? "on" : ""}" data-action="cart-expand" title="See everything" aria-label="See everything">${ICON.grid}</button>`;
+
+  drawer.innerHTML = `<div class="drawer-head">
+      <h2>Shopping list</h2>
+      <div><button class="icon-btn" data-action="cart-expand" title="Expand" aria-label="Expand">⤢</button>
+      <button class="icon-btn" data-action="cart-close" title="Close" aria-label="Close">×</button></div>
+    </div>
+    <p class="sub">${buy.length} to buy${keep.length ? ` · ${keep.length} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
+    ${cartSummary()}
+    <div class="drawer-scroll">
+      ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
+      ${keep.length ? `<label class="field">Keeping · ${keep.length}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
+    </div>
     <div class="btn-row">
       <button class="btn ghost" data-action="copy">Copy list</button>
-      <button class="btn" data-action="download">Download scene.json</button>
+      <button class="btn" data-action="download">scene.json</button>
+    </div>`;
+
+  // expanded: everything as big cards, filterable
+  const all = (S.scene || []).map((it, i) => ({ it, i }));
+  const cats = [...new Set(all.map(x => x.it.cat))];
+  const f = S.cartFilter || "all";
+  const shown = all.filter(x => f === "all" || (f === "buy" && !x.it.own) || (f === "keep" && x.it.own) || x.it.cat === f);
+  const chip = (key, label) => `<button class="xchip ${f === key ? "on" : ""}" data-action="cart-filter" data-f="${key}">${label}</button>`;
+  big.innerHTML = `<div class="x-head">
+      <div><h2>Your room, itemized</h2>
+        <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keep.length} you keep` : ""}</p></div>
+      <div class="x-actions">
+        <button class="xchip" data-action="copy">Copy list</button>
+        <button class="icon-btn light" data-action="cart-collapse" title="Collapse" aria-label="Collapse">⤡</button>
+        <button class="icon-btn light" data-action="cart-close" title="Close" aria-label="Close">×</button>
+      </div>
     </div>
-    <ul class="list" style="margin-top:14px">${S.scene.map(it => {
+    <div class="x-chips">${chip("all", "All")}${chip("buy", `To buy · ${buy.length}`)}${keep.length ? chip("keep", `Keeping · ${keep.length}`) : ""}
+      ${cats.map(c => chip(c, CAT_LABEL[c] || "Other")).join("")}</div>
+    <div class="x-grid">${shown.map(({ it, i }) => {
       const p = view(it);
-      return `<li><img src="${esc(imgOf(p))}" alt="">
-        <div><b>${esc(p.name)}</b><small>${esc(p.variant || "")}</small><small>${dimsText(p)}</small></div>
-        <div class="amt">${p.owned ? "Yours" : `${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a>`}</div></li>`;
-    }).join("")}</ul>
-  </div>`;
+      return `<article class="x-card ${p.owned ? "mine" : ""}">
+        <button class="x-img" data-action="cart-item" data-idx="${i}"><img src="${esc(imgOf(p))}" alt="">${p.owned ? `<span class="tag">Yours</span>` : ""}</button>
+        <b>${esc(p.owned ? p.name : p.family || p.name)}</b>
+        <small>${esc(p.owned ? CAT_LABEL[it.cat] : (p.type_name || CAT_LABEL[it.cat]) + (p.variant ? ", " + p.variant : ""))}</small>
+        <small>${dimsText(p)}</small>
+        <div class="x-foot">
+          <span class="x-price">${p.owned ? "Already yours" : `${money(p.price.amount)}<em> / piece${it.qty > 1 ? " · ×" + it.qty : ""}</em>`}</span>
+          <span class="x-btns">${p.url ? `<a class="icon-btn light" href="${esc(p.url)}" target="_blank" rel="noopener" title="View product">${ICON.out}</a>` : ""}
+            <button class="icon-btn light" data-action="cart-item" data-idx="${i}" title="Show in room">${ICON.look}</button></span>
+        </div>
+      </article>`;
+    }).join("")}</div>`;
 }
 
 /* ---------------- actions ---------------- */
 function goto(i) {
   i = Math.max(0, Math.min(STEPS.length - 1, i));
   S.step = i; S.sel = null;
+  if (i === SHOP) S.cart = "open";
+  else if (S.cart === "open" && i < EDIT) S.cart = "closed";
   if (i >= DESIGN && (S.dirty || !S.options.length) && !S.generating) { S.step = DESIGN; generate(); return; }
   render();
 }
@@ -776,6 +846,12 @@ document.addEventListener("click", e => {
     render();
     toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
+  else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
+  else if (act === "cart-expand") { S.cart = "expanded"; renderCart(); }
+  else if (act === "cart-collapse") { S.cart = "open"; renderCart(); }
+  else if (act === "cart-close") { S.cart = "closed"; renderCart(); }
+  else if (act === "cart-filter") { S.cartFilter = a.dataset.f; renderCart(); }
+  else if (act === "cart-item") { S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; render(); }
   else if (act === "copy") {
     const txt = S.scene.filter(it => !it.own).map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
@@ -858,7 +934,8 @@ addEventListener("keydown", e => {
   if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (e.key === "ArrowRight") goto(S.step + 1);
   if (e.key === "ArrowLeft") goto(S.step - 1);
-  if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
+  if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
+  else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
 addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); });
 room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); });
@@ -877,6 +954,8 @@ fetch("../data/products.json")
       if (h.has("sel")) S.sel = +h.get("sel");
     }
     S.step = Math.min(step, STEPS.length - 1);
+    if (S.step === SHOP) S.cart = "open";
+    if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
     render();
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1
