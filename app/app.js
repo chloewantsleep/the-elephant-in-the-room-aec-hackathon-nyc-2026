@@ -82,6 +82,7 @@ const S = {
   sel: null,
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
+  last: null,          // latest render + the scene it shows (for edit-mode updates)
   before: false,       // show the original photo instead of the render
 };
 
@@ -210,23 +211,50 @@ const photoSrc = () => S.space.photo === "demo" ? "assets/demo-room.jpg" : S.spa
 const sceneSig = () => JSON.stringify([S.space.photo === "demo" ? "demo" : S.space.data.length, S.space.wallIn,
   S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
+const photoKey = () => S.space.photo === "demo" ? "demo" : String(S.space.data.length);
+// the latest render for this photo; kept on screen after edits until the user updates it
+const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
 function showImage() {
-  const want = S.step >= 2 && !S.before && currentRender() || photoSrc();
+  const r = S.step >= 2 && !S.before && (currentRender() || lastRender()?.image);
+  const want = r || photoSrc();
   if (room.dataset.src !== want) { room.dataset.src = want; room.src = want; }
 }
 
+function itemPayload(it) {
+  const p = view(it);
+  return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
+           description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round) };
+}
+
+// What changed since the last render? null = too different, do a full render instead.
+function editsSinceLast() {
+  const L = lastRender();
+  if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
+  const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
+  const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
+  const changed = S.scene.filter(it => !before[it.cat] || before[it.cat].pid !== it.pid || before[it.cat].vid !== it.vid)
+    .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
+  const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
+  const n = changed.length + removed.length;
+  return n && n <= 3 ? { changed, removed } : null;
+}
+
 function renderRequest() {
-  return {
-    room_image: S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data,
-    room: { width_in: S.space.wallIn, depth_in: S.space.depthIn },
-    needs: { style: S.needs.style },
-    items: S.scene.map(it => {
-      const p = view(it);
-      return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
-               description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round) };
-    }),
-  };
+  const base = { room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style } };
+  const edits = editsSinceLast();
+  if (edits) {
+    // edit mode: start from the current render and change only these pieces (keeps everything else stable)
+    return { ...base, mode: "edit", base_image: lastRender().image, items: edits.changed, removed: edits.removed };
+  }
+  return { ...base, room_image: S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data,
+           items: S.scene.map(itemPayload) };
+}
+
+function rememberRender(sig, image) {
+  S.renders[sig] = image;
+  S.last = { image, photoKey: photoKey(), wallIn: S.space.wallIn, style: S.needs.style,
+             items: structuredClone(S.scene) };
 }
 
 // remembered per browser so teammates only type it once
@@ -238,10 +266,11 @@ const passcode = {
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
-  if (S.renders[sig]) { S.before = false; render(); return; }
+  if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
   S.rendering = true; S.before = false; render();
   try {
-    const body = JSON.stringify(renderRequest());
+    const reqObj = renderRequest();
+    const body = JSON.stringify(reqObj);
     const call = () => fetch("/api/render", { method: "POST", body,
       headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
     let res = await call();
@@ -254,8 +283,9 @@ async function renderScene() {
     }
     const j = await res.json().catch(() => ({ error: "Render server not running. Start it with: python3 server.py" }));
     if (!res.ok || j.error) throw new Error(j.error || "Render failed");
-    S.renders[sig] = j.image;
-    toast(j.cached ? "Loaded saved render" : `Rendered in ${(j.ms / 1000).toFixed(1)}s · ${j.model}`);
+    rememberRender(sig, j.image);
+    const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
+    toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
   } catch (e) {
     toast(e.message.slice(0, 120));
   } finally {
@@ -279,7 +309,11 @@ function renderTopbar() {
   const tot = sceneTotal(S.scene), has = !!currentRender();
   let action = "";
   if (S.rendering) action = `<span class="pill pill-static rendering-pill"><i class="spin"></i>Rendering with Gemini…</span>`;
-  else if (!has) action = `<button class="pill pill-cta" data-action="render">✦ ${Object.keys(S.renders).length ? "Re-render" : "Render"}</button>`;
+  else if (!has) {
+    const e = editsSinceLast(), n = e ? e.changed.length + e.removed.length : 0;
+    const label = !lastRender() ? "Render" : e ? `Update render · ${n} change${n > 1 ? "s" : ""}` : "Re-render all";
+    action = `<button class="pill pill-cta" data-action="render">✦ ${label}</button>`;
+  }
   else action = `<button class="pill" data-action="before">${S.before ? "Show render" : "Before"}</button>`;
   t.hidden = false;
   t.innerHTML = `<span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
@@ -502,7 +536,7 @@ document.addEventListener("click", e => {
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
     const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null;
-    render(); toast(`Swapped to ${byId[it.pid].name} · click Re-render to update the image`);
+    render(); toast(`Swapped to ${byId[it.pid].name} · click Update render`);
   } else if (act === "colorway") {
     S.scene[S.sel].vid = a.dataset.vid || null; render();
     toast(`Color · ${view(S.scene[S.sel]).variant}`);

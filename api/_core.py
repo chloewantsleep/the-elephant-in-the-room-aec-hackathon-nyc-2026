@@ -113,6 +113,34 @@ def build_prompt(req):
     return "\n".join(lines)
 
 
+def build_edit_prompt(req):
+    lines = [
+        "You are editing an interior design render.",
+        "IMAGE 1 is the current design. Make ONLY the changes listed below.",
+        "Keep everything else exactly as in IMAGE 1: same room, camera angle, framing, lighting, and every other"
+        " piece of furniture and decor in the same place and unchanged.",
+        "",
+        "Changes:",
+    ]
+    for i, it in enumerate(req.get("items", []), start=2):
+        d = it.get("dims_in") or {}
+        size = f"W {fmt_in(d.get('width'))} x D {fmt_in(d.get('depth'))} x H {fmt_in(d.get('height'))} in"
+        target = f"the {it.get('category', 'item')} ({it['replaces']})" if it.get("replaces") else None
+        what = f"IMAGE {i}: {it.get('name')} ({it.get('variant') or ''}), {size}."
+        if target:
+            lines.append(f"- Replace {target} with {what} Put it in the same spot, sized from its real dimensions.")
+        else:
+            lines.append(f"- Add {what} Place it: {where(it['pos']) if it.get('pos') else 'where it fits naturally'}.")
+        if it.get("description"):
+            lines.append(f"  ({it['description']})")
+    for r in req.get("removed", []):
+        lines.append(f"- Remove the {r.get('category')} ({r.get('name')}) and fill that area naturally with what is behind it.")
+    lines += ["",
+              "Reproduce each new product faithfully from its reference image: same shape, proportions, color and material.",
+              "Output one photorealistic, full-bleed image (no border) with the same framing and aspect ratio as IMAGE 1."]
+    return "\n".join(lines)
+
+
 def render(req):
     """req = {room_image, room:{width_in,depth_in}, needs:{style}, items:[{name, variant, category, qty,
     dims_in, description, image, pos}], instruction?} -> {image (data URL), model, ms, prompt}"""
@@ -124,8 +152,12 @@ def render(req):
     if os.path.exists(cache) and not req.get("fresh"):
         with open(cache) as f:
             return {**json.load(f), "cached": True}
-    prompt = build_prompt(req)
-    parts = [{"text": prompt}, {"text": "IMAGE 1 (the room):"}, image_part(req["room_image"])]
+    if req.get("mode") == "edit":
+        prompt = build_edit_prompt(req)
+        parts = [{"text": prompt}, {"text": "IMAGE 1 (current design):"}, image_part(req["base_image"])]
+    else:
+        prompt = build_prompt(req)
+        parts = [{"text": prompt}, {"text": "IMAGE 1 (the room):"}, image_part(req["room_image"])]
     for i, it in enumerate(req["items"], start=2):
         parts += [{"text": f"IMAGE {i} ({it.get('name')}):"}, image_part(it["image"])]
     body = {"contents": [{"role": "user", "parts": parts}],
