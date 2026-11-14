@@ -26,12 +26,21 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
 - **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.
 - **Demo deep links:** `#step=3&sel=0` opens edit with the first item open. `#room=bedroom&step=4` opens the bedroom list. Add `&render=1` to render on load.
 
+## Live site (Vercel)
+
+Every push to `main` deploys automatically to production on Vercel. Teammates only need the link, no setup.
+- The site is static (`app/`, `data/`) plus one Python function, `api/render.py`, which calls Gemini.
+- `GEMINI_API_KEY` and `DEMO_PASSCODE` live in the Vercel project's environment variables, never in git.
+- AI renders cost money, so the site asks for the **team passcode** once per browser. Ask in the team chat.
+
 ## Repo layout
 
 | Path | What |
 |---|---|
 | `app/` | UI MVP (`index.html`, `style.css`, `app.js`) |
-| `server.py` | Dev server + `/api/render` → Gemini (key from `.env`) |
+| `server.py` | Local dev server + `/api/render` → Gemini (key from `.env`) |
+| `api/` | `render.py` = Vercel function, `_core.py` = render logic shared with `server.py` |
+| `vercel.json` | Vercel config: `/` → `/app/`, function timeout, bundled product images |
 | `data/products.json` | 316 real IKEA products. See [`data/README.md`](data/README.md) and [`data/SUMMARY.md`](data/SUMMARY.md) |
 | `data/images/` | White-background product photos for rendering |
 | `schema/product.schema.json` | Shared product format |

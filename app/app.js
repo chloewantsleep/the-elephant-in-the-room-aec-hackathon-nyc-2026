@@ -229,14 +229,29 @@ function renderRequest() {
   };
 }
 
+// remembered per browser so teammates only type it once
+const passcode = {
+  get() { try { return localStorage.getItem("elephant-passcode") || ""; } catch { return ""; } },
+  set(v) { try { localStorage.setItem("elephant-passcode", v); } catch { /* private mode: ask again next time */ } },
+};
+
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
   if (S.renders[sig]) { S.before = false; render(); return; }
   S.rendering = true; S.before = false; render();
   try {
-    const res = await fetch("/api/render", { method: "POST", headers: { "Content-Type": "application/json" },
-                                             body: JSON.stringify(renderRequest()) });
+    const body = JSON.stringify(renderRequest());
+    const call = () => fetch("/api/render", { method: "POST", body,
+      headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
+    let res = await call();
+    if (res.status === 401) {   // deployed site: renders cost money, so they need the team passcode
+      const pc = prompt("Team passcode for AI renders:");
+      if (!pc) throw new Error("Render needs the team passcode");
+      passcode.set(pc.trim());
+      res = await call();
+      if (res.status === 401) { passcode.set(""); throw new Error("Wrong passcode"); }
+    }
     const j = await res.json().catch(() => ({ error: "Render server not running. Start it with: python3 server.py" }));
     if (!res.ok || j.error) throw new Error(j.error || "Render failed");
     S.renders[sig] = j.image;
