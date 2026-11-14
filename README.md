@@ -1,4 +1,7 @@
-# hackathon-nyc-2026 — AI furniture decision platform
+# The Elephant in the Room — AEC Hackathon NYC 2026
+
+
+**AI furniture decision platform**
 
 Tell us what you need, show us your room, and get a render of your space furnished with **real, buyable furniture** (real dimensions, real prices). Edit the design by clicking on the image, then leave with a **final render + shopping list**.
 
