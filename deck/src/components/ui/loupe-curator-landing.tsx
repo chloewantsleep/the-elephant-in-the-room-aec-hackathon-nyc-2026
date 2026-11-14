@@ -22,20 +22,22 @@ export const progressFrom = (top: number, height: number, stage: number) => {
 }
 
 /** Track lengths, in stage heights. */
-export const TRACK = { intro: 6, words: 3.4, zoom: 7, pile: 3.6 } as const
+export const TRACK = { intro: 8, words: 3.4, zoom: 7, pile: 3.6 } as const
 /** The panel after a pinned stage slides over its last stage-height of travel; the story is over by then. */
 export const coverAt = (len: number) => 1 - 1 / (len - 1)
 
 export const INTRO = {
-  fly: [0, 0.3],
-  lineOut: [0.05, 0.15],
-  open: [0.12, 0.22],
-  flip: [0.12, 0.25],
-  grow: [0.24, 0.46],
-  caption: [0.36, 0.48],
-  captionOut: [0.52, 0.57],
-  callouts: [0.56, 0.68],
-  strip: [0.6, 0.78],
+  fly: [0, 0.21],
+  lineOut: [0.04, 0.11],
+  open: [0.09, 0.16],
+  flip: [0.09, 0.18],
+  grow: [0.17, 0.33],   // the gap grows into the team collage
+  teamIn: [0.29, 0.36], // names fade in
+  teamOut: [0.46, 0.52], // the team crossfades into the room photo
+  caption: [0.52, 0.6],
+  captionOut: [0.64, 0.68],
+  callouts: [0.67, 0.76],
+  strip: [0.7, 0.84],
 } as const
 export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.8] } as const
 export const PILE = { ink: [0, 0.26], drop: [0.06, 0.5], swap: [0.56, 0.68], type: [0.64, 0.8] } as const
@@ -148,7 +150,7 @@ export const goldenAfter = (taps: number) => Math.floor(taps / GOLDEN_TAPS) % 2 
 
 /** Reduced motion: the scroll snaps between still poses instead of playing the motion. */
 export const REDUCED = {
-  intro: [[0, 0], [0.3, 0.79]],
+  intro: [[0, 0], [0.25, 0.4], [0.6, 0.84]],
   pile: [[0, 0.3], [0.5, 1]],
 } as const
 export function poseFor(p: number, poses: readonly (readonly [number, number])[]) {
@@ -483,22 +485,20 @@ const THEME =
   ".lcl-grid{border-radius:28px 28px 0 0}.lcl-fcard{border-radius:28px}" +
   ".lcl-bit:nth-child(3n){background:#9a9a9a}.lcl-bit:nth-child(4n){background:var(--lime)}" +
   ".lcl-clab{border-radius:999px}" +
-  // meet the team: 3 screens tall, the stage holds for a full screen, then the manifesto slides over it
-  ".lcl-team{position:relative;z-index:1;height:calc(var(--h) * 3);background:var(--paper)}" +
-  ".lcl-team-stage{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:center;gap:clamp(14px,2.4vh,28px);padding:0 clamp(16px,4vw,64px)}" +
-  ".lcl-team-head{display:flex;flex-direction:column;gap:8px}.lcl-team-head .lcl-mono{color:var(--soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase}" +
-  ".lcl-team-head h2{margin:0;font-weight:400;font-size:clamp(30px,4.2vw,64px);letter-spacing:-.04em;line-height:1}" +
-  ".lcl-team-art{position:relative;border-radius:24px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),0 24px 60px rgba(0,0,0,.10)}" +
-  ".lcl-team-art img{display:block;width:100%;height:auto;max-height:58vh;object-fit:cover;filter:saturate(.85)}" +
-  ".lcl-team-pin{position:absolute;top:8%;bottom:6%;width:11%;transform:translateX(-50%);border-radius:18px;transition:background .25s,box-shadow .25s}" +
-  ".lcl-team-pin:hover{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(20,20,20,.55)}" +
-  ".lcl-team-names{position:relative;height:52px;margin:0;padding:0;list-style:none}" +
-  ".lcl-team-names li{position:absolute;left:var(--x);top:0;transform:translateX(-50%);white-space:nowrap}" +
-  ".lcl-team-names a{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink);text-decoration:none;font-size:clamp(13px,1.15vw,17px)}" +
-  ".lcl-team-names a .lcl-mono{color:var(--soft);font-size:10px;letter-spacing:.06em;transition:color .2s}" +
-  ".lcl-team-names a:hover .lcl-mono{color:var(--ink)}" +
-  "@media (max-width:720px){.lcl-team-art img{max-height:none}.lcl-team-pin{display:none}" +
-  ".lcl-team-names{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px}.lcl-team-names li{position:static;transform:none}.lcl-team-names a{align-items:flex-start}}" +
+  // meet the team: a layer inside the growing gap photo, then it fades into the room photo
+  ".lcl-track{position:relative}.lcl-anchor{position:absolute;left:0;width:1px;height:1px}" +
+  ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(10px,2vh,22px);padding:0 clamp(16px,5vw,80px);background:#f6f4f0;opacity:var(--tm,1);pointer-events:none}" +
+  ".lcl-tm-label{color:#8a8a8a;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:var(--tn,0)}" +
+  ".lcl-tm-art{position:relative;width:100%;max-width:min(1500px,calc(70vh * 2.36))}" +
+  ".lcl-tm-art img{display:block;width:100%;height:auto;border-radius:18px}" +
+  ".lcl-tm-pin{position:absolute;top:8%;bottom:6%;width:11%;transform:translateX(-50%);border-radius:16px;transition:background .25s,box-shadow .25s}" +
+  ".lcl-tm-pin:hover{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(20,20,20,.55)}" +
+  ".lcl-tm-names{position:relative;width:100%;max-width:min(1500px,calc(70vh * 2.36));height:46px;margin:0;padding:0;list-style:none;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 10px))}" +
+  ".lcl-tm-names li{position:absolute;left:var(--x);top:0;transform:translateX(-50%);white-space:nowrap}" +
+  ".lcl-tm-names a{display:flex;flex-direction:column;align-items:center;gap:2px;color:#141414;text-decoration:none;font-size:clamp(12px,1.1vw,17px)}" +
+  ".lcl-tm-names a .lcl-mono{color:#8a8a8a;font-size:10px;letter-spacing:.06em;transition:color .2s}" +
+  ".lcl-tm-names a:hover .lcl-mono{color:#141414}" +
+  "@media (max-width:720px){.lcl-tm-pin{display:none}.lcl-tm-names{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}.lcl-tm-names li{position:static;transform:none}.lcl-tm-names a{align-items:flex-start}}" +
   ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--lime);color:#141414}"
 
 const FONTS =
@@ -605,6 +605,7 @@ export default function LoupeCuratorLanding({
     pileOn: false,
     pileTop: 0,
     sw: 0,
+    l2dx: 0, // half the width difference of the two halves of hero line 2
     user: false,
     spawn: 0,
     z: 100,
@@ -687,7 +688,7 @@ export default function LoupeCuratorLanding({
         st.clock += dt / 1000
         again = true
       }
-      const fade = 1 - span(p, [0.16, 0.28])
+      const fade = 1 - span(p, [0.115, 0.2])
       const cam = span(p, INTRO.fly) * FIELD.travel + st.clock * FIELD.idle
       const tw = st.tw
       st.thumbs.forEach((el, j) => {
@@ -714,6 +715,13 @@ export default function LoupeCuratorLanding({
       put(e.portrait, "transform", "translate3d(0," + (-span(p, [coverAt(TRACK.intro), 1]) * H * 0.32).toFixed(1) + "px,0)")
       put(e.portraitIn, "transform", "scale(" + coverScale(b, W, H).toFixed(4) + ")")
       put(I, "--g", b.w.toFixed(1) + "px")
+      // keep the headline centered while the gap is closed; drift back to the true center as it opens
+      put(e.l2, "transform", "translate(" + (st.l2dx * (1 - smooth(span(p, INTRO.open)))).toFixed(1) + "px,-50%)")
+      const tm = 1 - span(p, INTRO.teamOut)
+      put(I, "--tm", tm.toFixed(3))
+      put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
+      put(e.team, "visibility", tm > 0.001 ? "visible" : "hidden")
+      put(e.team, "pointerEvents", tm > 0.5 && span(p, INTRO.teamIn) > 0.5 ? "auto" : "none")
       put(I, "--cap", span(p, INTRO.caption).toFixed(3))
       put(I, "--capo", (1 - span(p, INTRO.captionOut)).toFixed(3))
       const c = span(p, INTRO.callouts)
@@ -873,9 +881,11 @@ export default function LoupeCuratorLanding({
       st.H = stage ? stage.clientHeight : window.innerHeight
       for (const k of ["intro", "mani", "grid", "words", "zoom", "pile", "foot"]) {
         const el = els.current[k] as HTMLElement | null
-        st.off[k] = el ? el.offsetTop : 0
+        st.off[k] = el ? el.offsetTop : 0   // (measured per section)
         st.len[k] = el ? el.offsetHeight : 0
       }
+      const wl = els.current.wl as HTMLElement | null, wr = els.current.wr as HTMLElement | null
+      st.l2dx = wl && wr ? (wl.offsetWidth - wr.offsetWidth) / 2 : 0
       st.thumbs = Array.from(root.querySelectorAll("[data-th]")) as El[]
       st.tw = st.thumbs[0] ? (st.thumbs[0] as HTMLElement).offsetWidth : 120
       st.words = Array.from(root.querySelectorAll("[data-word]")) as El[]
@@ -953,7 +963,8 @@ export default function LoupeCuratorLanding({
     const base = absTop()
     const stops = [
       base + st.off.intro + 0.4 * travel("intro"),
-      base + st.off.intro + 0.72 * travel("intro"),
+      base + st.off.intro + 0.58 * travel("intro"),
+      base + st.off.intro + 0.8 * travel("intro"),
       base + st.off.mani + st.H,
       base + st.off.grid + st.H * 0.3,
       ...(st.len.words ? [base + st.off.words + 0.45 * travel("words")] : []),
@@ -1114,6 +1125,7 @@ export default function LoupeCuratorLanding({
 
       {/* 1 · intro: the photo field, the gap, the curator */}
       <section className="lcl-track" ref={reg("intro")} style={{ "--len": TRACK.intro } as CSSProperties}>
+        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.4).toFixed(2) + ")" } as CSSProperties} />
         <div className="lcl-stage" ref={reg("introStage")}>
           {FIELD_KINDS.map((k, j) => (
             <div key={j} className="lcl-th" data-th="">
@@ -1123,9 +1135,9 @@ export default function LoupeCuratorLanding({
           <h1 className="lcl-h1 lcl-l1">
             <span ref={reg("l1")}>{words("Dream about the space", 0.1, 0.16)}</span>
           </h1>
-          <p className="lcl-h1 lcl-l2">
-            <span className="lcl-wl">{words("and Elephant makes it", 0.85, 0.16)}</span>
-            <span className="lcl-wr">{words("come true", 1.45, 0.16)}</span>
+          <p className="lcl-h1 lcl-l2" ref={reg("l2")}>
+            <span className="lcl-wl" ref={reg("wl")}>{words("and Elephant makes it", 0.85, 0.16)}</span>
+            <span className="lcl-wr" ref={reg("wr")}>{words("come true", 1.45, 0.16)}</span>
           </p>
           <div className="lcl-full" ref={reg("portrait")} data-v="v0" style={{ clipPath: "inset(50%)" }}>
             <div className="lcl-zin" ref={reg("portraitIn")}>
@@ -1135,6 +1147,22 @@ export default function LoupeCuratorLanding({
                 </div>
               ))}
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
+              <div className="lcl-tm" ref={reg("team")}>
+                <span className="lcl-mono lcl-tm-label">Meet the team</span>
+                <div className="lcl-tm-art">
+                  <img src="/img/team.jpg" alt="Tape collage of the six team members in a furnished room" draggable={false} />
+                  {TEAM.map((m) => (
+                    <a key={m.name} className="lcl-tm-pin" href={m.url} target="_blank" rel="noopener noreferrer" style={{ left: m.x + "%" } as CSSProperties} data-cursor="LinkedIn" aria-label={m.name + " on LinkedIn"} />
+                  ))}
+                </div>
+                <ul className="lcl-tm-names">
+                  {TEAM.map((m) => (
+                    <li key={m.name} style={{ "--x": m.x + "%" } as CSSProperties}>
+                      <a href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn">{m.name}<span className="lcl-mono">LinkedIn ↗</span></a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
             <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="316 real products plus your own. Real sizes and real prices.">
               {letters("316 real products plus your own. Real sizes and real prices.", "cap")}
@@ -1177,33 +1205,7 @@ export default function LoupeCuratorLanding({
         </div>
       </section>
 
-      {/* meet the team: the collage pins, then the manifesto slides over it */}
-      <section className="lcl-team" id="team">
-        <div className="lcl-team-stage">
-          <div className="lcl-team-head">
-            <span className="lcl-mono">Meet the team</span>
-            <h2>The people behind {brand}</h2>
-          </div>
-          <div className="lcl-team-art">
-            <img src="/img/team.jpg" alt="Tape collage of the six team members in a furnished room" draggable={false} />
-            {TEAM.map((m) => (
-              <a key={m.name} className="lcl-team-pin" href={m.url} target="_blank" rel="noopener noreferrer" style={{ left: m.x + "%" } as CSSProperties} data-cursor="LinkedIn" aria-label={m.name + " on LinkedIn"} />
-            ))}
-          </div>
-          <ul className="lcl-team-names">
-            {TEAM.map((m) => (
-              <li key={m.name} style={{ "--x": m.x + "%" } as CSSProperties}>
-                <a href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn">
-                  {m.name}
-                  <span className="lcl-mono">LinkedIn ↗</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* 2 · manifesto, slides over the pinned team */}
+      {/* 2 · manifesto, slides over the pinned intro */}
       <section className="lcl-mani" ref={reg("mani")}>
         <p className="lcl-para" style={{ "--n": inkN } as CSSProperties}>
           {paraWords.map((w, i) => (
