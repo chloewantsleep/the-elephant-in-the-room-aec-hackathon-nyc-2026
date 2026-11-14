@@ -22,6 +22,10 @@
     "api/isolate.py": {
       "maxDuration": 60,
       "includeFiles": "{api/_core.py,app/assets/**}"
+    },
+    "api/sketch.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,sketch_ai.py,data/products.json}"
     }
   }
 }
