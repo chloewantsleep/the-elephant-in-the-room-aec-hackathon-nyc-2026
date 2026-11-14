@@ -21,6 +21,7 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
   - the fit check against the wall width
   - the shopping list
   - **the render.** `server.py` sends the room photo and the white-background product photos to Gemini (`gemini-3.1-flash-image`, about 8 s and about $0.07 per image). Selecting an option renders it. After edits, click **Re-render**. **Before** toggles back to the original photo.
+- **Real (furniture you already own):** in **Space**, uploading a photo (or clicking *Find my furniture*) calls `/api/detect` (Gemini vision, boxes + category + estimated size). Each piece is cropped in the browser and sent to `/api/isolate`, which returns a **white-background isometric product shot**. The shots appear in the right-hand panel as they finish. **Keep** a piece and the planner designs around it (shown as "Yours · $0"; nothing of that type gets bought). **Ditch** it and the render removes it. Kept pieces can later be replaced with real products in Edit.
 - **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). Room analysis is the user typing one wall length (P2). Pin positions are per-slot defaults; drag them onto the render.
 - **Cost control:** identical requests are cached in `renders/cache/` (gitignored), so reloading or re-selecting an option is free.
 - **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.

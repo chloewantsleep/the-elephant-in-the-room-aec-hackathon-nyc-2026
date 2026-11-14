@@ -108,6 +108,13 @@ def build_prompt(req):
             f" W {fmt_in(d.get('width'))} x D {fmt_in(d.get('depth'))} x H {fmt_in(d.get('height'))} in."
             + (f" {it['description']}" if it.get("description") else "")
             + (f" Place it: {where(it['pos'])}." if it.get("pos") else ""))
+    if req.get("keep"):
+        lines += ["", "Existing pieces in IMAGE 1 to KEEP exactly as they are (same look, same position; do not replace them):"]
+        lines += [f"- {k.get('label')} ({k.get('category')}), {where(k['pos']) if k.get('pos') else ''}" for k in req["keep"]]
+    if req.get("remove_existing"):
+        lines += ["", "Existing pieces in IMAGE 1 to REMOVE (fill the area naturally with floor/wall behind them):"]
+        lines += [f"- {k.get('label')} ({k.get('category')}), {where(k['pos']) if k.get('pos') else ''}"
+                  for k in req["remove_existing"]]
     if req.get("instruction"):
         lines += ["", "Extra instruction from the user: " + req["instruction"]]
     return "\n".join(lines)
@@ -183,6 +190,122 @@ def render(req):
     with open(cache, "w") as f:
         json.dump(out, f)
     return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Existing furniture: detect it in the user's photo, then turn each piece into a clean product shot
+# ---------------------------------------------------------------------------------------------
+TEXT_MODEL = os.environ.get("GEMINI_TEXT_MODEL", "gemini-3.8-flash")
+ISOLATE_MODEL = os.environ.get("GEMINI_ISOLATE_MODEL", MODEL)
+CATEGORY_LIST = ("sofa, armchair, bed, dining_table, coffee_table, side_table, desk, office_chair, dining_chair, "
+                 "stool_bench, dresser, nightstand, wardrobe, shelving, tv_stand, cabinet, floor_lamp, table_lamp, "
+                 "pendant_lamp, rug, mirror, other")
+
+
+def cached(kind, payload, fn):
+    """Same input -> same answer, without paying again."""
+    key = hashlib.sha1((kind + json.dumps(payload, sort_keys=True)).encode()).hexdigest()[:16]
+    path = os.path.join(RENDERS, "cache", f"{kind}-{key}.json")
+    if os.path.exists(path) and not payload.get("fresh"):
+        with open(path) as f:
+            return {**json.load(f), "cached": True}
+    out = fn()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(out, f)
+    return out
+
+
+def detect(req):
+    """req = {photo} -> {items:[{label, category, box (0-1000: ymin,xmin,ymax,xmax), description, dims_in}]}"""
+    if not KEY:
+        raise RuntimeError("No GEMINI_API_KEY.")
+
+    def run():
+        prompt = (
+            "Find every piece of furniture and large decor in this room photo that someone could keep or replace: "
+            "sofas, chairs, tables, beds, storage, shelves, lamps (floor, table, pendant), rugs, mirrors. "
+            "Ignore walls, windows, curtains, small objects and plants. Only include items that are clearly visible.\n"
+            "Return a JSON array (max 10), each element:\n"
+            '{"label": short name like "grey 3-seat sofa", "category": one of [' + CATEGORY_LIST + '], '
+            '"box_2d": [ymin, xmin, ymax, xmax] normalized to 0-1000, '
+            '"description": one sentence on color, material, style, '
+            '"dims_in": {"width": number, "depth": number, "height": number} estimated real size in inches}')
+        body = {"contents": [{"role": "user", "parts": [image_part(req["photo"]), {"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
+        t0 = time.time()
+        res = gemini(f"models/{TEXT_MODEL}:generateContent", body)
+        text = "".join(p.get("text", "") for p in res["candidates"][0]["content"]["parts"])
+        raw = json.loads(text)
+        items = []
+        for it in raw if isinstance(raw, list) else raw.get("items", []):
+            box = it.get("box_2d") or it.get("box")
+            if not box or len(box) != 4:
+                continue
+            items.append({"label": it.get("label", "item"), "category": it.get("category", "other"),
+                          "box": [max(0, min(1000, int(v))) for v in box],
+                          "description": it.get("description", ""), "dims_in": it.get("dims_in") or {}})
+        return {"items": items, "model": TEXT_MODEL, "ms": int((time.time() - t0) * 1000)}
+
+    return cached("detect", {"photo": req["photo"], "m": TEXT_MODEL}, run)
+
+
+def isolate(req):
+    """req = {crop (data URL of the item cut from the photo), label, description} -> {image: white-bg isometric shot}"""
+    if not KEY:
+        raise RuntimeError("No GEMINI_API_KEY.")
+
+    def run():
+        prompt = (
+            f"IMAGE 1 is a crop from a photo of someone's room. It shows their {req.get('label', 'furniture')}"
+            + (f" ({req['description']})" if req.get("description") else "") + ".\n"
+            "Create a clean e-commerce product photo of THIS EXACT piece:\n"
+            "- isolated on a pure white background (#FFFFFF), no room, no floor, no other objects\n"
+            "- isometric three-quarter view from slightly above, the whole object visible and centered\n"
+            "- keep its exact shape, proportions, color, fabric/material and details; complete any part that is hidden\n"
+            "- soft studio lighting, subtle contact shadow, square image")
+        body = {"contents": [{"role": "user", "parts": [{"text": prompt}, image_part(req["crop"])]}],
+                "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
+        t0 = time.time()
+        res = gemini(f"models/{ISOLATE_MODEL}:generateContent", body)
+        parts = (res.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
+        img = next((p.get("inline_data") or p.get("inlineData") for p in parts
+                    if p.get("inline_data") or p.get("inlineData")), None)
+        if not img:
+            raise RuntimeError("No image returned for " + req.get("label", "item"))
+        mime = img.get("mime_type") or img.get("mimeType") or "image/png"
+        return {"image": f"data:{mime};base64,{img['data']}", "model": ISOLATE_MODEL,
+                "ms": int((time.time() - t0) * 1000)}
+
+    return cached("isolate", {"crop": req["crop"], "label": req.get("label"), "m": ISOLATE_MODEL}, run)
+
+
+def make_handler(fn):
+    """Vercel Python function class for POST {json} -> fn(json)."""
+    from http.server import BaseHTTPRequestHandler
+
+    class Handler(BaseHTTPRequestHandler):
+        def _json(self, code, obj):
+            body = json.dumps(obj).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            self._json(200, {"key": bool(KEY), "model": MODEL, "passcode": bool(os.environ.get("DEMO_PASSCODE"))})
+
+        def do_POST(self):
+            if not passcode_ok(self.headers):
+                return self._json(401, {"error": "Passcode required", "passcode": True})
+            try:
+                self._json(200, fn(json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))))
+            except Exception as e:  # surface the reason to the UI
+                self._json(500, {"error": str(e)})
+
+    return Handler
 
 
 def passcode_ok(headers):

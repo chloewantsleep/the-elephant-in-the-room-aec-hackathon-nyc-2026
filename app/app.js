@@ -23,7 +23,7 @@ const CAT_LABEL = {
   side_table: "Side table", desk: "Desk", office_chair: "Office chair", dining_chair: "Dining chair",
   stool_bench: "Bench", dresser: "Dresser", nightstand: "Nightstand", wardrobe: "Wardrobe", shelving: "Shelving",
   tv_stand: "TV stand", cabinet: "Sideboard", floor_lamp: "Floor lamp", table_lamp: "Table lamp",
-  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror",
+  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror", other: "Other",
 };
 
 // Slots per room type. share = share of budget, maxW = max width as a fraction of the wall,
@@ -83,6 +83,7 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
+  existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
 };
 
@@ -100,13 +101,29 @@ function inch(v) {
 }
 function dimsText(p) {
   const d = p.dims_in;
-  return [["W", d.width], ["D", d.depth], ["H", d.height]].filter(x => x[1] != null).map(x => `${x[0]} ${inch(x[1])}`).join(" · ");
+  return (p.estimated ? "≈ " : "") + [["W", d.width], ["D", d.depth], ["H", d.height]].filter(x => x[1] != null).map(x => `${x[0]} ${inch(x[1])}`).join(" · ");
 }
 const imgOf = p => p.images.main_local ? "../" + p.images.main_local : p.images.main;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// A piece the user already owns (found in their photo), shaped like a product record.
+const exById = id => S.existing?.items.find(e => e.id === id);
+const cap = t => t ? t[0].toUpperCase() + t.slice(1) : t;
+function ownedProduct(e) {
+  const d = e.dims_in || {};
+  return { id: "own:" + e.id, name: cap(e.label), family: cap(e.label), variant: "Already yours", brand: "Yours",
+           category: e.category, price: { amount: 0, currency: "USD" }, owned: true, estimated: true,
+           dims_in: { width: d.width ?? null, depth: d.depth ?? null, height: d.height ?? null },
+           materials: [], variants: [], images: { main: e.iso || e.crop, main_local: null }, url: null,
+           description: e.description };
+}
+
 // Product as displayed: the base record, optionally with a colorway applied.
 function view(item) {
+  if (item.own) {
+    const e = exById(item.own);
+    return e ? ownedProduct(e) : ownedProduct({ id: item.own, label: "your piece", category: item.cat });
+  }
   const p = byId[item.pid];
   if (!item.vid) return p;
   const v = p.variants.find(x => x.id === item.vid);
@@ -148,11 +165,23 @@ function toImage(x, y) {
 }
 
 /* ---------------- ⑤ the planner (MOCK of the AI layout agent) ---------------- */
+const keptPieces = () => S.existing?.photoKey === photoKey() ? S.existing.items.filter(e => e.keep && e.status !== "error") : [];
+const boxCenter = b => [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20];   // box 0-1000 -> image %
+const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ? e.category : "other", qty: 1,
+                          own: e.id, pid: null, vid: null, pos: boxCenter(e.box) });
+
 function planOptions() {
   const tpl = TEMPLATES[S.needs.room];
   const used = {};
+  const kept = keptPieces();
   return STRATEGIES.map(strat => {
+    const usedOwn = new Set();
     const items = tpl.map(slot => {
+      const mine = kept.find(e => e.category === slot.cat && !usedOwn.has(e.id));
+      if (mine) { usedOwn.add(mine.id); return ownedItem(mine); }   // you already have one: keep it, don't buy
+      return null;
+    }).map((own, k) => own || tpl[k]).map(slot => {
+      if (slot.own) return slot;
       const budget = S.needs.budget * slot.share / (slot.qty || 1);
       const maxW = slot.maxW * S.space.wallIn;
       let pool = P.filter(p => p.category === slot.cat && (p.dims_in.width == null || p.dims_in.width <= maxW));
@@ -165,6 +194,7 @@ function planOptions() {
       (used[slot.cat] = used[slot.cat] || []).push(pick.id);
       return { cat: slot.cat, qty: slot.qty || 1, pid: pick.id, vid: null, pos: slot.pos.slice() };
     });
+    kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
     return { name: strat.name, items };
   });
 }
@@ -192,6 +222,7 @@ function stagesText() {
   return [
     `Reading your needs · ${S.needs.style.toLowerCase()}, ${money(S.needs.budget)}`,
     `Scaling the room · back wall ${inch(S.space.wallIn)}`,
+    ...(keptPieces().length ? [`Keeping ${keptPieces().length} of your pieces`] : []),
     `Searching ${P.length} real products`,
     "Checking fit and budget",
     "Composing 3 options",
@@ -203,13 +234,13 @@ function render() {
   document.body.classList.toggle("dim", S.step < 2 || S.generating);
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
-  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderTopbar();
+  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
 const photoSrc = () => S.space.photo === "demo" ? "assets/demo-room.jpg" : S.space.data;
 const sceneSig = () => JSON.stringify([S.space.photo === "demo" ? "demo" : S.space.data.length, S.space.wallIn,
-  S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty])]);
+  S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty, it.own])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
 const photoKey = () => S.space.photo === "demo" ? "demo" : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
@@ -233,7 +264,8 @@ function editsSinceLast() {
   if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
   const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
   const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
-  const changed = S.scene.filter(it => !before[it.cat] || before[it.cat].pid !== it.pid || before[it.cat].vid !== it.vid)
+  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own;
+  const changed = S.scene.filter(it => !before[it.cat] || !same(before[it.cat], it))
     .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
   const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
   const n = changed.length + removed.length;
@@ -247,8 +279,12 @@ function renderRequest() {
     // edit mode: start from the current render and change only these pieces (keeps everything else stable)
     return { ...base, mode: "edit", base_image: lastRender().image, items: edits.changed, removed: edits.removed };
   }
+  const ex = S.existing?.photoKey === photoKey() ? S.existing.items : [];
+  const here = e => ({ label: e.label, category: e.category, pos: boxCenter(e.box).map(Math.round) });
   return { ...base, room_image: S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data,
-           items: S.scene.map(itemPayload) };
+           items: S.scene.filter(it => !it.own).map(itemPayload),
+           keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
+           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
 }
 
 function rememberRender(sig, image) {
@@ -263,26 +299,35 @@ const passcode = {
   set(v) { try { localStorage.setItem("elephant-passcode", v); } catch { /* private mode: ask again next time */ } },
 };
 
+async function apiPost(path, obj) {
+  const body = JSON.stringify(obj);
+  const call = () => fetch(path, { method: "POST", body,
+    headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
+  let res = await call();
+  if (res.status === 401) {   // deployed site: AI calls cost money, so they need the team passcode
+    const pc = prompt("Team passcode for AI features:");
+    if (!pc) throw new Error("This needs the team passcode");
+    passcode.set(pc.trim());
+    res = await call();
+    if (res.status === 401) { passcode.set(""); throw new Error("Wrong passcode"); }
+  }
+  const j = await res.json().catch(() => ({ error: "AI server not running. Start it with: python3 server.py" }));
+  if (!res.ok || j.error) throw new Error(j.error || "Request failed");
+  return j;
+}
+
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
   if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
+  const reqObj = renderRequest();
+  if (reqObj.mode !== "edit" && !reqObj.items.length && !(reqObj.remove_existing || []).length) {
+    S.before = true; render(); toast("You're keeping everything, so there's nothing new to render yet");   // don't pay for a copy
+    return;
+  }
   S.rendering = true; S.before = false; render();
   try {
-    const reqObj = renderRequest();
-    const body = JSON.stringify(reqObj);
-    const call = () => fetch("/api/render", { method: "POST", body,
-      headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
-    let res = await call();
-    if (res.status === 401) {   // deployed site: renders cost money, so they need the team passcode
-      const pc = prompt("Team passcode for AI renders:");
-      if (!pc) throw new Error("Render needs the team passcode");
-      passcode.set(pc.trim());
-      res = await call();
-      if (res.status === 401) { passcode.set(""); throw new Error("Wrong passcode"); }
-    }
-    const j = await res.json().catch(() => ({ error: "Render server not running. Start it with: python3 server.py" }));
-    if (!res.ok || j.error) throw new Error(j.error || "Render failed");
+    const j = await apiPost("/api/render", reqObj);
     rememberRender(sig, j.image);
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
@@ -291,6 +336,104 @@ async function renderScene() {
   } finally {
     S.rendering = false; render();
   }
+}
+
+/* ---------------- existing furniture: detect -> crop -> white-background isometric shot ---------------- */
+const photoForApi = () => S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data;
+let _photoImg = null;
+function photoImage() {
+  const src = photoSrc();
+  if (_photoImg && _photoImg.src.endsWith(src.slice(-200))) return Promise.resolve(_photoImg);
+  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(_photoImg = im); im.onerror = bad; im.src = src; });
+}
+async function cropBox(box) {
+  const im = await photoImage(), W = im.naturalWidth, H = im.naturalHeight, pad = 0.05;
+  const x0 = Math.max(0, box[1] / 1000 - pad) * W, y0 = Math.max(0, box[0] / 1000 - pad) * H;
+  const x1 = Math.min(1, box[3] / 1000 + pad) * W, y1 = Math.min(1, box[2] / 1000 + pad) * H;
+  const k = Math.min(1, 768 / Math.max(x1 - x0, y1 - y0));
+  const c = Object.assign(document.createElement("canvas"), { width: (x1 - x0) * k, height: (y1 - y0) * k });
+  c.getContext("2d").drawImage(im, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.9);
+}
+
+async function scanFurniture() {
+  if (S.existing?.status === "detecting" || S.existing?.status === "isolating") return;
+  const run = S.existing = { photoKey: photoKey(), status: "detecting", items: [] };
+  const alive = () => S.existing === run;
+  render();
+  try {
+    const det = await apiPost("/api/detect", { photo: photoForApi() });
+    if (!alive()) return;
+    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
+    run.status = run.items.length ? "isolating" : "done";
+    S.dirty = true; render();
+    if (!run.items.length) { toast("No furniture found in this photo"); return; }
+    const queue = run.items.slice();
+    const worker = async () => {
+      for (let e; (e = queue.shift());) {
+        try {
+          e.crop = await cropBox(e.box); if (alive()) renderPanel();
+          const r = await apiPost("/api/isolate", { crop: e.crop, label: e.label, description: e.description });
+          e.iso = r.image; e.status = "done";
+        } catch (err) { e.status = "error"; e.error = err.message; }
+        if (alive()) { renderPanel(); if (S.step >= 2) renderHotspots(); }
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    if (alive()) { run.status = "done"; render(); toast(`Found ${run.items.length} pieces in your photo`); }
+  } catch (err) {
+    if (alive()) { run.status = "error"; run.error = err.message; render(); toast(err.message.slice(0, 120)); }
+  }
+}
+
+function existingCard() {
+  const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
+  if (!ex) {
+    return `<div class="card card-right ex-card">
+      <h2>Already have furniture?</h2>
+      <p class="sub">We can find the pieces in your photo, turn each into a clean product shot, and you decide what to keep.</p>
+      <button class="btn block" data-action="scan">Find my furniture</button>
+    </div>`;
+  }
+  if (ex.status === "detecting") {
+    return `<div class="card card-right ex-card"><h2>Your furniture</h2>
+      <ul class="stages"><li class="now"><span class="tick"></span>Looking for furniture in your photo…</li></ul></div>`;
+  }
+  if (ex.status === "error") {
+    return `<div class="card card-right ex-card"><h2>Your furniture</h2><p class="sub">${esc(ex.error)}</p>
+      <button class="btn block" data-action="scan">Try again</button></div>`;
+  }
+  const kept = ex.items.filter(e => e.keep).length, busy = ex.items.filter(e => e.status === "loading").length;
+  return `<div class="card card-right ex-card">
+    <h2>Your furniture</h2>
+    <p class="sub">${ex.items.length} pieces found${busy ? ` · making product shots (${ex.items.length - busy}/${ex.items.length})` : ""}.
+      Keep what you love, ditch the rest. We design around what you keep.</p>
+    <div class="ex-grid">${ex.items.map(e => `
+      <div class="ex ${e.keep ? "" : "ditched"}" data-ex="${e.id}">
+        <div class="ex-img">${e.iso ? `<img src="${esc(e.iso)}" alt="">`
+          : e.status === "error" ? `<span class="ex-err">Couldn't extract</span>` : `<i class="shimmer"></i>${e.crop ? `<img class="ex-crop" src="${esc(e.crop)}" alt="">` : ""}`}</div>
+        <b>${esc(cap(e.label))}</b>
+        <small>${esc(CAT_LABEL[e.category] || "Other")} · ${dimsText(ownedProduct(e))}</small>
+        <div class="seg">
+          <button class="${e.keep ? "on" : ""}" data-action="keep" data-id="${e.id}" data-keep="1">Keep</button>
+          <button class="${e.keep ? "" : "on"}" data-action="keep" data-id="${e.id}" data-keep="0">Ditch</button>
+        </div>
+      </div>`).join("")}</div>
+    <p class="hint">Keeping ${kept} of ${ex.items.length}. <button class="link-btn" data-action="scan-again">Scan again</button></p>
+  </div>`;
+}
+
+function renderBoxes() {
+  const layer = $("#boxes");
+  const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
+  if (S.step !== 1 || !ex || !ex.items.length) { layer.innerHTML = ""; return; }
+  const g = geom();
+  layer.innerHTML = ex.items.map(e => {
+    const [y0, x0, y1, x1] = e.box;
+    const l = g.ox + x0 / 1000 * g.dw, t = g.oy + y0 / 1000 * g.dh, w = (x1 - x0) / 1000 * g.dw, h = (y1 - y0) / 1000 * g.dh;
+    return `<div class="bx ${e.keep ? "" : "ditched"}" id="bx-${e.id}" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px">
+      <span>${esc(cap(e.label))}</span></div>`;
+  }).join("");
 }
 
 function renderSteps() {
@@ -337,7 +480,7 @@ function renderHotspots() {
   const html = [];
   for (const { it, i, xy: [x, y] } of order) {
     const p = view(it);
-    const label = `${p.family || p.name} · ${money(p.price.amount)}`;
+    const label = p.owned ? `${p.name} · yours` : `${p.family || p.name} · ${money(p.price.amount)}`;
     const w = 86 + label.length * 8.2;
     let flip = x > innerWidth * 0.62, lh = 92, rect;
     const rectFor = (lh, flip) => {
@@ -347,7 +490,7 @@ function renderHotspots() {
     for (const tryFlip of [flip, !flip]) {
       for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
         rect = rectFor(lh, tryFlip);
-        if (!hit(rect) && rect.t > 60) break;
+        if (!hit(rect) && rect.t > innerHeight * 0.06 + 72) break;   // stay below the top bar
       }
       if (!hit(rect)) { flip = tryFlip; break; }
     }
@@ -367,7 +510,7 @@ function renderHotspots() {
 function renderPanel() {
   const el = $("#panel");
   if (S.step === 0) el.innerHTML = needsCard();
-  else if (S.step === 1) el.innerHTML = spaceCard();
+  else if (S.step === 1) el.innerHTML = spaceCard() + existingCard();
   else if (S.step === 2) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === 3) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = shopCard();
@@ -445,9 +588,9 @@ function editHint() {
   </div>`;
 }
 function detailCard() {
-  const it = S.scene[S.sel], base = byId[it.pid], p = view(it);
+  const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
-  const colorways = [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))];
+  const colorways = base ? [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))] : [];
   const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it))
     .sort((a, b) => Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
   return `<div class="card card-right">
@@ -456,7 +599,7 @@ function detailCard() {
     <p class="p-cat">${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}</p>
     <h3 class="p-name">${esc(p.name)}</h3>
     <p class="p-var">${esc(p.variant || "")}</p>
-    <p class="p-price">${money(p.price.amount)}${it.qty > 1 ? ` <small style="font-size:13px;color:var(--ink-soft)">each · ${money(p.price.amount * it.qty)}</small>` : ""}</p>
+    <p class="p-price">${p.owned ? `<span class="fit">Already yours · $0</span>` : money(p.price.amount)}${it.qty > 1 ? ` <small style="font-size:13px;color:var(--ink-soft)">each · ${money(p.price.amount * it.qty)}</small>` : ""}</p>
     <dl class="facts">
       <dt>Size</dt><dd>${dimsText(p)}</dd>
       <dt>Fit</dt><dd><span class="fit ${ok ? "" : "no"}">${ok ? "Fits" : "Too wide"} · max ${inch(maxWidthFor(it))} wide</span></dd>
@@ -465,12 +608,12 @@ function detailCard() {
     ${colorways.length > 1 ? `<label class="field">Colorways · ${colorways.length}</label>
       <div class="swatches">${colorways.slice(0, 10).map(c =>
         `<button class="swatch ${(it.vid || null) === c.id ? "on" : ""}" data-action="colorway" data-vid="${c.id || ""}" title="${esc(c.variant)}"><img src="${esc(c.image)}" alt=""></button>`).join("")}</div>` : ""}
-    <label class="field">Swap · alternatives that fit</label>
+    <label class="field">${p.owned ? "Replace it with · real products that fit" : "Swap · alternatives that fit"}</label>
     <div class="alts">${alts.map(a =>
       `<button class="alt" data-action="swap" data-pid="${a.id}"><img src="${esc(imgOf(a))}" alt=""><b>${esc(a.name)}</b><small>${money(a.price.amount)}</small></button>`).join("")}</div>
     <div class="btn-row">
-      <button class="btn ghost" data-action="remove">Remove</button>
-      <a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">View product ↗</a>
+      <button class="btn ghost" data-action="remove">${p.owned ? "Ditch it" : "Remove"}</button>
+      ${p.url ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">View product ↗</a>` : ""}
     </div>
   </div>`;
 }
@@ -481,7 +624,7 @@ function shopCard() {
   const tot = sceneTotal(S.scene), b = S.needs.budget, over = tot > b;
   return `<div class="card card-right">
     <h2>Shopping list</h2>
-    <p class="sub">${S.scene.length} pieces · ${ROOMS[S.needs.room].toLowerCase()} · ${S.needs.style.toLowerCase()}</p>
+    <p class="sub">${S.scene.filter(it => !it.own).length} to buy${S.scene.some(it => it.own) ? ` · ${S.scene.filter(it => it.own).length} you keep` : ""} · ${ROOMS[S.needs.room].toLowerCase()} · ${S.needs.style.toLowerCase()}</p>
     <div class="sum"><span>Total</span><span>${money(tot)}</span></div>
     <div class="budget ${over ? "over" : ""}"><span>Budget ${money(b)}</span><span>${over ? money(tot - b) + " over" : money(b - tot) + " left"}</span></div>
     <div class="bar ${over ? "over" : ""}"><i style="width:${Math.min(100, tot / b * 100)}%"></i></div>
@@ -493,7 +636,7 @@ function shopCard() {
       const p = view(it);
       return `<li><img src="${esc(imgOf(p))}" alt="">
         <div><b>${esc(p.name)}</b><small>${esc(p.variant || "")}</small><small>${dimsText(p)}</small></div>
-        <div class="amt">${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a></div></li>`;
+        <div class="amt">${p.owned ? "Yours" : `${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a>`}</div></li>`;
     }).join("")}</ul>
   </div>`;
 }
@@ -513,7 +656,8 @@ function exportScene() {
     items: S.scene.map(it => {
       const p = view(it);
       return { slot: it.cat, qty: it.qty, sku: p.id, name: p.name, variant: p.variant, price_usd: p.price.amount,
-               dims_in: p.dims_in, placement: { image_pos_pct: it.pos.map(v => +v.toFixed(1)) }, image: p.images.main, url: p.url };
+               dims_in: p.dims_in, placement: { image_pos_pct: it.pos.map(v => +v.toFixed(1)) },
+               image: p.owned ? null : p.images.main, url: p.url, owned: !!p.owned };
     }),
     total_usd: sceneTotal(S.scene),
   };
@@ -528,24 +672,30 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
-  else if (act === "demo") { S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); renderPanel(); }
+  else if (act === "demo") { S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); render(); }
   else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); renderScene(); }
   else if (act === "render") renderScene();
+  else if (act === "scan" || act === "scan-again") { if (act === "scan-again") S.existing = null; scanFurniture(); }
+  else if (act === "keep") {
+    const e = exById(a.dataset.id); e.keep = a.dataset.keep === "1"; S.dirty = true; renderPanel(); renderBoxes();
+  }
   else if (act === "before") { S.before = !S.before; render(); }
   else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== 3) S.step = 3; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
-    const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null;
+    const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null; delete it.own;
     render(); toast(`Swapped to ${byId[it.pid].name} · click Update render`);
   } else if (act === "colorway") {
     S.scene[S.sel].vid = a.dataset.vid || null; render();
     toast(`Color · ${view(S.scene[S.sel]).variant}`);
   } else if (act === "remove") {
-    const [it] = S.scene.splice(S.sel, 1); S.sel = null; render();
+    const [it] = S.scene.splice(S.sel, 1); S.sel = null;
+    if (it.own && exById(it.own)) exById(it.own).keep = false;
+    render();
     toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
   else if (act === "copy") {
-    const txt = S.scene.map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
+    const txt = S.scene.filter(it => !it.own).map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
     navigator.clipboard.writeText(txt).then(() => toast("Shopping list copied"), () => toast("Copy failed"));
   } else if (act === "download") {
@@ -580,7 +730,8 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      showImage(); renderPanel(); toast("Room photo loaded");
+      showImage(); render(); toast("Room photo loaded · looking for your furniture");
+      scanFurniture();
     };
     img.src = r.result;
   };
@@ -590,6 +741,13 @@ $("#file").addEventListener("change", e => loadPhoto(e.target.files[0]));
 addEventListener("dragover", e => { if (S.step === 1) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
 addEventListener("drop", e => { if (S.step === 1) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
+
+/* hover a piece in the panel -> highlight its box on the photo */
+document.addEventListener("mouseover", e => {
+  const card = e.target.closest("[data-ex]");
+  document.querySelectorAll(".bx.hl").forEach(b => b.classList.remove("hl"));
+  if (card) $("#bx-" + card.dataset.ex)?.classList.add("hl");
+});
 
 /* drag pins */
 let drag = null;
@@ -612,8 +770,8 @@ addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") goto(S.step - 1);
   if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); });
+addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); });
+room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); });
 
 /* ---------------- boot ---------------- */
 fetch("../data/products.json")
@@ -630,7 +788,13 @@ fetch("../data/products.json")
     }
     S.step = Math.min(step, STEPS.length - 1);
     render();
-    if (h.has("render") && S.scene) renderScene();   // #step=3&render=1
+    const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
+    if (h.has("scan")) {                                                       // #step=1&scan=1
+      scanFurniture().then(() => {
+        if (step >= 2) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
+        after();
+      });
+    } else after();
   })
   .catch(() => {
     $("#panel").innerHTML = `<div class="card card-center"><h2>Can't load product data</h2>

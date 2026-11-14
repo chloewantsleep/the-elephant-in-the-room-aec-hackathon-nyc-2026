@@ -39,13 +39,14 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path != "/api/render":
+        fn = {"/api/render": core.render, "/api/detect": core.detect, "/api/isolate": core.isolate}.get(self.path)
+        if not fn:
             return self._json(404, {"error": "not found"})
         try:
             if not core.passcode_ok(self.headers):
                 return self._json(401, {"error": "Passcode required", "passcode": True})
             req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-            return self._json(200, core.render(req))
+            return self._json(200, fn(req))
         except Exception as e:  # surface the reason to the UI
             return self._json(500, {"error": str(e)})
 
