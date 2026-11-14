@@ -88,8 +88,11 @@ def build_prompt(req):
         "",
         "Task: re-furnish the room in IMAGE 1 with exactly these products.",
         "- Keep the room's architecture, walls, windows, floor, ceiling, lighting direction and camera angle the same as IMAGE 1.",
-        "- Remove or replace existing furniture of the same type so each listed product appears exactly once"
-        " (unless a quantity is given).",
+        ("- Pieces under KEEP (below) must stay exactly as they are in IMAGE 1: same look, same position, same count."
+         " Only remove or replace furniture that is NOT on the KEEP list."
+         if req.get("keep") else
+         "- Remove or replace existing furniture of the same type so each listed product appears exactly once"
+         " (unless a quantity is given)."),
         "- Reproduce each product faithfully: same shape, proportions, color, material and details as its reference image."
         " Do not invent different furniture.",
         f"- True scale: the back wall is about {fmt_in(room.get('width_in'))} inches wide and the room is about"
@@ -109,12 +112,17 @@ def build_prompt(req):
             + (f" {it['description']}" if it.get("description") else "")
             + (f" Place it: {where(it['pos'])}." if it.get("pos") else ""))
     if req.get("keep"):
-        lines += ["", "Existing pieces in IMAGE 1 to KEEP exactly as they are (same look, same position; do not replace them):"]
-        lines += [f"- {k.get('label')} ({k.get('category')}), {where(k['pos']) if k.get('pos') else ''}" for k in req["keep"]]
+        lines += ["", "KEEP: existing pieces in IMAGE 1 that must remain visible and unchanged (do not move, restyle, cover or replace them):"]
+        for k in req["keep"]:
+            n = int(k.get("count") or 1)
+            spots = "; ".join(where(p) for p in (k.get("positions") or ([k["pos"]] if k.get("pos") else [])))
+            lines.append(f"- {n} x {k.get('label')} ({k.get('category')})" + (f" at: {spots}" if spots else ""))
     if req.get("remove_existing"):
         lines += ["", "Existing pieces in IMAGE 1 to REMOVE (fill the area naturally with floor/wall behind them):"]
-        lines += [f"- {k.get('label')} ({k.get('category')}), {where(k['pos']) if k.get('pos') else ''}"
-                  for k in req["remove_existing"]]
+        for k in req["remove_existing"]:
+            n = int(k.get("count") or 1)
+            spots = "; ".join(where(p) for p in (k.get("positions") or ([k["pos"]] if k.get("pos") else [])))
+            lines.append(f"- all {n} x {k.get('label')} ({k.get('category')})" + (f" at: {spots}" if spots else ""))
     if req.get("instruction"):
         lines += ["", "Extra instruction from the user: " + req["instruction"]]
     return "\n".join(lines)
@@ -226,11 +234,14 @@ def detect(req):
             "Find every piece of furniture and large decor in this room photo that someone could keep or replace: "
             "sofas, chairs, tables, beds, storage, shelves, lamps (floor, table, pendant), rugs, mirrors. "
             "Ignore walls, windows, curtains, small objects and plants. Only include items that are clearly visible.\n"
-            "Return a JSON array (max 10), each element:\n"
-            '{"label": short name like "grey 3-seat sofa", "category": one of [' + CATEGORY_LIST + '], '
-            '"box_2d": [ymin, xmin, ymax, xmax] normalized to 0-1000, '
+            "IMPORTANT: identical pieces (the same design, e.g. four matching lounge chairs or a row of matching stools) "
+            "are ONE entry with a count and one box per piece.\n"
+            "Return a JSON array (max 10 entries), each element:\n"
+            '{"label": short singular name like "grey lounge chair", "category": one of [' + CATEGORY_LIST + '], '
+            '"count": how many identical pieces, '
+            '"boxes": [[ymin, xmin, ymax, xmax], ...] one box per piece, normalized to 0-1000, '
             '"description": one sentence on color, material, style, '
-            '"dims_in": {"width": number, "depth": number, "height": number} estimated real size in inches}')
+            '"dims_in": {"width": number, "depth": number, "height": number} estimated real size of ONE piece in inches}')
         body = {"contents": [{"role": "user", "parts": [image_part(req["photo"]), {"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
         t0 = time.time()
@@ -238,16 +249,19 @@ def detect(req):
         text = "".join(p.get("text", "") for p in res["candidates"][0]["content"]["parts"])
         raw = json.loads(text)
         items = []
+        clamp = lambda b: [max(0, min(1000, int(v))) for v in b]
         for it in raw if isinstance(raw, list) else raw.get("items", []):
-            box = it.get("box_2d") or it.get("box")
-            if not box or len(box) != 4:
+            boxes = [clamp(b) for b in (it.get("boxes") or [it.get("box_2d") or it.get("box")]) if b and len(b) == 4]
+            if not boxes:
                 continue
+            # crop/isolate from the largest (usually clearest) instance
+            main = max(boxes, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
             items.append({"label": it.get("label", "item"), "category": it.get("category", "other"),
-                          "box": [max(0, min(1000, int(v))) for v in box],
+                          "count": max(len(boxes), int(it.get("count") or 1)), "box": main, "boxes": boxes,
                           "description": it.get("description", ""), "dims_in": it.get("dims_in") or {}})
         return {"items": items, "model": TEXT_MODEL, "ms": int((time.time() - t0) * 1000)}
 
-    return cached("detect", {"photo": req["photo"], "m": TEXT_MODEL}, run)
+    return cached("detect", {"photo": req["photo"], "m": TEXT_MODEL, "v": 2}, run)   # v2: identical pieces grouped
 
 
 def isolate(req):

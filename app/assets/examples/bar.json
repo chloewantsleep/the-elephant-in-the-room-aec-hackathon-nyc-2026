@@ -1,0 +1,111 @@
+{
+ "photo": "assets/example-bar.jpg",
+ "baked": "2026-11-14",
+ "items": [
+  {
+   "id": "e0",
+   "label": "wooden bar stool",
+   "category": "stool_bench",
+   "count": 5,
+   "box": [
+    617,
+    774,
+    953,
+    940
+   ],
+   "boxes": [
+    [
+     622,
+     100,
+     963,
+     260
+    ],
+    [
+     619,
+     275,
+     955,
+     416
+    ],
+    [
+     617,
+     503,
+     952,
+     631
+    ],
+    [
+     617,
+     639,
+     953,
+     788
+    ],
+    [
+     617,
+     774,
+     953,
+     940
+    ]
+   ],
+   "description": "Mid-century modern style wooden bar stool with an upholstered cushion and curved backrest.",
+   "dims_in": {
+    "width": 21,
+    "depth": 21,
+    "height": 38
+   },
+   "iso": "assets/examples/bar/e0.jpg"
+  },
+  {
+   "id": "e1",
+   "label": "bar counter",
+   "category": "dining_table",
+   "count": 1,
+   "box": [
+    564,
+    0,
+    927,
+    995
+   ],
+   "boxes": [
+    [
+     564,
+     0,
+     927,
+     995
+    ]
+   ],
+   "description": "Large commercial bar counter with a black base and sleek white quartz countertop.",
+   "dims_in": {
+    "width": 240,
+    "depth": 48,
+    "height": 36
+   },
+   "iso": "assets/examples/bar/e1.jpg"
+  },
+  {
+   "id": "e2",
+   "label": "linear pendant light",
+   "category": "pendant_lamp",
+   "count": 1,
+   "box": [
+    162,
+    48,
+    342,
+    922
+   ],
+   "boxes": [
+    [
+     162,
+     48,
+     342,
+     922
+    ]
+   ],
+   "description": "Long, suspended black metal canopy with integrated downward linear lighting.",
+   "dims_in": {
+    "width": 216,
+    "depth": 16,
+    "height": 18
+   },
+   "iso": "assets/examples/bar/e2.jpg"
+  }
+ ]
+}
