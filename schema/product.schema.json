@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "product.schema.json",
+  "title": "Product",
+  "description": "One real, buyable furniture item. Every source (IKEA, Shopify brands, ...) is normalized into this shape. One record = one design family's representative colorway; other colorways are in `variants`.",
+  "type": "object",
+  "required": ["id", "source", "brand", "name", "category", "price", "dims_in", "images", "url"],
+  "properties": {
+    "id": { "type": "string", "description": "<source>:<source item id>, globally unique. e.g. ikea:s19384116" },
+    "source": { "type": "string", "examples": ["ikea"] },
+    "brand": { "type": "string" },
+    "name": { "type": "string", "description": "Display name, e.g. 'KIVIK Sofa'" },
+    "category": {
+      "enum": ["sofa", "armchair", "bed", "dining_table", "coffee_table", "side_table", "desk", "office_chair",
+               "dining_chair", "stool_bench", "dresser", "nightstand", "wardrobe", "shelving", "tv_stand",
+               "cabinet", "floor_lamp", "table_lamp", "pendant_lamp", "rug", "mirror"]
+    },
+    "type_name": { "type": ["string", "null"], "description": "Retailer's own type label, e.g. 'Sleeper sofa'" },
+    "variant": { "type": ["string", "null"], "description": "Color / fabric of THIS record, e.g. 'Blekinge white'" },
+    "family": { "type": ["string", "null"], "description": "Design family / product line, e.g. 'KIVIK'" },
+    "description": { "type": ["string", "null"], "description": "Short visual description of the main image. Good input for image-model prompts." },
+    "price": {
+      "type": "object",
+      "required": ["amount", "currency"],
+      "properties": { "amount": { "type": "number" }, "currency": { "type": "string" } }
+    },
+    "dims_in": {
+      "type": "object",
+      "description": "Overall footprint in INCHES. width = left-right seen from the front, depth = front-back, height = floor to top. null = unknown, never 0. Rugs: height = thickness (may be null). Mirrors: depth may be null.",
+      "properties": {
+        "width": { "type": ["number", "null"] },
+        "depth": { "type": ["number", "null"] },
+        "height": { "type": ["number", "null"] }
+      }
+    },
+    "dims_extra_in": { "type": "object", "description": "Other named measurements in inches, snake_case keys (seat_height, bed_width, armrest_height, ...)", "additionalProperties": { "type": "number" } },
+    "dims_raw": { "type": ["string", "null"], "description": "Original measurement text, for checking" },
+    "materials": { "type": "array", "items": { "type": "string" }, "description": "Normalized keywords: solid wood, particleboard, steel, fabric types, glass, ..." },
+    "colors": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "hex": { "type": "string" } } } },
+    "style_tags": { "type": "array", "items": { "type": "string" }, "description": "Empty for now; to be filled by an LLM tagging pass" },
+    "designer": { "type": ["string", "null"] },
+    "images": {
+      "type": "object",
+      "properties": {
+        "main": { "type": "string", "description": "White-background product shot URL — use this for rendering" },
+        "main_local": { "type": ["string", "null"], "description": "Repo-relative path of the downloaded main image (1400px JPEG)" },
+        "context": { "type": ["string", "null"], "description": "Lifestyle / in-room shot URL — good as a style reference" },
+        "gallery": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "description": "main | context | quality (close-up) | functional | cut_through | non_standardized" },
+              "url": { "type": "string" },
+              "alt": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "variants": {
+      "type": "array",
+      "description": "Other colorways of the same design — use for 'swap color' edits. Dimensions are usually the same as the parent record (check the variant's page if exact size matters).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }, "variant": { "type": ["string", "null"] },
+          "price": { "type": ["number", "null"] }, "image": { "type": ["string", "null"] }, "url": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "rating": { "type": ["object", "null"], "properties": { "value": { "type": "number" }, "count": { "type": "integer" } } },
+    "url": { "type": "string" },
+    "in_stock": { "type": ["boolean", "null"], "description": "Sellable online at scrape time" },
+    "scraped_at": { "type": "string", "format": "date" }
+  }
+}
