@@ -31,13 +31,13 @@ const CAT_LABEL = {
 // pos = default pin position on the photo (% of image). Pins can be dragged to match any photo.
 const TEMPLATES = {
   living: [
-    { cat: "sofa", share: .36, maxW: .75, pos: [47, 53] },
-    { cat: "coffee_table", share: .10, maxW: .40, pos: [53, 72] },
-    { cat: "armchair", share: .14, maxW: .35, pos: [13, 72] },
-    { cat: "rug", share: .12, maxW: .80, pos: [32, 88] },
-    { cat: "floor_lamp", share: .06, maxW: .20, pos: [77, 30] },
-    { cat: "pendant_lamp", share: .06, maxW: .30, pos: [50, 20] },
-    { cat: "shelving", share: .08, maxW: .40, pos: [9, 26] },
+    { cat: "sofa", share: .36, maxW: .75, pos: [52, 62] },
+    { cat: "coffee_table", share: .10, maxW: .40, pos: [28, 76] },
+    { cat: "armchair", share: .14, maxW: .35, pos: [14, 62] },
+    { cat: "rug", share: .12, maxW: .80, pos: [40, 92] },
+    { cat: "floor_lamp", share: .06, maxW: .20, pos: [88, 45] },
+    { cat: "pendant_lamp", share: .06, maxW: .30, pos: [45, 16] },
+    { cat: "shelving", share: .08, maxW: .40, pos: [8, 40] },
   ],
   bedroom: [
     { cat: "bed", share: .40, maxW: .60, pos: [50, 60] },
@@ -49,11 +49,11 @@ const TEMPLATES = {
     { cat: "wardrobe", share: .13, maxW: .40, pos: [8, 38] },
   ],
   dining: [
-    { cat: "dining_table", share: .34, maxW: .55, pos: [50, 66] },
-    { cat: "dining_chair", share: .26, maxW: .20, pos: [28, 72], qty: 4 },
-    { cat: "cabinet", share: .20, maxW: .45, pos: [84, 50] },
-    { cat: "pendant_lamp", share: .08, maxW: .30, pos: [50, 20] },
-    { cat: "rug", share: .10, maxW: .80, pos: [62, 90] },
+    { cat: "dining_table", share: .34, maxW: .55, pos: [50, 60] },
+    { cat: "dining_chair", share: .26, maxW: .20, pos: [35, 78], qty: 4 },
+    { cat: "cabinet", share: .20, maxW: .45, pos: [70, 45] },
+    { cat: "pendant_lamp", share: .08, maxW: .30, pos: [50, 30] },
+    { cat: "rug", share: .10, maxW: .80, pos: [62, 94] },
   ],
   office: [
     { cat: "desk", share: .34, maxW: .55, pos: [50, 62] },
@@ -64,6 +64,13 @@ const TEMPLATES = {
   ],
 };
 
+// Example rooms: photos taken at the AEC Hackathon NYC venue. Each has a matching demo render (no AI spend).
+const EXAMPLES = [
+  { name: "Lounge", src: "assets/example-lounge.jpg", room: "living", render: "assets/demo-render-lounge.jpg" },
+  { name: "Bar counter", src: "assets/example-bar.jpg", room: "dining", render: "assets/demo-render-bar.jpg" },
+];
+const example = () => EXAMPLES[S.space.ex] || EXAMPLES[0];
+
 const STRATEGIES = [
   { key: "essentials", name: "Essentials", target: 0.45 },
   { key: "balanced", name: "Balanced", target: 0.85 },
@@ -73,7 +80,7 @@ const STRATEGIES = [
 const S = {
   step: 0,
   needs: { room: "living", style: "Warm minimal", budget: 3000, notes: "", mode: "non-pro" },
-  space: { wallIn: 144, depthIn: 132, photo: "demo" },
+  space: { wallIn: 144, depthIn: 132, photo: "demo", ex: 0 },   // photo: "demo" = one of EXAMPLES, "upload" = yours
   dirty: true,         // needs/space changed since the last plan
   generating: false,
   stage: 0,
@@ -244,11 +251,11 @@ function render() {
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
-const photoSrc = () => S.space.photo === "demo" ? "assets/demo-room.jpg" : S.space.data;
-const sceneSig = () => JSON.stringify([S.space.photo === "demo" ? "demo" : S.space.data.length, S.space.wallIn,
+const photoSrc = () => S.space.photo === "demo" ? example().src : S.space.data;
+const sceneSig = () => JSON.stringify([photoKey(), S.space.wallIn,
   S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty, it.own])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
-const photoKey = () => S.space.photo === "demo" ? "demo" : String(S.space.data.length);
+const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
 const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
@@ -287,7 +294,7 @@ function renderRequest() {
   }
   const ex = S.existing?.photoKey === photoKey() ? S.existing.items : [];
   const here = e => ({ label: e.label, category: e.category, pos: boxCenter(e.box).map(Math.round) });
-  return { ...base, room_image: S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data,
+  return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
            items: S.scene.filter(it => !it.own).map(itemPayload),
            keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
            remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
@@ -322,7 +329,6 @@ async function apiPost(path, obj) {
   return j;
 }
 
-const DEMO_RENDER = "assets/demo-render.jpg";
 
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
@@ -332,7 +338,7 @@ async function renderScene() {
     if (S.renders[sig]) { S.before = false; render(); return; }
     S.rendering = true; S.before = false; render();
     setTimeout(() => {
-      rememberRender(sig, DEMO_RENDER); S.rendering = false; render();
+      rememberRender(sig, S.space.photo === "demo" ? example().render : EXAMPLES[0].render); S.rendering = false; render();
       toast("Demo render · AI renders are off (top right to turn on)");
     }, 700);
     return;
@@ -357,7 +363,7 @@ async function renderScene() {
 }
 
 /* ---------------- existing furniture: detect -> crop -> white-background isometric shot ---------------- */
-const photoForApi = () => S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data;
+const photoForApi = () => S.space.photo === "demo" ? "app/" + example().src : S.space.data;
 let _photoImg = null;
 function photoImage() {
   const src = photoSrc();
@@ -561,7 +567,7 @@ function chatStart() {
   S.chat = { q: 0, log: [] };
   const kept = keptPieces().length;
   say("bot", kept ? `Hi! I see your room and the ${kept} piece${kept > 1 ? "s" : ""} you're keeping. A few quick questions.`
-    : S.space.photo === "demo" ? "Hi! Upload a photo of your room above, or try the demo room. A few quick questions:"
+    : S.space.photo === "demo" ? `Hi! Upload a photo of your room above, or try our example (${example().name.toLowerCase()}). A few quick questions:`
     : "Hi! A few quick questions about the room.");
   say("bot", QUESTIONS[0].ask());
 }
@@ -627,13 +633,13 @@ function needsCard() {
   return `<div class="card card-left chat-card">
     <button class="photo-row" data-action="upload" id="drop">
       <img src="${esc(photoSrc())}" alt="">
-      <span><b>${demo ? "Upload your room" : "Your room"}</b><small>${demo ? "Demo room · drop yours here" : "Click or drop to replace"}</small></span>
+      <span><b>${demo ? "Upload your room" : "Your room"}</b><small>${demo ? `Example: ${example().name.toLowerCase()} · drop yours here` : "Click or drop to replace"}</small></span>
       <i>↑</i>
     </button>
     <div class="photo-links">
       ${scanText}
       <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide room size" : "Room size (optional)"}</button>
-      ${demo ? "" : `<button class="link-btn" data-action="demo">Demo room</button>`}
+      <button class="link-btn" data-action="demo">${demo ? "Next example" : "Use an example"}</button>
     </div>
     ${S.sizeOpen ? `<div class="size-row">
       <label>Back wall <input type="number" min="60" max="600" value="${sp.wallIn}" data-bind="wallIn"> in</label>
@@ -816,7 +822,7 @@ function goto(i) {
 
 function exportScene() {
   return {
-    room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? "demo-room.jpg" : "upload" },
+    room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? example().src : "upload" },
     needs: { ...S.needs, budget_usd: S.needs.budget },
     items: S.scene.map(it => {
       const p = view(it);
@@ -837,7 +843,12 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
-  else if (act === "demo") { S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); render(); }
+  else if (act === "demo") {
+    if (S.space.photo === "demo") S.space.ex = (S.space.ex + 1) % EXAMPLES.length;
+    S.space.photo = "demo"; S.space.data = null; S.dirty = true;
+    if (!S.chat || S.chat.q === 0) S.needs.room = example().room;   // until the user picks a room in the chat
+    showImage(); render();
+  }
   else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); renderScene(); }
   else if (act === "render") renderScene();
   else if (act === "chat") {
@@ -969,10 +980,11 @@ fetch("../data/products.json")
     P = d; byId = Object.fromEntries(d.map(p => [p.id, p]));
     // deep link for demos: #room=bedroom&step=3&sel=0
     const h = new URLSearchParams(location.hash.slice(1));
+    if (EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
     if (ROOMS[h.get("room")]) S.needs.room = h.get("room");
     const step = +h.get("step") || 0;
     if (step >= DESIGN) {
-      S.options = planOptions(); S.scene = structuredClone(S.options[0].items); S.dirty = false;
+      S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
     S.step = Math.min(step, STEPS.length - 1);

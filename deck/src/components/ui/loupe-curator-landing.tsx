@@ -186,7 +186,7 @@ export type LoupeCuratorLandingProps = {
 
 type Curator = { name: string; bio: string; tags: string[]; deck: string[] }
 
-// The three "curators" are the three steps of the product; their portraits are the room photo and Gemini renders.
+// The three "curators" are the three steps of the product; their portraits are our venue photo and its Gemini renders.
 const CURATORS: Curator[] = [
   {
     name: "01 · Needs",
@@ -208,14 +208,14 @@ const CURATORS: Curator[] = [
   },
 ]
 
-// The "collections" are real Gemini renders of the demo room.
+// The "collections" are real Gemini renders of our example rooms (photos taken at the hackathon venue).
 const COLLECTIONS = [
-  { name: "As it is", by: 0, thumbs: ["armchair", "coffee", "floorlamp", "pendant", "rug", "shelf"] },
+  { name: "As it is", by: 0, thumbs: ["armchair", "coffee", "rug", "floorlamp", "pendant", "shelf"] },
   { name: "Essentials", by: 1, thumbs: ["sofa", "coffee", "armchair", "rug", "floorlamp", "shelf"] },
-  { name: "Statement", by: 1, thumbs: ["sofa", "coffee", "armchair", "floorlamp", "rug", "side"] },
-  { name: "One recolor", by: 2, thumbs: ["armchair", "sofa", "coffee", "floorlamp", "side", "rug"] },
-  { name: "Keep & swap", by: 0, thumbs: ["sofa", "rug", "coffee", "armchair", "pendant", "floorlamp"] },
-  { name: "First test", by: 1, thumbs: ["sofa", "coffee", "armchair", "floorlamp", "shelf", "rug"] },
+  { name: "Statement", by: 1, thumbs: ["sofa", "armchair", "pendant", "coffee", "rug", "floorlamp"] },
+  { name: "One recolor", by: 2, thumbs: ["sofa", "armchair", "coffee", "rug", "floorlamp", "side"] },
+  { name: "Keep & swap", by: 0, thumbs: ["pendant", "stool", "cabinet", "dchair", "mirror", "side"] },
+  { name: "Dining bar", by: 1, thumbs: ["dchair", "cabinet", "pendant", "rug", "side", "mirror"] },
 ]
 
 const FIELD_KINDS = ["sofa", "armchair", "coffee", "pendant", "rug", "floorlamp", "shelf", "side", "bed", "nightstand", "dresser", "desk", "dchair", "stool", "mirror", "cabinet", "armchair", "sofa"]
