@@ -11,7 +11,8 @@
  *   - pin positions: defaults per slot; drag to line up with the render
  */
 
-const STEPS = ["Needs", "Space", "Design", "Edit", "Shop"];
+const STEPS = ["Needs", "Design", "Edit", "Shop"];   // needs = your room photo + a short chat
+const NEEDS = 0, DESIGN = 1, EDIT = 2, SHOP = 3;
 
 const ROOMS = {
   living: "Living room", bedroom: "Bedroom", dining: "Dining", office: "Office",
@@ -23,20 +24,20 @@ const CAT_LABEL = {
   side_table: "Side table", desk: "Desk", office_chair: "Office chair", dining_chair: "Dining chair",
   stool_bench: "Bench", dresser: "Dresser", nightstand: "Nightstand", wardrobe: "Wardrobe", shelving: "Shelving",
   tv_stand: "TV stand", cabinet: "Sideboard", floor_lamp: "Floor lamp", table_lamp: "Table lamp",
-  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror",
+  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror", other: "Other",
 };
 
 // Slots per room type. share = share of budget, maxW = max width as a fraction of the wall,
 // pos = default pin position on the photo (% of image). Pins can be dragged to match any photo.
 const TEMPLATES = {
   living: [
-    { cat: "sofa", share: .36, maxW: .75, pos: [47, 53] },
-    { cat: "coffee_table", share: .10, maxW: .40, pos: [53, 72] },
-    { cat: "armchair", share: .14, maxW: .35, pos: [13, 72] },
-    { cat: "rug", share: .12, maxW: .80, pos: [32, 88] },
-    { cat: "floor_lamp", share: .06, maxW: .20, pos: [77, 30] },
-    { cat: "pendant_lamp", share: .06, maxW: .30, pos: [50, 20] },
-    { cat: "shelving", share: .08, maxW: .40, pos: [9, 26] },
+    { cat: "sofa", share: .36, maxW: .75, pos: [52, 62] },
+    { cat: "coffee_table", share: .10, maxW: .40, pos: [28, 76] },
+    { cat: "armchair", share: .14, maxW: .35, pos: [14, 62] },
+    { cat: "rug", share: .12, maxW: .80, pos: [40, 92] },
+    { cat: "floor_lamp", share: .06, maxW: .20, pos: [88, 45] },
+    { cat: "pendant_lamp", share: .06, maxW: .30, pos: [45, 16] },
+    { cat: "shelving", share: .08, maxW: .40, pos: [8, 40] },
   ],
   bedroom: [
     { cat: "bed", share: .40, maxW: .60, pos: [50, 60] },
@@ -48,11 +49,11 @@ const TEMPLATES = {
     { cat: "wardrobe", share: .13, maxW: .40, pos: [8, 38] },
   ],
   dining: [
-    { cat: "dining_table", share: .34, maxW: .55, pos: [50, 66] },
-    { cat: "dining_chair", share: .26, maxW: .20, pos: [28, 72], qty: 4 },
-    { cat: "cabinet", share: .20, maxW: .45, pos: [84, 50] },
-    { cat: "pendant_lamp", share: .08, maxW: .30, pos: [50, 20] },
-    { cat: "rug", share: .10, maxW: .80, pos: [62, 90] },
+    { cat: "dining_table", share: .34, maxW: .55, pos: [50, 60] },
+    { cat: "dining_chair", share: .26, maxW: .20, pos: [35, 78], qty: 4 },
+    { cat: "cabinet", share: .20, maxW: .45, pos: [70, 45] },
+    { cat: "pendant_lamp", share: .08, maxW: .30, pos: [50, 30] },
+    { cat: "rug", share: .10, maxW: .80, pos: [62, 94] },
   ],
   office: [
     { cat: "desk", share: .34, maxW: .55, pos: [50, 62] },
@@ -62,6 +63,13 @@ const TEMPLATES = {
     { cat: "rug", share: .10, maxW: .80, pos: [62, 90] },
   ],
 };
+
+// Example rooms: photos taken at the AEC Hackathon NYC venue. Each has a matching demo render (no AI spend).
+const EXAMPLES = [
+  { name: "Lounge", src: "assets/example-lounge.jpg", room: "living", render: "assets/demo-render-lounge.jpg" },
+  { name: "Bar counter", src: "assets/example-bar.jpg", room: "dining", render: "assets/demo-render-bar.jpg" },
+];
+const example = () => EXAMPLES[S.space.ex] || EXAMPLES[0];
 
 const STRATEGIES = [
   { key: "essentials", name: "Essentials", target: 0.45 },
@@ -73,7 +81,7 @@ const S = {
   step: 0,
   removedCategories: [],
   needs: { room: "living", style: "Warm minimal", budget: 3000, notes: "", mode: "non-pro" },
-  space: { wallIn: 144, depthIn: 132, photo: "demo" },
+  space: { wallIn: 144, depthIn: 132, photo: "demo", ex: 0 },   // photo: "demo" = one of EXAMPLES, "upload" = yours
   dirty: true,         // needs/space changed since the last plan
   generating: false,
   stage: 0,
@@ -84,6 +92,12 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
+  live: false,         // false = demo renders (no Gemini spend); flip with the top-right toggle or #live=1
+  cart: "closed",      // closed | open (left drawer) | expanded (big grid)
+  cartFilter: "all",
+  sizeOpen: false,     // room size inputs are optional and folded away
+  chat: null,          // needs conversation {q: current question, log: [{from, text}]}
+  existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
 };
 
@@ -102,13 +116,29 @@ function inch(v) {
 }
 function dimsText(p) {
   const d = p.dims_in;
-  return [["W", d.width], ["D", d.depth], ["H", d.height]].filter(x => x[1] != null).map(x => `${x[0]} ${inch(x[1])}`).join(" · ");
+  return (p.estimated ? "≈ " : "") + [["W", d.width], ["D", d.depth], ["H", d.height]].filter(x => x[1] != null).map(x => `${x[0]} ${inch(x[1])}`).join(" · ");
 }
 const imgOf = p => p.images.main_local ? "../" + p.images.main_local : p.images.main;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// A piece the user already owns (found in their photo), shaped like a product record.
+const exById = id => S.existing?.items.find(e => e.id === id);
+const cap = t => t ? t[0].toUpperCase() + t.slice(1) : t;
+function ownedProduct(e) {
+  const d = e.dims_in || {};
+  return { id: "own:" + e.id, name: cap(e.label), family: cap(e.label), variant: "Already yours", brand: "Yours",
+           category: e.category, price: { amount: 0, currency: "USD" }, owned: true, estimated: true,
+           dims_in: { width: d.width ?? null, depth: d.depth ?? null, height: d.height ?? null },
+           materials: [], variants: [], images: { main: e.iso || e.crop, main_local: null }, url: null,
+           description: e.description };
+}
+
 // Product as displayed: the base record, optionally with a colorway applied.
 function view(item) {
+  if (item.own) {
+    const e = exById(item.own);
+    return e ? ownedProduct(e) : ownedProduct({ id: item.own, label: "your piece", category: item.cat });
+  }
   const p = byId[item.pid];
   if (!item.vid) return p;
   const v = p.variants.find(x => x.id === item.vid);
@@ -141,7 +171,7 @@ function toScreen([px, py]) {
   const small = innerWidth < 820;
   const fy = small ? 16 : innerHeight * 0.06, fx = small ? 16 : innerWidth * 0.05;
   // keep pins inside the frame so labels never fall off-screen or under the top bar / bottom pills
-  const bottomGap = S.step === 2 && !small ? 330 : 110;
+  const bottomGap = S.step === DESIGN && !small ? 330 : 110;
   const x = Math.min(Math.max(g.ox + px / 100 * g.dw, fx + 80), g.W - fx - 80);
   const y = Math.min(Math.max(g.oy + py / 100 * g.dh, fy + 230), g.H - fy - bottomGap);
   return [x, y];
@@ -152,10 +182,20 @@ function toImage(x, y) {
 }
 
 /* ---------------- ⑤ the planner (MOCK of the AI layout agent) ---------------- */
+const keptPieces = () => S.existing?.photoKey === photoKey() ? S.existing.items.filter(e => e.keep && e.status !== "error") : [];
+const boxCenter = b => [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20];   // box 0-1000 -> image %
+const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ? e.category : "other", qty: 1,
+                          own: e.id, pid: null, vid: null, pos: boxCenter(e.box) });
+
 function planOptions() {
   const slots = BriefEngine.slots(TEMPLATES[S.needs.room], B, TEMPLATES);
   const cap = BriefEngine.budget(B, S.needs.budget);
-  return STRATEGIES.map(strategy => ({name: strategy.name, ...BriefEngine.plan(P, slots, B, cap, S.space.wallIn, strategy.target)}));
+  const kept = keptPieces();
+  const newSlots = slots.filter(slot => !kept.some(e => e.category === slot.cat));
+  return STRATEGIES.map(strategy => {
+    const plan = BriefEngine.plan(P, newSlots, B, cap, S.space.wallIn, strategy.target);
+    return {name:strategy.name, ...plan, items:[...kept.map(ownedItem), ...plan.items]};
+  });
 }
 
 function generate() {
@@ -180,6 +220,7 @@ function stagesText() {
   return [
     `Reading your needs · ${S.needs.style.toLowerCase()}, ${money(S.needs.budget)}`,
     `Width allowance · back wall ${inch(S.space.wallIn)}`,
+    ...(keptPieces().length ? [`Keeping ${keptPieces().length} of your pieces`] : []),
     `Searching ${P.length} real products`,
     "Checking fit and budget",
     "Composing 3 options",
@@ -188,25 +229,25 @@ function stagesText() {
 
 /* ---------------- rendering ---------------- */
 function render() {
-  document.body.classList.toggle("dim", S.step < 2 || S.generating);
+  document.body.classList.toggle("dim", S.step < DESIGN || S.generating);
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
-  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderTopbar();
-  document.body.classList.toggle("photo-first", S.step === 0 && S.space.photo !== "upload");
+  renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart(); renderMode();
+  document.body.classList.toggle("photo-first", S.step === NEEDS && S.space.photo !== "upload");
   renderDesigner(); renderDiagnosis();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
-const photoSrc = () => S.space.photo === "demo" ? "assets/demo-room.jpg" : S.space.data;
-const sceneSig = () => JSON.stringify([S.space.photo === "demo" ? "demo" : S.space.data.length, S.space.wallIn,
-  S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty])]);
+const photoSrc = () => S.space.photo === "demo" ? example().src : S.space.data;
+const sceneSig = () => JSON.stringify([photoKey(), S.space.wallIn,
+  S.needs.style, S.scene.map(it => [it.pid, it.vid, it.qty, it.own])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
-const photoKey = () => S.space.photo === "demo" ? "demo" : String(S.space.data.length);
+const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
 const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
 function showImage() {
-  const r = S.step >= 2 && !S.before && (currentRender() || lastRender()?.image);
+  const r = S.step >= DESIGN && !S.before && (currentRender() || lastRender()?.image);
   const want = r || photoSrc();
   if (room.dataset.src !== want) { room.dataset.src = want; room.src = want; }
 }
@@ -223,7 +264,8 @@ function editsSinceLast() {
   if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
   const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
   const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
-  const changed = S.scene.filter(it => !before[it.cat] || before[it.cat].pid !== it.pid || before[it.cat].vid !== it.vid)
+  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own;
+  const changed = S.scene.filter(it => !before[it.cat] || !same(before[it.cat], it))
     .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
   const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
   const n = changed.length + removed.length;
@@ -237,8 +279,12 @@ function renderRequest() {
     // edit mode: start from the current render and change only these pieces (keeps everything else stable)
     return { ...base, mode: "edit", base_image: lastRender().image, items: edits.changed, removed: edits.removed };
   }
-  return { ...base, room_image: S.space.photo === "demo" ? "app/assets/demo-room.jpg" : S.space.data,
-           items: S.scene.map(itemPayload) };
+  const ex = S.existing?.photoKey === photoKey() ? S.existing.items : [];
+  const here = e => ({ label: e.label, category: e.category, pos: boxCenter(e.box).map(Math.round) });
+  return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
+           items: S.scene.filter(it => !it.own).map(itemPayload),
+           keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
+           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
 }
 
 function rememberRender(sig, image) {
@@ -253,26 +299,46 @@ const passcode = {
   set(v) { try { localStorage.setItem("elephant-passcode", v); } catch { /* private mode: ask again next time */ } },
 };
 
+async function apiPost(path, obj) {
+  const body = JSON.stringify(obj);
+  const call = () => fetch(path, { method: "POST", body,
+    headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
+  let res = await call();
+  if (res.status === 401) {   // deployed site: AI calls cost money, so they need the team passcode
+    const pc = prompt("Team passcode for AI features:");
+    if (!pc) throw new Error("This needs the team passcode");
+    passcode.set(pc.trim());
+    res = await call();
+    if (res.status === 401) { passcode.set(""); throw new Error("Wrong passcode"); }
+  }
+  const j = await res.json().catch(() => ({ error: "AI server not running. Start it with: python3 server.py" }));
+  if (!res.ok || j.error) throw new Error(j.error || "Request failed");
+  return j;
+}
+
+
 async function renderScene() {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
+  if (!S.live) {
+    // demo mode: show a saved render instead of calling Gemini (saves credits while we build)
+    if (S.renders[sig]) { S.before = false; render(); return; }
+    S.rendering = true; S.before = false; render();
+    setTimeout(() => {
+      rememberRender(sig, S.space.photo === "demo" ? example().render : EXAMPLES[0].render); S.rendering = false; render();
+      toast("Demo render · AI renders are off (top right to turn on)");
+    }, 700);
+    return;
+  }
   if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
+  const reqObj = renderRequest();
+  if (reqObj.mode !== "edit" && !reqObj.items.length && !(reqObj.remove_existing || []).length) {
+    S.before = true; render(); toast("You're keeping everything, so there's nothing new to render yet");   // don't pay for a copy
+    return;
+  }
   S.rendering = true; S.before = false; render();
   try {
-    const reqObj = renderRequest();
-    const body = JSON.stringify(reqObj);
-    const call = () => fetch("/api/render", { method: "POST", body,
-      headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
-    let res = await call();
-    if (res.status === 401) {   // deployed site: renders cost money, so they need the team passcode
-      const pc = prompt("Team passcode for AI renders:");
-      if (!pc) throw new Error("Render needs the team passcode");
-      passcode.set(pc.trim());
-      res = await call();
-      if (res.status === 401) { passcode.set(""); throw new Error("Wrong passcode"); }
-    }
-    const j = await res.json().catch(() => ({ error: "Render server not running. Start it with: python3 server.py" }));
-    if (!res.ok || j.error) throw new Error(j.error || "Render failed");
+    const j = await apiPost("/api/render", reqObj);
     rememberRender(sig, j.image);
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
@@ -281,6 +347,98 @@ async function renderScene() {
   } finally {
     S.rendering = false; render();
   }
+}
+
+/* ---------------- existing furniture: detect -> crop -> white-background isometric shot ---------------- */
+const photoForApi = () => S.space.photo === "demo" ? "app/" + example().src : S.space.data;
+let _photoImg = null;
+function photoImage() {
+  const src = photoSrc();
+  if (_photoImg && _photoImg.src.endsWith(src.slice(-200))) return Promise.resolve(_photoImg);
+  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(_photoImg = im); im.onerror = bad; im.src = src; });
+}
+async function cropBox(box) {
+  const im = await photoImage(), W = im.naturalWidth, H = im.naturalHeight, pad = 0.05;
+  const x0 = Math.max(0, box[1] / 1000 - pad) * W, y0 = Math.max(0, box[0] / 1000 - pad) * H;
+  const x1 = Math.min(1, box[3] / 1000 + pad) * W, y1 = Math.min(1, box[2] / 1000 + pad) * H;
+  const k = Math.min(1, 768 / Math.max(x1 - x0, y1 - y0));
+  const c = Object.assign(document.createElement("canvas"), { width: (x1 - x0) * k, height: (y1 - y0) * k });
+  c.getContext("2d").drawImage(im, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.9);
+}
+
+async function scanFurniture() {
+  if (S.existing?.status === "detecting" || S.existing?.status === "isolating") return;
+  const run = S.existing = { photoKey: photoKey(), status: "detecting", items: [] };
+  const alive = () => S.existing === run;
+  render();
+  try {
+    const det = await apiPost("/api/detect", { photo: photoForApi() });
+    if (!alive()) return;
+    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
+    run.status = run.items.length ? "isolating" : "done";
+    S.dirty = true; render();
+    if (!run.items.length) { toast("No furniture found in this photo"); return; }
+    const queue = run.items.slice();
+    const worker = async () => {
+      for (let e; (e = queue.shift());) {
+        try {
+          e.crop = await cropBox(e.box); if (alive()) renderPanel();
+          const r = await apiPost("/api/isolate", { crop: e.crop, label: e.label, description: e.description });
+          e.iso = r.image; e.status = "done";
+        } catch (err) { e.status = "error"; e.error = err.message; }
+        if (alive()) { renderPanel(); if (S.step >= DESIGN) renderHotspots(); }
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    if (alive()) { run.status = "done"; render(); toast(`Found ${run.items.length} pieces in your photo`); }
+  } catch (err) {
+    if (alive()) { run.status = "error"; run.error = err.message; render(); toast(err.message.slice(0, 120)); }
+  }
+}
+
+function existingCard() {
+  const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
+  if (!ex) return "";
+  if (ex.status === "detecting") {
+    return `<div class="card card-right ex-card"><h2>Your furniture</h2>
+      <ul class="stages"><li class="now"><span class="tick"></span>Looking for furniture in your photo…</li></ul></div>`;
+  }
+  if (ex.status === "error") {
+    return `<div class="card card-right ex-card"><h2>Your furniture</h2><p class="sub">${esc(ex.error)}</p>
+      <button class="btn block" data-action="scan">Try again</button></div>`;
+  }
+  const kept = ex.items.filter(e => e.keep).length, busy = ex.items.filter(e => e.status === "loading").length;
+  return `<div class="card card-right ex-card">
+    <h2>Your furniture</h2>
+    <p class="sub">${ex.items.length} pieces found${busy ? ` · making product shots (${ex.items.length - busy}/${ex.items.length})` : ""}.
+      Keep what you love, ditch the rest. We design around what you keep.</p>
+    <div class="ex-grid">${ex.items.map(e => `
+      <div class="ex ${e.keep ? "" : "ditched"}" data-ex="${e.id}">
+        <div class="ex-img">${e.iso ? `<img src="${esc(e.iso)}" alt="">`
+          : e.status === "error" ? `<span class="ex-err">Couldn't extract</span>` : `<i class="shimmer"></i>${e.crop ? `<img class="ex-crop" src="${esc(e.crop)}" alt="">` : ""}`}</div>
+        <b>${esc(cap(e.label))}</b>
+        <small>${esc(CAT_LABEL[e.category] || "Other")} · ${dimsText(ownedProduct(e))}</small>
+        <div class="seg">
+          <button class="${e.keep ? "on" : ""}" data-action="keep" data-id="${e.id}" data-keep="1">Keep</button>
+          <button class="${e.keep ? "" : "on"}" data-action="keep" data-id="${e.id}" data-keep="0">Ditch</button>
+        </div>
+      </div>`).join("")}</div>
+    <p class="hint">Keeping ${kept} of ${ex.items.length}. <button class="link-btn" data-action="scan-again">Scan again</button></p>
+  </div>`;
+}
+
+function renderBoxes() {
+  const layer = $("#boxes");
+  const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
+  if (S.step !== NEEDS || !ex || !ex.items.length) { layer.innerHTML = ""; return; }
+  const g = geom();
+  layer.innerHTML = ex.items.map(e => {
+    const [y0, x0, y1, x1] = e.box;
+    const l = g.ox + x0 / 1000 * g.dw, t = g.oy + y0 / 1000 * g.dh, w = (x1 - x0) / 1000 * g.dw, h = (y1 - y0) / 1000 * g.dh;
+    return `<div class="bx ${e.keep ? "" : "ditched"}" id="bx-${e.id}" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px">
+      <span>${esc(cap(e.label))}</span></div>`;
+  }).join("");
 }
 
 function renderSteps() {
@@ -293,9 +451,13 @@ function renderSides() {
   b.innerHTML = `<span class="chev">‹</span>${STEPS[S.step - 1] || ""}`;
   n.innerHTML = `${STEPS[S.step + 1] || ""}<span class="chev">›</span>`;
 }
+function renderMode() {
+  $("#mode").textContent = S.live ? "AI renders on · Gemini" : "Demo renders · AI off";
+}
+
 function renderTopbar() {
   const t = $("#topbar");
-  if (S.step < 2 || !S.scene || S.generating) { t.hidden = true; return; }
+  if (S.step < DESIGN || !S.scene || S.generating) { t.hidden = true; return; }
   const tot = sceneTotal(S.scene), has = !!currentRender();
   let action = "";
   if (S.rendering) action = `<span class="pill pill-static rendering-pill"><i class="spin"></i>Rendering with Gemini…</span>`;
@@ -311,7 +473,7 @@ function renderTopbar() {
 
 function renderMeasure() {
   const m = $("#measure");
-  if (S.step !== 1) { m.hidden = true; return; }
+  if (S.step !== NEEDS || !S.sizeOpen) { m.hidden = true; return; }
   const [x1, y] = toScreen([10, 47]), [x2] = toScreen([90, 47]);
   Object.assign(m.style, { left: x1 + "px", top: y + "px", width: (x2 - x1) + "px" });
   m.innerHTML = `<span class="pill">Back wall · ${inch(S.space.wallIn)} (${(S.space.wallIn / 12).toFixed(1)} ft)</span>`;
@@ -320,14 +482,14 @@ function renderMeasure() {
 
 function renderHotspots() {
   const box = $("#hotspots");
-  if (S.step < 2 || !S.scene || S.generating || S.rendering || S.before) { box.innerHTML = ""; return; }
+  if (S.step < DESIGN || !S.scene || S.generating || S.rendering || S.before) { box.innerHTML = ""; return; }
   const placed = [];   // label rectangles already used, to keep labels from covering each other
   const hit = r => placed.some(q => r.l < q.r + 8 && r.r > q.l - 8 && r.t < q.b + 6 && r.b > q.t - 6);
   const order = S.scene.map((it, i) => ({ it, i, xy: toScreen(it.pos) })).sort((a, b) => b.xy[1] - a.xy[1]);
   const html = [];
   for (const { it, i, xy: [x, y] } of order) {
     const p = view(it);
-    const label = `${p.family || p.name} · ${money(p.price.amount)}`;
+    const label = p.owned ? `${p.name} · yours` : `${p.family || p.name} · ${money(p.price.amount)}`;
     const w = 86 + label.length * 8.2;
     let flip = x > innerWidth * 0.62, lh = 92, rect;
     const rectFor = (lh, flip) => {
@@ -337,7 +499,7 @@ function renderHotspots() {
     for (const tryFlip of [flip, !flip]) {
       for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
         rect = rectFor(lh, tryFlip);
-        if (!hit(rect) && rect.t > 60) break;
+        if (!hit(rect) && rect.t > innerHeight * 0.06 + 72) break;   // stay below the top bar
       }
       if (!hit(rect)) { flip = tryFlip; break; }
     }
@@ -356,35 +518,15 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === 0) el.innerHTML = needsCard();
-  else if (S.step === 1) { el.innerHTML = spaceCard(); el.querySelector('.card').insertAdjacentHTML('afterbegin', `<label class="field">Which room are we working on?</label><div class="chips">${Object.entries(ROOMS).map(([k,v])=>`<button class="chip ${S.needs.room===k?'on':''}" data-action="set" data-key="room" data-val="${k}">${v}</button>`).join('')}</div>`); }
-  else if (S.step === 2) el.innerHTML = S.generating ? progressCard() : optionsView();
-  else if (S.step === 3) el.innerHTML = S.sel != null ? detailCard() : editHint();
-  else el.innerHTML = shopCard();
-  if (S.step >= 2 && S.options[S.opt]?.gaps?.length) el.insertAdjacentHTML('afterbegin', `<div class="plan-gap" role="status">No verified match within current constraints: ${S.options[S.opt].gaps.map(c=>esc(CAT_LABEL[c])).join(', ')}. These slots are left open; no constraints were relaxed.</div>`);
+  if (S.step === NEEDS) el.innerHTML = needsCard() + existingCard();
+  else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
+  else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
+  else el.innerHTML = "";
+  if (S.step >= DESIGN && S.options[S.opt]?.gaps?.length) el.insertAdjacentHTML('afterbegin', `<div class="plan-gap" role="status">No match for ${S.options[S.opt].gaps.map(c=>esc(CAT_LABEL[c])).join(', ')} within your budget and dimensions.</div>`);
 }
 
-/* ① needs */
-function needsCard() { return designerCard(); }
-
-/* ② space */
-function spaceCard() {
-  const s = S.space;
-  return `<div class="card card-left">
-    <h2>Your space</h2>
-    <p class="sub">Upload a photo of the room, then give us one real length so every product is shown at a preliminary width allowance.</p>
-    <button class="drop" data-action="upload" id="drop">
-      <b>${s.photo === "demo" ? "Upload a room photo" : "Replace photo"}</b>
-      <span>Drop an image here or click to browse</span>
-    </button>
-    ${s.photo !== "demo" ? `<button class="btn ghost block" style="margin-top:10px" data-action="demo">Use the demo room</button>` : ""}
-    <label class="field">Back wall width</label>
-    <div class="num-row"><input type="number" min="60" max="600" value="${s.wallIn}" data-bind="wallIn"><span>inches · ${(s.wallIn / 12).toFixed(1)} ft</span></div>
-    <label class="field">Room depth (approx.)</label>
-    <div class="num-row"><input type="number" min="60" max="600" value="${s.depthIn}" data-bind="depthIn"><span>inches · ${(s.depthIn / 12).toFixed(1)} ft</span></div>
-    <p class="hint">The dashed line shows the wall we measure. Later this step can use a vision model, depth estimation or a LiDAR scan instead of typing.</p>
-    <button class="btn block" data-action="next">Design my room →</button>
-  </div>`;
+function needsCard() {
+  return designerCard();
 }
 
 /* ⑤ design */
@@ -416,9 +558,9 @@ function editHint() {
   </div>`;
 }
 function detailCard() {
-  const it = S.scene[S.sel], base = byId[it.pid], p = view(it);
+  const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
-  const colorways = [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))];
+  const colorways = base ? [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))] : [];
   const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it) && eligibleSwap(q, it))
     .sort((a, b) => BriefEngine.assess(b,it.cat,B).score-BriefEngine.assess(a,it.cat,B).score || Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
   return `<div class="card card-right">
@@ -427,7 +569,7 @@ function detailCard() {
     <p class="p-cat">${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}</p>
     <h3 class="p-name">${esc(p.name)}</h3>
     <p class="p-var">${esc(p.variant || "")}</p>
-    <p class="p-price">${money(p.price.amount)}${it.qty > 1 ? ` <small style="font-size:13px;color:var(--ink-soft)">each · ${money(p.price.amount * it.qty)}</small>` : ""}</p>
+    <p class="p-price">${p.owned ? `<span class="fit">Already yours · $0</span>` : money(p.price.amount)}${it.qty > 1 ? ` <small style="font-size:13px;color:var(--ink-soft)">each · ${money(p.price.amount * it.qty)}</small>` : ""}</p>
     <dl class="facts">
       <dt>Size</dt><dd>${dimsText(p)}</dd>
       <dt>Fit</dt><dd><span class="fit ${ok ? "" : "no"}">${ok ? "Width check passes" : "Too wide"} · max ${inch(maxWidthFor(it))} wide</span></dd>
@@ -438,56 +580,126 @@ function detailCard() {
     ${colorways.length > 1 ? `<label class="field">Colorways · ${colorways.length}</label>
       <div class="swatches">${colorways.slice(0, 10).map(c =>
         `<button class="swatch ${(it.vid || null) === c.id ? "on" : ""}" data-action="colorway" data-vid="${c.id || ""}" title="${esc(c.variant)}"><img src="${esc(c.image)}" alt=""></button>`).join("")}</div>` : ""}
-    <label class="field">Swap · alternatives that fit</label>
+    <label class="field">${p.owned ? "Replace it with · real products that fit" : "Swap · alternatives that fit"}</label>
     <div class="alts">${alts.map(a =>
       `<button class="alt" data-action="swap" data-pid="${a.id}"><img src="${esc(imgOf(a))}" alt=""><b>${esc(a.name)}</b><small>${money(a.price.amount)}</small></button>`).join("")}</div>
     <div class="btn-row">
-      <button class="btn ghost" data-action="remove">Remove</button>
-      <a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">View product ↗</a>
+      <button class="btn ghost" data-action="remove">${p.owned ? "Ditch it" : "Remove"}</button>
+      ${p.url ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">View product ↗</a>` : ""}
     </div>
   </div>`;
 }
 
 /* shop */
-function shopCard() {
-  if (!S.scene) return `<div class="card card-right"><h2>Shopping list</h2><p class="sub">Design a room first.</p><button class="btn block" data-action="goto" data-step="2">Design my room →</button></div>`;
+/* ---------------- cart: left rail -> slide-out list -> expanded grid ---------------- */
+const ICON = {
+  cart: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-1.5 11.5a2 2 0 0 1-2 1.5H7.5a2 2 0 0 1-2-1.5L4 7z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/></svg>`,
+  grid: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg>`,
+  look: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`,
+  out: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>`,
+};
+const toBuy = () => (S.scene || []).map((it, i) => ({ it, i })).filter(x => !x.it.own);
+const keeping = () => (S.scene || []).map((it, i) => ({ it, i })).filter(x => x.it.own);
+
+function cartSummary() {
   const tot = sceneTotal(S.scene), b = S.needs.budget, over = tot > b;
-  return `<div class="card card-right">
-    <h2>Shopping list</h2>
-    <p class="sub">${S.scene.length} pieces · ${ROOMS[S.needs.room].toLowerCase()} · ${S.needs.style.toLowerCase()}</p>
-    <div class="sum"><span>Total</span><span>${money(tot)}</span></div>
+  return `<div class="sum"><span>Total</span><span>${money(tot)}</span></div>
     <div class="budget ${over ? "over" : ""}"><span>Budget ${money(b)}</span><span>${over ? money(tot - b) + " over" : money(b - tot) + " left"}</span></div>
-    <div class="bar ${over ? "over" : ""}"><i style="width:${Math.min(100, tot / b * 100)}%"></i></div>
+    <div class="bar ${over ? "over" : ""}"><i style="width:${Math.min(100, tot / b * 100)}%"></i></div>`;
+}
+function cartRow({ it, i }) {
+  const p = view(it);
+  return `<li><button class="row-img" data-action="cart-item" data-idx="${i}"><img src="${esc(imgOf(p))}" alt=""></button>
+    <div><b>${esc(p.name)}</b><small>${esc(p.owned ? CAT_LABEL[it.cat] : p.variant || "")}</small><small>${dimsText(p)}</small></div>
+    <div class="amt">${p.owned ? "Yours" : `${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a>`}</div></li>`;
+}
+
+function renderCart() {
+  const on = S.step >= DESIGN && S.scene && !S.generating;
+  const rail = $("#rail"), drawer = $("#drawer"), big = $("#cartx");
+  if (!on) S.cart = "closed";
+  rail.hidden = !on;
+  drawer.classList.toggle("open", S.cart === "open");
+  big.classList.toggle("open", S.cart === "expanded");
+  document.body.classList.toggle("cart-expanded", S.cart === "expanded");
+  document.body.classList.toggle("cart-open", S.cart === "open");
+  if (!on) return;
+  const buy = toBuy(), keep = keeping();
+  rail.innerHTML = `
+    <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
+    <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
+    <button class="rail-btn ${S.cart === "expanded" ? "on" : ""}" data-action="cart-expand" title="See everything" aria-label="See everything">${ICON.grid}</button>`;
+
+  drawer.innerHTML = `<div class="drawer-head">
+      <h2>Shopping list</h2>
+      <div><button class="icon-btn" data-action="cart-expand" title="Expand" aria-label="Expand">⤢</button>
+      <button class="icon-btn" data-action="cart-close" title="Close" aria-label="Close">×</button></div>
+    </div>
+    <p class="sub">${buy.length} to buy${keep.length ? ` · ${keep.length} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
+    ${cartSummary()}
+    <div class="drawer-scroll">
+      ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
+      ${keep.length ? `<label class="field">Keeping · ${keep.length}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
+    </div>
     <div class="btn-row">
       <button class="btn ghost" data-action="copy">Copy list</button>
-      <button class="btn" data-action="download">Download scene.json</button>
+      <button class="btn" data-action="download">scene.json</button>
+    </div>`;
+
+  // expanded: everything as big cards, filterable
+  const all = (S.scene || []).map((it, i) => ({ it, i }));
+  const cats = [...new Set(all.map(x => x.it.cat))];
+  const f = S.cartFilter || "all";
+  const shown = all.filter(x => f === "all" || (f === "buy" && !x.it.own) || (f === "keep" && x.it.own) || x.it.cat === f);
+  const chip = (key, label) => `<button class="xchip ${f === key ? "on" : ""}" data-action="cart-filter" data-f="${key}">${label}</button>`;
+  big.innerHTML = `<div class="x-head">
+      <div><h2>Your room, itemized</h2>
+        <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keep.length} you keep` : ""}</p></div>
+      <div class="x-actions">
+        <button class="xchip" data-action="copy">Copy list</button>
+        <button class="icon-btn" data-action="cart-collapse" title="Collapse" aria-label="Collapse">⤡</button>
+        <button class="icon-btn" data-action="cart-close" title="Close" aria-label="Close">×</button>
+      </div>
     </div>
-    <ul class="list" style="margin-top:14px">${S.scene.map(it => {
+    <div class="x-chips">${chip("all", "All")}${chip("buy", `To buy · ${buy.length}`)}${keep.length ? chip("keep", `Keeping · ${keep.length}`) : ""}
+      ${cats.map(c => chip(c, CAT_LABEL[c] || "Other")).join("")}</div>
+    <div class="x-grid">${shown.map(({ it, i }) => {
       const p = view(it);
-      return `<li><img src="${esc(imgOf(p))}" alt="">
-        <div><b>${esc(p.name)}</b><small>${esc(p.variant || "")}</small><small>${dimsText(p)}</small></div>
-        <div class="amt">${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a></div></li>`;
-    }).join("")}</ul>
-  </div>`;
+      return `<article class="x-card ${p.owned ? "mine" : ""}">
+        <button class="x-img" data-action="cart-item" data-idx="${i}"><img src="${esc(imgOf(p))}" alt="">${p.owned ? `<span class="tag">Yours</span>` : ""}</button>
+        <b>${esc(p.owned ? p.name : p.family || p.name)}</b>
+        <small>${esc(p.owned ? CAT_LABEL[it.cat] : (p.type_name || CAT_LABEL[it.cat]) + (p.variant ? ", " + p.variant : ""))}</small>
+        <small>${dimsText(p)}</small>
+        <div class="x-foot">
+          <span class="x-price">${p.owned ? "Already yours" : `${money(p.price.amount)}<em> / piece${it.qty > 1 ? " · ×" + it.qty : ""}</em>`}</span>
+          <span class="x-btns">${p.url ? `<a class="icon-btn" href="${esc(p.url)}" target="_blank" rel="noopener" title="View product">${ICON.out}</a>` : ""}
+            <button class="icon-btn" data-action="cart-item" data-idx="${i}" title="Show in room">${ICON.look}</button></span>
+        </div>
+      </article>`;
+    }).join("")}</div>`;
 }
 
 /* ---------------- actions ---------------- */
 function goto(i) {
   i = Math.max(0, Math.min(STEPS.length - 1, i));
   S.step = i; S.sel = null;
-  if (i >= 2 && (S.dirty || !S.options.length) && !S.generating) { S.step = 2; generate(); return; }
+  if (i === SHOP) S.cart = "open";
+  else if (S.cart === "open" && i < EDIT) S.cart = "closed";
+  if (i >= DESIGN && (S.dirty || !S.options.length) && !S.generating) { S.step = DESIGN; generate(); return; }
   render();
 }
 
 function exportScene() {
   return {
-    room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? "demo-room.jpg" : "upload" },
+    room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? example().src : "upload" },
     needs: { ...S.needs, budget_usd: S.needs.budget },
     brief: B,
     items: S.scene.map(it => {
       const p = view(it);
       return { slot: it.cat, qty: it.qty, sku: p.id, name: p.name, variant: p.variant, price_usd: p.price.amount,
-               dims_in: p.dims_in, placement: { image_pos_pct: it.pos.map(v => +v.toFixed(1)) }, image: p.images.main, url: p.url };
+               dims_in: p.dims_in, placement: { image_pos_pct: it.pos.map(v => +v.toFixed(1)) },
+               image: p.owned ? null : p.images.main, url: p.url, owned: !!p.owned };
     }),
     total_usd: sceneTotal(S.scene),
   };
@@ -502,14 +714,27 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
-  else if (act === "demo") { B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.space.photo = "demo"; S.space.data = null; S.dirty = true; showImage(); renderPanel(); }
+  else if (act === "demo") {
+    if (S.space.photo === "demo") S.space.ex = (S.space.ex + 1) % EXAMPLES.length;
+    B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null;
+    S.space.photo = "demo"; S.space.data = null; S.dirty = true;
+    S.needs.room = example().room; render();
+  }
   else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); }
   else if (act === "render") renderScene();
+  else if (act === "size") { S.sizeOpen = !S.sizeOpen; renderPanel(); renderMeasure(); }
+  else if (act === "scan" || act === "scan-again") { if (act === "scan-again") S.existing = null; scanFurniture(); }
+  else if (act === "keep") {
+    const e = exById(a.dataset.id); e.keep = a.dataset.keep === "1"; S.dirty = true; renderPanel(); renderBoxes();
+  }
   else if (act === "before") { S.before = !S.before; render(); }
-  else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== 3) S.step = 3; render(); }
+  else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== EDIT) S.step = EDIT; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
-    const it = S.scene[S.sel]; if(!eligibleSwap(byId[a.dataset.pid], it)) return toast("This choice conflicts with the current brief."); recordEdit(`I replaced ${view(it).name} with ${byId[a.dataset.pid].name}.`); it.pid = a.dataset.pid; it.vid = null;
+    const it = S.scene[S.sel]; if(!eligibleSwap(byId[a.dataset.pid], it)) return toast("This choice conflicts with the current brief.");
+    recordEdit(`I replaced ${view(it).name} with ${byId[a.dataset.pid].name}.`);
+    if(it.own && exById(it.own)) exById(it.own).keep=false;
+    it.pid = a.dataset.pid; it.vid = null; delete it.own;
     render(); toast(`Swapped to ${byId[it.pid].name} · click Update render`);
   } else if (act === "colorway") {
     const it=S.scene[S.sel], previous=it.vid; it.vid=a.dataset.vid || null;
@@ -517,11 +742,23 @@ document.addEventListener("click", e => {
     recordEdit(`I changed the colorway to ${view(it).variant}.`); render();
     toast(`Color · ${view(S.scene[S.sel]).variant}`);
   } else if (act === "remove") {
-    const [it] = S.scene.splice(S.sel, 1); recordEdit(`I removed ${view(it).name} from this design.`); S.removedCategories.push(it.cat); S.sel = null; render();
+    const [it] = S.scene.splice(S.sel, 1); recordEdit(`I removed ${view(it).name} from this design.`); S.removedCategories.push(it.cat); S.sel = null;
+    if (it.own && exById(it.own)) exById(it.own).keep = false;
+    render();
     toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
+  else if (act === "live") {
+    S.live = !S.live; S.renders = {}; S.last = null; S.before = false;   // don't mix demo images into AI edits
+    render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
+  }
+  else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
+  else if (act === "cart-expand") { S.cart = "expanded"; renderCart(); }
+  else if (act === "cart-collapse") { S.cart = "open"; renderCart(); }
+  else if (act === "cart-close") { S.cart = "closed"; renderCart(); }
+  else if (act === "cart-filter") { S.cartFilter = a.dataset.f; renderCart(); }
+  else if (act === "cart-item") { S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; render(); }
   else if (act === "copy") {
-    const txt = S.scene.map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
+    const txt = S.scene.filter(it => !it.own).map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
     navigator.clipboard.writeText(txt).then(() => toast("Shopping list copied"), () => toast("Copy failed"));
   } else if (act === "download") {
@@ -539,7 +776,6 @@ document.addEventListener("input", e => {
   if (k === "wallIn" || k === "depthIn") {
     const v = +e.target.value; if (!v) return;
     S.space[k] = v; S.dirty = true;
-    e.target.nextElementSibling.textContent = `inches · ${(v / 12).toFixed(1)} ft`;
     renderMeasure();
   }
 });
@@ -556,16 +792,24 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; saveBrief(); render(); startPhotoConversation();
+      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.live=true;
+      saveBrief(); render(); startPhotoConversation();
     };
     img.src = r.result;
   };
   r.readAsDataURL(file);
 }
-$("#file").addEventListener("change", e => loadPhoto(e.target.files[0]));
-addEventListener("dragover", e => { if (S.step === 1) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
+$("#file").addEventListener("change", e => { const file=e.target.files[0]; e.target.value=""; loadPhoto(file); });
+addEventListener("dragover", e => { if (S.step === NEEDS) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
-addEventListener("drop", e => { if (S.step === 1) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
+addEventListener("drop", e => { if (S.step === NEEDS) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
+
+/* hover a piece in the panel -> highlight its box on the photo */
+document.addEventListener("mouseover", e => {
+  const card = e.target.closest("[data-ex]");
+  document.querySelectorAll(".bx.hl").forEach(b => b.classList.remove("hl"));
+  if (card) $("#bx-" + card.dataset.ex)?.classList.add("hl");
+});
 
 /* drag pins */
 let drag = null;
@@ -586,10 +830,11 @@ addEventListener("keydown", e => {
   if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (e.key === "ArrowRight") goto(S.step + 1);
   if (e.key === "ArrowLeft") goto(S.step - 1);
-  if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
+  if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
+  else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderDiagnosis(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderDiagnosis(); });
+addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
 Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))
@@ -598,15 +843,25 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
     P = d; byId = Object.fromEntries(d.map(p => [p.id, p]));
     // deep link for demos: #room=bedroom&step=3&sel=0
     const h = new URLSearchParams(location.hash.slice(1));
+    if (EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
     if (ROOMS[h.get("room")]) S.needs.room = h.get("room");
     const step = +h.get("step") || 0;
-    if (step >= 2) {
-      S.options = planOptions(); S.scene = structuredClone(S.options[0].items); S.dirty = false;
+    if (step >= DESIGN) {
+      S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
     S.step = Math.min(step, STEPS.length - 1);
+    if (S.step === SHOP) S.cart = "open";
+    if (h.has("live")) S.live = true;
+    if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
     render();
-    if (h.has("render") && S.scene) renderScene();   // #step=3&render=1
+    const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
+    if (h.has("scan")) {                                                       // #step=1&scan=1
+      scanFurniture().then(() => {
+        if (step >= DESIGN) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
+        after();
+      });
+    } else after();
   })
   .catch(() => {
     $("#panel").innerHTML = `<div class="card card-center"><h2>Can't load product data</h2>

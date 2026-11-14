@@ -40,7 +40,8 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path not in ("/api/render", "/api/chat"):
+        fn = {"/api/chat": designer.chat, "/api/render": core.render, "/api/detect": core.detect, "/api/isolate": core.isolate}.get(self.path)
+        if not fn:
             return self._json(404, {"error": "not found"})
         try:
             if not core.passcode_ok(self.headers):
@@ -48,7 +49,7 @@ class Handler(SimpleHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0))
             if not 0 < length <= 5000000: return self._json(413, {"error": "Request too large"})
             req = json.loads(self.rfile.read(length))
-            return self._json(200, (designer.chat(req) if self.path == "/api/chat" else core.render(req)))
+            return self._json(200, fn(req))
         except Exception as e:  # surface the reason to the UI
             return self._json(500, {"error": str(e)})
 

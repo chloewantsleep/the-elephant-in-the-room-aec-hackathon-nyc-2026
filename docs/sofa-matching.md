@@ -28,3 +28,5 @@ Real-data tests compare different habits on the same products, verify planner ch
 References: https://github.com/schemaorg/schemaorg (Product / PropertyValue; no dependency added), exact manufacturer URLs inside annotations. Matching weights are product design hypotheses, deliberately visible and changeable, not industry standards.
 
 Live browser verification: real Gemini chat classified cross-legged reading, confirmation ranked SÖDERHAMN first; correcting the habit to upright conversation ranked ROCKSJÖN first and updated the room selection. Budget and catalogue were unchanged. Manufacturer quote disclosure was checked in the UI.
+
+After merging the four-step upstream UI, Needs uses the live designer in place of scripted questions. Room type, dimensions and furniture detection are under Room details. Explicitly kept furniture is preserved; only remaining slots are purchased through the brief-aware planner. Sofa selection and subsequent brief changes also update the new shopping drawer. Uploaded rooms use live rendering; the upstream example-render mode remains available explicitly.

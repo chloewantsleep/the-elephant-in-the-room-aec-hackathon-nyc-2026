@@ -40,7 +40,8 @@ document.addEventListener('click',e=>{
  if(a.dataset.action==='sofa-choose'){
   const match=sofaCandidates().find(x=>x.p.id===a.dataset.pid);if(!match)return;
   const slot=S.scene?.find(it=>it.cat==='sofa');if(!slot)return toast('Create a design with a sofa first.');
-  const previous=view(slot).name;slot.pid=match.p.id;slot.vid=null;S.last=null;
+  const previous=view(slot).name;if(slot.own&&exById(slot.own))exById(slot.own).keep=false;
+  slot.pid=match.p.id;slot.vid=null;delete slot.own;S.last=null;S.options[S.opt].items=structuredClone(S.scene);
   sofaExplorerOpen=false;render();renderSofaExplorer();recordEdit(`I chose ${match.p.name} instead of ${previous}.`);
  }
 });

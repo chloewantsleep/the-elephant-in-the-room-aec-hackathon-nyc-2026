@@ -18,7 +18,8 @@ function designerCard() {
     <button class="btn" data-action="upload">Take or upload a photo ↗</button>
   </section>`;
   return `<section class="card designer-card" aria-label="Your designer">
-    <div class="designer-heading"><span>Your space</span>${S.step >= 2 ? '<button data-action="chat-close" aria-label="Close designer">×</button>' : '<button class="chip" data-action="upload">Change photo</button>'}</div>
+    <div class="designer-heading"><span>Your space</span>${S.step >= DESIGN ? '<button data-action="chat-close" aria-label="Close designer">×</button>' : '<button class="chip" data-action="upload">Change photo</button>'}</div>
+    ${S.step===NEEDS?`<details class="room-settings"><summary>Room details</summary><div class="chips">${Object.entries(ROOMS).map(([k,v])=>`<button class="chip ${S.needs.room===k?'on':''}" data-action="set" data-key="room" data-val="${k}">${v}</button>`).join('')}</div><div class="size-row"><label>Back wall <input type="number" min="60" max="600" value="${S.space.wallIn}" data-bind="wallIn" aria-label="Back wall width"> in</label><label>Depth <input type="number" min="60" max="600" value="${S.space.depthIn}" data-bind="depthIn" aria-label="Room depth"> in</label></div><button class="chip" data-action="scan">Find furniture to keep</button></details>`:''}
     <div class="conversation" role="log" aria-label="Design conversation" aria-live="polite">
     ${B.history.filter(m=>!m.hidden).map(m=>`<div class="message ${m.role}"><p>${esc(m.text)}</p></div>`).join('')}
     ${chatBusy ? '<p role="status">Looking at your space…</p>' : ''}</div>
@@ -26,7 +27,7 @@ function designerCard() {
     ${chatError ? `<p class="chat-error" role="alert">${esc(chatError)}</p><button class="chip" data-action="chat-retry">Try again</button>` : ''}
     ${importOpen ? `<div class="context-box"><button class="chip" data-action="history-prompt">Get preferences from ChatGPT / Claude</button><textarea id="context-input" aria-label="Context to import" placeholder="Notes, things you own, or inspiration…"></textarea><button class="btn" data-action="context-add">Add</button><button class="chip new-room" data-action="new-room">Start a new room</button></div>` : ''}
     <form id="designer-form"><label class="sr-only" for="designer-message">Tell your designer</label><textarea id="designer-message" maxlength="12000" placeholder="Tell me…" ${chatBusy?'disabled':''}>${esc(chatDraft)}</textarea><div class="composer-footer"><button class="chip" type="button" data-action="context">＋ Context</button><button class="btn" type="submit" ${chatBusy?'disabled':''}>Send ↗</button></div></form>
-    ${S.step < 2 && BriefEngine.active(B).length ? '<button class="btn ghost block" data-action="goto" data-step="1">Explore furniture →</button>' : ''}
+    ${S.step === NEEDS && BriefEngine.active(B).length ? `<button class="btn ghost block" data-action="goto" data-step="${DESIGN}">Explore furniture →</button>` : ''}
   </section>`;
 }
 async function startPhotoConversation() {
@@ -38,7 +39,7 @@ async function startPhotoConversation() {
 function renderDesigner() {
   let host = document.getElementById('designer-drawer');
   if (!host) { host = document.createElement('aside'); host.id='designer-drawer'; document.body.append(host); }
-  host.innerHTML = S.step >= 2 ? (chatOpen ? designerCard() : '<button class="designer-launch btn" data-action="chat-open">Talk to your designer ↗</button>') : '';
+  host.innerHTML = S.step >= DESIGN ? (chatOpen ? designerCard() : '<button class="designer-launch btn" data-action="chat-open">Talk to your designer ↗</button>') : '';
   const log = document.querySelector('.conversation'); if(log) log.scrollTop=log.scrollHeight;
 }
 function refreshDesigner() { if (S.step === 0) renderPanel(); renderDesigner(); }
@@ -80,7 +81,7 @@ function briefChanged() {
     // Preserve deliberate edits when still compatible; replace only invalid choices.
     for(let i=0;i<next.length;i++) {
       const prior=old.find(it=>it.cat===next[i].cat);
-      if(prior && fits(view(prior),prior) && BriefEngine.assess(view(prior),prior.cat,B).eligible && BriefEngine.assess(view(prior),prior.cat,B).score >= BriefEngine.assess(view(next[i]),next[i].cat,B).score) {
+      if(prior && !prior.own && !next[i].own && fits(view(prior),prior) && BriefEngine.assess(view(prior),prior.cat,B).eligible && BriefEngine.assess(view(prior),prior.cat,B).score >= BriefEngine.assess(view(next[i]),next[i].cat,B).score) {
         const trial=next.slice();trial[i]=prior;
         if(sceneTotal(trial)<=S.needs.budget) next[i]=prior;
       }
@@ -101,7 +102,7 @@ function renderDiagnosis() {
   let markers=document.getElementById('photo-annotations');
   if(!markers){markers=document.createElement('div');markers.id='photo-annotations';document.getElementById('stage').append(markers);}
   const g=geom();
-  markers.hidden=S.step>1 || S.space.photo!=='upload';
+  markers.hidden=S.step!==NEEDS || S.space.photo!=='upload';
   markers.innerHTML=(B.annotations||[]).map((a,i)=>`<div class="photo-annotation" style="left:${g.ox+a.x/100*g.dw}px;top:${g.oy+a.y/100*g.dh}px"><span>${i+1}</span><p>${esc(a.label)}</p></div>`).join('');
   host.hidden=true;
   host.innerHTML=`<span class="eyebrow">YOUR SPACE</span><div class="diagnosis-flow">${B.observations.map((o,i)=>`<div><span class="diagnosis-number">0${i+1}</span><p>${esc(o)}</p></div>`).join('<span class="diagnosis-connector">↓</span>')}</div>`;
@@ -115,7 +116,7 @@ document.addEventListener('click',async e=>{
     if(chatBusy)return;
     try {localStorage.setItem(BRIEF_KEY+'-previous',JSON.stringify(B));} catch {chatError='Could not save the previous room.';refreshDesigner();return;}
     B={revision:0,requirements:[],history:[],observations:[],annotations:[],proposals:[]};
-    S.space={wallIn:144,depthIn:132,photo:'demo'};S.needs.budget=3000;
+    S.space={wallIn:144,depthIn:132,photo:'demo',ex:0};S.needs.budget=3000;S.existing=null;S.cart='closed';document.getElementById('file').value='';
     S.scene=null;S.options=[];S.last=null;S.renders={};S.removedCategories=[];S.dirty=true;S.step=0;
     chatDraft='';chatError='';chatOpen=false;importOpen=false;saveBrief();render();return;
   }

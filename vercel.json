@@ -15,6 +15,14 @@
       "maxDuration": 60,
       "includeFiles": "{api/_core.py,app/assets/**,data/images/**}"
     },
+    "api/detect.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,app/assets/**}"
+    },
+    "api/isolate.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,app/assets/**}"
+    },
     "api/chat.py": {
       "maxDuration": 60,
       "includeFiles": "{api/_core.py,api/_designer.py}"
