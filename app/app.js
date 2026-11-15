@@ -99,6 +99,9 @@ const S = {
   cartCat: "all",      // category dropdown in the expanded view
   cartQ: "",           // search text in the expanded view
   cartMenu: false,
+  cartView: "list",     // list | room within the expanded shopping list
+  shopMode: "current",
+  shopSelected: null,
   preview: null,       // index of the piece open in the product preview
   previewAlt: null,    // product id of a similar item being looked at inside the preview
   sizeOpen: false,
@@ -216,7 +219,7 @@ function planOptions() {
       return { cat: slot.cat, qty: slot.qty || 1, pid: pick.id, vid: null, pos: slot.pos.slice() };
     });
     kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
-    return { name: strat.name, items };
+    return { name: strat.name, items: items.map((item, slotId) => ({ ...item, slotId })) };
   });
 }
 
@@ -229,6 +232,7 @@ function generate() {
     if (S.stage >= n) {
       S.options = planOptions(); S.opt = 0;
       S.scene = structuredClone(S.options[0].items);
+      S.shopMode = "current"; S.shopSelected = null;
       S.generating = false; S.dirty = false;
       render();
       renderScene();
@@ -260,8 +264,8 @@ function render() {
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
 const photoSrc = () => S.space.photo === "demo" ? example().src : S.space.data;
-const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn,
-  S.needs.style, items.map(it => [it.pid, it.vid, it.qty, it.own])]);
+const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn, S.space.depthIn,
+  S.needs.style, items.map(it => [it.pid, it.vid, it.qty, it.own, it.pos.map(Math.round)])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
 const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
@@ -282,13 +286,12 @@ function itemPayload(it) {
 // What changed since the last render? null = too different, do a full render instead.
 function editsSinceLast() {
   const L = lastRender();
-  if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
-  const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
-  const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
-  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own;
-  const changed = S.scene.filter(it => !before[it.cat] || !same(before[it.cat], it))
-    .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
-  const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
+  if (!L?.real || L.wallIn !== S.space.wallIn || L.depthIn !== S.space.depthIn || L.style !== S.needs.style) return null;
+  const diff = shopDiff(L.items, S.scene);
+  const changed = diff.filter(row => row.current && row.changes.length)
+    .map(({ current, before, changes }) => ({ ...itemPayload(current), replaces: before ? view(before).name : null,
+      moved: changes.includes("Moved") }));
+  const removed = diff.filter(row => !row.current).map(({ before }) => ({ category: CAT_LABEL[before.cat], name: view(before).name }));
   const n = changed.length + removed.length;
   return n && n <= 3 ? { changed, removed } : null;
 }
@@ -311,10 +314,9 @@ function renderRequest() {
 }
 
 // real = the image truly shows this scene (an AI render), so AI edits can build on it
-function rememberRender(sig, image, real = true) {
+function rememberRender(sig, image, snapshot, real = true) {
   S.renders[sig] = image;
-  S.last = { image, real, photoKey: photoKey(), wallIn: S.space.wallIn, style: S.needs.style,
-             items: structuredClone(S.scene) };
+  if (snapshot.photoKey === photoKey()) S.last = { ...snapshot, image, real };
 }
 
 function setLive(on) {
@@ -349,6 +351,8 @@ async function apiPost(path, obj) {
 async function renderScene(manual = false) {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
+  const snapshot = { photoKey: photoKey(), wallIn: S.space.wallIn, depthIn: S.space.depthIn,
+    style: S.needs.style, items: structuredClone(S.scene) };
   if (!S.live) {
     // demo mode: show a saved render instead of calling Gemini (saves credits while we build)
     if (S.renders[sig]) { S.before = false; render(); return; }
@@ -367,13 +371,13 @@ async function renderScene(manual = false) {
     setTimeout(() => {
       // a saved demo image only fits the default plan; otherwise show your photo with the pieces you keep
       const img = isBaked ? example().render : keepsMine ? photoSrc() : S.space.photo === "demo" ? example().render : EXAMPLES[0].render;
-      rememberRender(sig, img, isBaked); S.rendering = false; render();
+      rememberRender(sig, img, snapshot, isBaked); S.rendering = false; render();
       toast(isBaked ? "Demo render · AI renders are off (top right to turn on)" : keepsMine ? "Demo mode: showing your photo with the pieces you keep. Turn on AI renders to see the new ones in it"
                       : "Demo render · AI renders are off (top right to turn on)");
     }, 700);
     return;
   }
-  if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
+  if (S.renders[sig]) { rememberRender(sig, S.renders[sig], snapshot); S.before = false; render(); return; }
   const reqObj = renderRequest();
   if (reqObj.mode !== "edit" && !reqObj.items.length && !(reqObj.remove_existing || []).length) {
     S.before = true; render(); toast("You're keeping everything, so there's nothing new to render yet");   // don't pay for a copy
@@ -382,7 +386,7 @@ async function renderScene(manual = false) {
   S.rendering = true; S.before = false; render();
   try {
     const j = await apiPost("/api/render", reqObj);
-    rememberRender(sig, j.image);
+    rememberRender(sig, j.image, snapshot);
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
   } catch (e) {
@@ -784,6 +788,8 @@ function renderCart() {
   document.body.classList.toggle("has-rail", !!on);
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
+  drawer.inert = S.cart !== "open";
+  big.inert = S.cart !== "expanded";
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
   document.body.classList.toggle("cart-open", S.cart === "open");
   if (!on) return;
@@ -801,6 +807,7 @@ function renderCart() {
     </div>
     <p class="sub">${buy.length} to buy${keep.length ? ` · ${keepN} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
     ${cartSummary()}
+    <button class="btn ghost shop-launch" data-action="shop-view" data-view="room">Explore room view <span aria-hidden="true">↗</span></button>
     <div class="drawer-scroll">
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
       ${keep.length ? `<label class="field">Keeping · ${keepN}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
@@ -816,18 +823,24 @@ function renderCart() {
   const f = S.cartFilter || "all", cat = cats.includes(S.cartCat) ? S.cartCat : "all";
   const chip = (key, label) => `<button class="xchip ${f === key ? "on" : ""}" data-action="cart-filter" data-f="${key}">${label}</button>`;
   const pv = S.preview != null && S.scene[S.preview] ? S.preview : null;
+  const roomView = S.cartView === "room" && S.cart === "expanded";
   big.classList.toggle("previewing", pv != null);
-  big.innerHTML = `<div class="x-body">
+  big.innerHTML = `<div class="x-body ${roomView ? "shop-body" : ""}" ${pv != null ? "inert" : ""}>
     <div class="x-head">
       <div><h2>Your room, itemized</h2>
-        <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}</p></div>
+        <p>${roomView ? `${esc(S.options[S.opt]?.name)} · ${esc(ROOMS[S.needs.room])}`
+          : `${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}`}</p></div>
       <div class="x-actions">
-        <button class="xchip" data-action="copy">Copy list</button>
+        <div class="shop-switch" role="group" aria-label="Shopping list view">
+          <button class="xchip ${roomView ? "" : "on"}" data-action="shop-view" data-view="list" aria-pressed="${!roomView}">List</button>
+          <button class="xchip ${roomView ? "on" : ""}" data-action="shop-view" data-view="room" aria-pressed="${roomView}">Room view</button>
+        </div>
+        ${roomView ? "" : '<button class="xchip x-copy" data-action="copy">Copy list</button>'}
         <button class="icon-btn glass" data-action="cart-collapse" title="Back to list" aria-label="Back to list">⤡</button>
         <button class="icon-btn glass" data-action="cart-close" title="Close" aria-label="Close">×</button>
       </div>
     </div>
-    <div class="x-tools">
+    ${roomView ? shopRoomMarkup() : `<div class="x-tools">
       <div class="x-chips">${chip("all", "All")}${chip("buy", `To buy · ${buy.length}`)}${keep.length ? chip("keep", `Keeping · ${keepN}`) : ""}</div>
       <div class="x-drop ${S.cartMenu ? "open" : ""}">
         <button class="xchip x-drop-btn ${cat !== "all" ? "on" : ""}" data-action="cart-menu">${cat === "all" ? "All categories" : esc(CAT_LABEL[cat] || "Other")}<i><svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg></i></button>
@@ -836,9 +849,28 @@ function renderCart() {
       <label class="x-search">${ICON.look}<input type="search" placeholder="Search your room" value="${esc(S.cartQ || "")}" data-cart-search aria-label="Search">
         <button class="x-clear" data-action="cart-clear" aria-label="Clear search" ${S.cartQ ? "" : "hidden"}>×</button></label>
     </div>
-    <div class="x-grid">${cartGrid()}</div>
+    <div class="x-grid">${cartGrid()}</div>`}
   </div>
   ${pv != null ? previewMarkup(S.scene[pv], pv, stars) : ""}`;
+}
+
+function updateShopRoom(action, value) {
+  const layoutTop = $(".shop-layout")?.scrollTop;
+  const itemsTop = $(".shop-items")?.scrollTop;
+  renderCart();
+  if (layoutTop) $(".shop-layout").scrollTop = layoutTop;
+  if (itemsTop) $(".shop-items").scrollTop = itemsTop;
+  const button = $(".shop-body button[data-action='" + action + "'][" + value + "]");
+  button?.focus({ preventScroll: true });
+  if (action === "shop-pick") button?.scrollIntoView({ block: "nearest" });
+}
+
+function closeCartPreview() {
+  const index = S.preview;
+  S.preview = null; S.previewAlt = null;
+  renderCart();
+  const trigger = S.cartView === "room" ? $(".shop-entry.selected [data-action='cart-preview']") : $(`.x-img[data-idx="${index}"]`);
+  trigger?.focus();
 }
 
 const stars = r => {
@@ -986,7 +1018,11 @@ document.addEventListener("click", e => {
     showImage(); render();
     loadBakedFurniture().then(render);
   }
-  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); render(); renderScene(); }
+  else if (act === "option") {
+    S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items);
+    S.shopMode = "current"; S.shopSelected = null;
+    render(); renderScene();
+  }
   else if (act === "render") renderScene(true);
   else if (act === "chat") {
     const v = a.dataset.val, q = QUESTIONS[S.chat.q];
@@ -1022,15 +1058,32 @@ document.addEventListener("click", e => {
     render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
   }
   else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
-  else if (act === "cart-expand") { S.cart = "expanded"; renderCart(); }
+  else if (act === "cart-expand") { S.cart = "expanded"; S.cartView = "list"; renderCart(); }
+  else if (act === "shop-view") {
+    S.cart = "expanded"; S.cartView = a.dataset.view; S.cartMenu = false;
+    S.preview = null; S.previewAlt = null;
+    renderCart();
+    $(`#cartx [data-view="${S.cartView}"]`)?.focus();
+  }
+  else if (act === "shop-mode") {
+    S.shopMode = a.dataset.mode; S.shopSelected = null;
+    updateShopRoom(act, `data-mode="${S.shopMode}"`);
+  }
+  else if (act === "shop-pick") {
+    S.shopSelected = +a.dataset.id;
+    updateShopRoom(act, `data-id="${S.shopSelected}"`);
+  }
   else if (act === "cart-collapse") { S.cart = "open"; S.preview = null; renderCart(); }
   else if (act === "cart-close") { S.cart = "closed"; S.preview = null; renderCart(); }
   else if (act === "cart-filter") { S.cartFilter = a.dataset.f; renderCart(); }
   else if (act === "cart-menu") { S.cartMenu = !S.cartMenu; $(".x-drop")?.classList.toggle("open", S.cartMenu); }
   else if (act === "cart-clear") { S.cartQ = ""; renderCart(); $("[data-cart-search]")?.focus(); }
   else if (act === "cart-cat") { S.cartCat = a.dataset.c; S.cartMenu = false; renderCart(); }
-  else if (act === "cart-preview") { S.preview = +a.dataset.idx; S.previewAlt = null; renderCart(); }
-  else if (act === "cart-preview-close") { S.preview = null; S.previewAlt = null; renderCart(); }
+  else if (act === "cart-preview") {
+    S.preview = +a.dataset.idx; S.previewAlt = null; renderCart();
+    $(".pv-close")?.focus({ preventScroll: true });
+  }
+  else if (act === "cart-preview-close") closeCartPreview();
   else if (act === "pv-finish") {
     const it = S.scene[S.preview]; it.vid = a.dataset.vid || null; render();
     toast(`Finish · ${view(it).variant} · click Update render to see it`);
@@ -1041,7 +1094,10 @@ document.addEventListener("click", e => {
     const it = S.scene[+a.dataset.idx]; it.pid = S.previewAlt; it.vid = null; delete it.own; S.previewAlt = null; render();
     toast(`Swapped to ${byId[it.pid].name} · click Update render to see it`);
   }
-  else if (act === "cart-item") { S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; render(); }
+  else if (act === "cart-item") {
+    S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; S.preview = null; S.previewAlt = null;
+    render();
+  }
   else if (act === "copy") {
     const txt = S.scene.filter(it => !it.own).map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
@@ -1127,7 +1183,7 @@ addEventListener("keydown", e => {
   if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (e.key === "ArrowRight") goto(S.step + 1);
   if (e.key === "ArrowLeft") goto(S.step - 1);
-  if (e.key === "Escape" && S.preview != null) { S.preview = null; renderCart(); }
+  if (e.key === "Escape" && S.preview != null) closeCartPreview();
   else if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
   else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
@@ -1156,11 +1212,12 @@ fetch("../data/products.json")
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
+    if (h.get("cart") === "room" && S.scene) { S.cart = "expanded"; S.cartView = "room"; }
     render();
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1
       scanFurniture().then(() => {
-        if (step >= DESIGN) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
+        if (step >= DESIGN) { S.options = planOptions(); S.scene = structuredClone(S.options[S.opt].items); render(); }
         after();
       });
     } else after();
