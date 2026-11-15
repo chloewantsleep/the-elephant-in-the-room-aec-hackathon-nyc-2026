@@ -598,6 +598,7 @@ async function renderScene(manual = false) {
     const isDemoBase = reqObj.mode !== "edit" && S.space.photo === "demo" && S.space.ex === 0
       && sameItems(S.scene.filter(it => !it.sketched), testScene());
     if (demoRoom() && !toPlace.length) reqObj.cache_only = true;   // demo room: only sketches make new renders
+    if (demoRoom() && !bigNeeded && toPlace.length && rsOf.has(lastRender()?.image) && await addSketchLayers(toPlace)) return;
     const fromDemo = bigNeeded && demoRoom() && isDemoBase;
     const prevShown = reqObj.mode === "edit" ? lastRender().image : null;
     const demoLine = fromDemo || (!bigNeeded && prevShown && rsOf.has(prevShown));   // a picture of the demo render's lineage
@@ -878,15 +879,59 @@ const sameItems = (a, b) => a.length === b.length && b.every(x => a.some(y => y.
 // Sketched pieces (sketch.js): each is added into a small crop around what the user drew, then laid over the picture.
 // They are then tracked like every other product, so they get labels, colors and similar products too.
 const sketchPrefetch = new Map();   // "<sketch>|<product>|<similar>" -> overlay promise (made together with the sketch)
+function sketchCrop(base, strokes) {
+  let [x0, y0, x1, y1] = skBox(strokes);   // % of the picture
+  const grow = (a, b, min) => { const c = (a + b) / 2, h = Math.max(b - a, min) / 2; return [Math.max(0, c - h), Math.min(100, c + h)]; };
+  [x0, x1] = grow(x0, x1, 18); [y0, y1] = grow(y0, y1, 18);   // a tiny sketch still gets a crop with some context
+  return Variants.cropForRecolor(base, [y0 * 10, x0 * 10, y1 * 10, x1 * 10], 0.5);
+}
+
+// Demo picture: a sketched piece is one more LAYER on the unchanged demo render (like a color or a similar product),
+// so its saved placement is always reused and every other prepared look stays valid. Its similar products are
+// layers that replace it. false = not this case (the normal flow places it into the picture).
+async function addSketchLayers(items) {
+  const run = V, shapes = typeof savedShapes === "function" ? savedShapes() : [];
+  if (!run?.tracked || !run.mapped || typeof skBox !== "function") return false;
+  const at = items.map(it => S.scene.indexOf(it));
+  // the scene is the demo picture's scene plus these sketched pieces, at the end
+  if (S.scene.length !== run.scene.length + items.length || at.some((i, k) => i !== run.scene.length + k)) return false;
+  if (!S.scene.slice(0, run.scene.length).every((it, i) => lookState(it, i).s !== "none")) return false;
+  toast(`Adding your sketched ${items.map(it => CAT_LABEL[it.cat].toLowerCase()).join(", ")}…`);
+  for (const [k, it] of items.entries()) {
+    const sh = shapes[it.sk], i = at[k];
+    if (!sh) return false;
+    const crop = await sketchCrop(run.base, sh.strokes), limit = Variants.sketchBox(crop, sh.strokes), p = view(it);
+    const placeOne = q => Variants.place({ crop, strokes: sh.strokes, api: apiPost, mock: MOCK_VARIANTS,
+      product: { name: q.name, variant: q.variant, category: CAT_LABEL[it.cat], image: q.images.main_local || q.images.main,
+                 dims_in: q.dims_in, description: q.description } });
+    const mainP = placeOne(p).catch(() => placeOne(p));
+    const alts = similarProducts(it).map(q => ({ q, img: placeOne(q) }));   // at the same time: switching is instant later
+    let main;
+    try { main = await mainP; } catch (e) { toast(`Couldn't add ${p.family || p.name}: ${e.message.slice(0, 80)}`); return true; }
+    const [x0, y0, x1, y1] = skBox(sh.strokes), box = [y0 * 10, x0 * 10, y1 * 10, x1 * 10].map(Math.round);
+    run.scene[i] = structuredClone(it);
+    run.items[i] = { pid: it.pid, from: it.vid || null, fromName: p.variant, crop: await Variants.cropForRecolor(run.base, box),
+                     layer: await Variants.makeOverlay(crop, main, limit), looks: { ["c:" + vkey(it.vid)]: { status: "done" } } };
+    for (const { q, img } of alts) {
+      const look = run.items[i].looks["s:" + q.id] = { status: "loading" };
+      img.then(alt => Variants.makeOverlay(crop, alt, limit, main))
+        .then(o => { look.overlay = o; look.status = "done"; const cur = S.scene?.[i];
+                     if (V === run && cur && lookState(cur, i).s === "ready" && !currentRender()) showColors(); })
+        .catch(e => { look.status = "error"; look.error = e.message; });
+    }
+    const spot = toShown(boxCenter(box));   // its label, on the shown photo
+    for (const list of [S.scene, S.options[S.opt]?.items]) if (list?.[i]) list[i].at = spot.slice();
+  }
+  await showColors();
+  return true;
+}
+
 async function placeSketched(base, items) {
   const shapes = typeof savedShapes === "function" ? savedShapes() : [];
   const overlays = await Promise.all(items.map(async it => {
     const sh = shapes[it.sk];
     if (!sh || typeof skBox !== "function") return null;
-    let [x0, y0, x1, y1] = skBox(sh.strokes);   // % of the picture
-    const grow = (a, b, min) => { const c = (a + b) / 2, h = Math.max(b - a, min) / 2; return [Math.max(0, c - h), Math.min(100, c + h)]; };
-    [x0, x1] = grow(x0, x1, 18); [y0, y1] = grow(y0, y1, 18);   // a tiny sketch still gets a crop with some context
-    const crop = await Variants.cropForRecolor(base, [y0 * 10, x0 * 10, y1 * 10, x1 * 10], 0.5);
+    const crop = await sketchCrop(base, sh.strokes);
     const p = view(it);
     const placeOne = q => Variants.place({ crop, strokes: sh.strokes, api: apiPost, mock: MOCK_VARIANTS,
         product: { name: q.name, variant: q.variant, category: CAT_LABEL[it.cat], image: q.images.main_local || q.images.main,
@@ -914,7 +959,8 @@ async function placeSketched(base, items) {
 async function showColors() {
   if (!colorsReady()) return false;
   const sig = sceneSig(), run = V;
-  const overlays = S.scene.map((it, i) => lookState(it, i)).filter(l => l.s === "ready").map(l => l.overlay);
+  const overlays = S.scene.map((it, i) => { const l = lookState(it, i), e = V.items[i];
+    return l.s === "ready" ? l.overlay : l.s === "same" && e?.layer ? e.layer : null; }).filter(Boolean);
   let img = S.renders[sig] || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
   if (!S.renders[sig] && run.mapped) img = await showOnPhoto(img);   // the demo render: shown on the full photo
   if (V !== run || sceneSig() !== sig) return false;   // something else changed meanwhile
