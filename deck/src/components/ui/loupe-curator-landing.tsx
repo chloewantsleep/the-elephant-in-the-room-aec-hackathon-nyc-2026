@@ -33,11 +33,12 @@ export const INTRO = {
   flip: [0.09, 0.18],
   grow: [0.17, 0.33],   // the gap grows into the team collage
   teamIn: [0.29, 0.36], // names fade in
-  teamOut: [0.46, 0.52], // the team crossfades into the room photo
-  caption: [0.52, 0.6],
-  captionOut: [0.64, 0.68],
-  callouts: [0.67, 0.76],
-  strip: [0.7, 0.84],
+  shrink: [0.44, 0.5],  // the team shrinks back into a small window…
+  regrow: [0.51, 0.58], // …which zooms out again as the room photo
+  caption: [0.57, 0.64],
+  captionOut: [0.67, 0.7],
+  callouts: [0.7, 0.78],
+  strip: [0.73, 0.86],
 } as const
 export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.8] } as const
 export const PILE = { ink: [0, 0.26], drop: [0.06, 0.5], swap: [0.56, 0.68], type: [0.64, 0.8] } as const
@@ -723,15 +724,19 @@ export default function LoupeCuratorLanding({
       put(I, "--l1", l1.toFixed(3))
       put(e.l1, "filter", l1 > 0 && l1 < 1 ? "blur(" + (l1 * 10).toFixed(1) + "px)" : "none")
       const w0 = Math.min(W * 0.14, 190)
-      const b = zoomBox(span(p, INTRO.open), span(p, INTRO.grow), W, H, w0, w0 * 0.62)
+      // grow -> (team) -> shrink back to the small window -> regrow (room photo)
+      const g1 = span(p, INTRO.grow)
+      const b = zoomBox(span(p, INTRO.open), clamp01(g1 - span(p, INTRO.shrink) + span(p, INTRO.regrow)), W, H, w0, w0 * 0.62)
+      const bWords = zoomBox(span(p, INTRO.open), g1, W, H, w0, w0 * 0.62)   // the headline stays pushed out
       put(e.portrait, "clipPath", insetOf(b, W, H))
       put(e.portrait, "visibility", b.w < 1 ? "hidden" : "visible")
       put(e.portrait, "transform", "translate3d(0," + (-span(p, [coverAt(TRACK.intro), 1]) * H * 0.32).toFixed(1) + "px,0)")
       put(e.portraitIn, "transform", "scale(" + coverScale(b, W, H).toFixed(4) + ")")
-      put(I, "--g", b.w.toFixed(1) + "px")
+      put(I, "--g", bWords.w.toFixed(1) + "px")
       // keep the headline centered while the gap is closed; drift back to the true center as it opens
       put(e.l2, "transform", "translate(" + (st.l2dx * (1 - smooth(span(p, INTRO.open)))).toFixed(1) + "px,-50%)")
-      const tm = 1 - span(p, INTRO.teamOut)
+      // swap team -> room while the window is at its smallest
+      const tm = 1 - span(p, [INTRO.shrink[1] - 0.004, INTRO.regrow[0] + 0.004])
       put(I, "--tm", tm.toFixed(3))
       put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
       put(e.team, "visibility", tm > 0.001 ? "visible" : "hidden")
@@ -977,7 +982,7 @@ export default function LoupeCuratorLanding({
     const base = absTop()
     const stops = [
       base + st.off.intro + 0.4 * travel("intro"),
-      base + st.off.intro + 0.58 * travel("intro"),
+      base + st.off.intro + 0.62 * travel("intro"),
       base + st.off.intro + 0.8 * travel("intro"),
       base + st.off.mani + st.H,
       base + st.off.grid + st.H * 0.3,
