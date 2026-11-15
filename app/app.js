@@ -468,7 +468,9 @@ const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : nul
 
 function showImage() {
   const r = S.step >= DESIGN && !S.before && (currentRender() || lastRender()?.image);
-  const want = r || photoSrc();
+  // demo room: from Design on, the photo shows the render's area only, same framing as the render (no seam)
+  const area = !r && S.step >= DESIGN && demoRoom() && !DEMO_ON_PHOTO && (loadDemoPhotoArea(), demoPhotoArea);
+  const want = r || area || photoSrc();
   if (room.dataset.src !== want) { room.dataset.src = want; room.src = want; $("#backdrop").src = want; }
 }
 
@@ -669,12 +671,30 @@ const prepared = new Map();   // render image -> its V, so going back to a pictu
 const DEMO_SPACE = { x: 0.3306, y: 0, w: 0.6695, h: 1 };
 const rsOf = new Map(), shownOf = new Map();   // shown picture <-> picture in the render's own space
 const renderSpace = img => rsOf.get(img) || img;
-const toShown = ([x, y]) => [DEMO_SPACE.x * 100 + DEMO_SPACE.w * x, DEMO_SPACE.y * 100 + DEMO_SPACE.h * y];
-async function showOnPhoto(rsImg) {   // render-space picture -> the same picture on the full photo
+// The render only covers DEMO_SPACE, and its sofa and rug run off its left edge, so pasting it onto the full photo
+// always cut them (a soft seam through the sofa). So the demo shows the render's area only, full screen: the shown
+// picture IS the render-space picture, and "Before" shows the same area of the photo (demoPhotoArea).
+// DEMO_ON_PHOTO = true goes back to pasting onto the full photo.
+const DEMO_ON_PHOTO = false;
+const toShown = ([x, y]) => DEMO_ON_PHOTO ? [DEMO_SPACE.x * 100 + DEMO_SPACE.w * x, DEMO_SPACE.y * 100 + DEMO_SPACE.h * y] : [x, y];
+async function showOnPhoto(rsImg) {   // render-space picture -> the picture shown (still marked as the demo render's lineage)
   if (shownOf.has(rsImg)) return shownOf.get(rsImg);
-  const shown = await Variants.pasteInto(photoSrc(), rsImg, DEMO_SPACE);
+  const shown = DEMO_ON_PHOTO ? await Variants.pasteInto(photoSrc(), rsImg, DEMO_SPACE) : rsImg;
   shownOf.set(rsImg, shown); rsOf.set(shown, rsImg);
   return shown;
+}
+// the photo cropped to the render's area: "Before" (and the design steps before a render) in the demo room
+let demoPhotoArea = null;
+function loadDemoPhotoArea() {
+  if (DEMO_ON_PHOTO || demoPhotoArea) return;
+  const im = new Image();
+  im.onload = () => {
+    const W = im.naturalWidth, H = im.naturalHeight, x = Math.round(DEMO_SPACE.x * W), y = Math.round(DEMO_SPACE.y * H);
+    const c = Object.assign(document.createElement("canvas"), { width: Math.round(DEMO_SPACE.w * W), height: Math.round(DEMO_SPACE.h * H) });
+    c.getContext("2d").drawImage(im, x, y, c.width, c.height, 0, 0, c.width, c.height);
+    demoPhotoArea = c.toDataURL("image/jpeg", 0.92); showImage();
+  };
+  im.src = EXAMPLES[0].src;
 }
 const VARIANT_MAX = 4;   // colors per product, including the one it was rendered in (also the swatches shown)
 const SIMILAR_MAX = 4;   // similar products listed per piece (also prepared, default color only)
@@ -926,7 +946,7 @@ async function demoCompose() {
 // where each piece is on the shown demo picture (from the tracking), for the Shop room plan: {slotId: [box 0-1000]}
 function demoBoxes(items) {
   if (!demoRoom() || !V?.mapped) return null;
-  const m = b => [b[0], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * b[1]), b[2], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * b[3])];
+  const m = b => DEMO_ON_PHOTO ? [b[0], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * b[1]), b[2], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * b[3])] : b;
   const out = {};
   items.forEach((it, k) => {
     const i = V.scene.findIndex(x => x.cat === it.cat && !!x.own === !!it.own && !!x.sketched === !!it.sketched);
