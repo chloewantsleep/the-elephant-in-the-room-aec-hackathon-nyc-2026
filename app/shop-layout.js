@@ -98,7 +98,9 @@ function shopPhotoAnchors(items) {
     pts.forEach((pos, i) => {
       const u = pos[0] / 100, v = pos[1] / 100;
       const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
-      spots.push([`${id}:${i}`, (u - .5) * aspect / near / 1.2, near]);            // ~ 26 mm lens; left/right widens with distance
+      // left/right widens a little with distance (not the full 1/near, which would fling far pieces to the walls
+      // and squeeze everything near the camera into the middle)
+      spots.push([`${id}:${i}`, (u - .5) * aspect * (1 + .6 * (1 - near)), near]);
     });
   });
   const out = new Map();

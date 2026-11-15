@@ -233,7 +233,7 @@ function shopDiagram(layout, ref, selected) {
   const contactShadows = solids.filter(({ item, z }) => item.cat !== "rug" && z === 0)
     .map(({ x, y, rw, rd }) =>
       face("shop-contact-shadow", ...atHeight(ellipse(x + 4, y + 5, rw * .50, rd * .48), 0))).join("");
-  const style = row => `${row.item.inPicture ? "scene" : row.item.own ? "owned" : "buy"}${row.id === selected ? " selected" : ""}`;
+  const style = row => `${row.item.own ? "owned" : "buy"}${row.id === selected ? " selected" : ""}`;
   const drawItem = row => {
     const { item, x, y, z, w, d, h, id, finish, turn } = row;
     const form = row.form || SHOP_FORM[item.cat] || "box";
@@ -296,17 +296,13 @@ function shopRoomMarkup() {
   if (option) option.shopOriginal ??= structuredClone(option.items);
   const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
   const ref = shopReference(original);
-  // everything the picture shows: the design, plus the photo's own furniture you didn't keep (still in the
-  // picture unless an AI render of this design already removed it)
-  const aiRender = ref.image?.startsWith("data:image/") && ref.image !== photoSrc();
-  const found = S.existing?.photoKey === photoKey() ? S.existing.items : [];
-  const extra = aiRender ? [] : found.filter(e => e.status !== "error" && !original.some(it => it.own === e.id))
-    .map((e, k) => ({ ...ownedItem(e), inPicture: true, slotId: original.length + k }));
-  const plan = shopSceneLayout([...original, ...extra], S.space, S.needs.room, ref);
+  const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
   const demo = S.space.photo === "demo";
   let refSrc = ref.image || (demo ? example().render : photoSrc());
-  if (!demo && refSrc.startsWith("assets/demo-render-")) refSrc = photoSrc();
-  const refLabel = refSrc === photoSrc() ? "Original room photo"
+  // a saved demo render only shows the example's own design; for any other design show the room photo instead
+  const noRender = refSrc.startsWith("assets/demo-render-") && !ref.demoExact;
+  if (noRender) refSrc = photoSrc();
+  const refLabel = noRender ? "Room photo · this design has no AI render yet" : refSrc === photoSrc() ? "Original room photo"
     : refSrc.startsWith("assets/demo-render-") ? "Demo reference render" : "Design reference render";
   const planLabel = ref.demoExact ? "Measured from the demo render" : "Laid out from the design's positions";
 
@@ -318,7 +314,7 @@ function shopRoomMarkup() {
         <p class="shop-note" aria-live="polite">${planLabel} · ${inch(plan.width)} × ${inch(plan.depth)}</p>
       </div>
       <div class="shop-legend" aria-label="Diagram legend">
-        <span><i class="buy"></i>To buy</span><span><i class="owned"></i>Keeping</span>${extra.length ? '<span><i class="scene"></i>In the picture, not in your list</span>' : ""}
+        <span><i class="buy"></i>To buy</span><span><i class="owned"></i>Keeping</span>
       </div>
     </section>
     <aside class="shop-side" aria-label="Reference and furniture">
@@ -345,7 +341,7 @@ function shopPieceRow({ item, id, number }, selected) {
       <span class="shop-index">${number}</span>
       <span class="shop-thumb">${image ? `<img src="${esc(image)}" alt="">` : ""}</span>
       <span class="shop-piece-name"><strong>${esc(p.owned ? p.name : p.family || p.name)}</strong>
-        <small>${esc(category)}${item.qty > 1 ? ` × ${item.qty}` : ""} · ${item.inPicture ? "In the picture" : p.owned ? "Keeping" : money(p.price.amount * item.qty)}</small>
+        <small>${esc(category)}${item.qty > 1 ? ` × ${item.qty}` : ""} · ${p.owned ? "Keeping" : money(p.price.amount * item.qty)}</small>
       </span>
     </button>
     ${selected ? `<div class="shop-piece-detail">
