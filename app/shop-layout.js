@@ -109,8 +109,8 @@ function shopPhotoAnchors(items) {
   const span = (lo, hi) => Math.max(hi - lo, 1e-6);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), n0 = Math.min(...ns), n1 = Math.max(...ns);
   for (const [key, x, n] of spots) {
-    // spread over the floor: left wall .1 .. right wall .9, back wall .15 .. front .9 (evenly by how low it sits)
-    const uv = [spots.length > 1 ? .1 + .8 * (x - x0) / span(x0, x1) : .5, spots.length > 1 ? .15 + .75 * (n - n0) / span(n0, n1) : .5];
+    // spread over the whole floor, wall to wall and back to front (evenly by how low it sits in the picture)
+    const uv = [spots.length > 1 ? .08 + .84 * (x - x0) / span(x0, x1) : .5, spots.length > 1 ? .1 + .82 * (n - n0) / span(n0, n1) : .5];
     out.set(key, uv);
     if (key.endsWith(":0")) out.set(+key.slice(0, -2), uv);
   }
@@ -122,7 +122,13 @@ function shopSceneLayout(items, space, room, ref) {
   const profile = space.confirmed ? null : ref?.profile;
   let width = Math.max(36, shopPositive(space.wallIn, 144), profile?.width || 0);
   let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
-  const distance = 14, sameDistance = 3;   // a walkway between different pieces; copies of one piece (stools, chairs) sit close
+  // a walkway between different pieces; pieces that are used together sit close
+  const distance = 26, sameDistance = 4;
+  const PAIRS = { "dining_chair|dining_table": 4, "stool_bench|dining_table": 4, "office_chair|desk": 4,
+    "nightstand|bed": 4, "coffee_table|sofa": 16, "coffee_table|armchair": 16, "side_table|sofa": 4,
+    "side_table|armchair": 4 };
+  const gapBetween = (a, b) => a.id != null && a.id === b.id ? sameDistance
+    : PAIRS[`${a.cat}|${b.cat}`] ?? PAIRS[`${b.cat}|${a.cat}`] ?? distance;
   const fromPhoto = shopPhotoAnchors(items);
 
   // A bigger floor when the pieces need it (unless the room was measured): enough area for the footprints,
@@ -140,20 +146,18 @@ function shopSceneLayout(items, space, room, ref) {
         if (uv) spots.push({ id: item.slotId, cat: item.cat, uv, w, d });
       }
     });
-    const byArea = Math.sqrt(area * 3.2 / (width * depth));   // pieces cover at most ~30% of the floor
+    const byArea = Math.sqrt(area * 5 / (width * depth));   // pieces cover at most ~20% of the floor
     const needs = [];
     for (let a = 0; a < spots.length; a++) for (let b = a + 1; b < spots.length; b++) {
-      const p = spots[a], q = spots[b];
-      const seated = (x, y) => ["dining_chair", "office_chair", "stool_bench"].includes(x.cat) && ["dining_table", "desk"].includes(y.cat);
-      const gap = p.id === q.id || seated(p, q) || seated(q, p) ? sameDistance : distance;
+      const p = spots[a], q = spots[b], gap = gapBetween(p, q);
       const du = Math.abs(p.uv[0] - q.uv[0]) * width, dv = Math.abs(p.uv[1] - q.uv[1]) * depth;
       const need = Math.min(du > 1e-6 ? ((p.w + q.w) / 2 + gap) / du : Infinity, dv > 1e-6 ? ((p.d + q.d) / 2 + gap) / dv : Infinity);
       if (Number.isFinite(need)) needs.push(need);
     }
     // most pairs get their walkway from the bigger floor; the few on almost the same spot are left to the clearance check
     needs.sort((a, b) => a - b);
-    const bySpacing = needs.length ? needs[Math.floor(needs.length * .75)] : 1;
-    const grow = Math.min(1.9, Math.max(1, byArea, bySpacing));
+    const bySpacing = needs.length ? needs[Math.floor(needs.length * .85)] : 1;
+    const grow = Math.min(2.6, Math.max(1, byArea, bySpacing));
     width = Math.round(width * grow); depth = Math.round(depth * grow);
   }
 
@@ -184,15 +188,12 @@ function shopSceneLayout(items, space, room, ref) {
     entries.sort((a, b) => (priority[a.item.cat] ?? 2) - (priority[b.item.cat] ?? 2));
     const first = cat => entries.find(row => row.item.cat === cat)?.pieces[0];
 
-    // seats pull up to their table or desk; everything else keeps a walkway
-    const SEATS = new Set(["dining_chair", "office_chair", "stool_bench"]), TABLES = new Set(["dining_table", "desk"]);
     function openSpot(x, y, rw, rd, id, cat) {
       const x0 = rw / 2 + 3, x1 = width - x0, y0 = rd / 2 + 3, y1 = depth - y0;
       if (x1 < x0 || y1 < y0) return null;
       const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
       const boundedX = clamp(x, x0, x1), boundedY = clamp(y, y0, y1);
-      const gapTo = p => (p.id != null && p.id === id) || (SEATS.has(cat) && TABLES.has(p.cat)) || (TABLES.has(cat) && SEATS.has(p.cat))
-        ? sameDistance : distance;
+      const gapTo = p => gapBetween({ id, cat }, p);
       const clear = (px, py) => occupied.every(p => (
         Math.abs(px - p.x) >= (rw + p.rw) / 2 + gapTo(p) - .001 ||
         Math.abs(py - p.y) >= (rd + p.rd) / 2 + gapTo(p) - .001
@@ -232,9 +233,9 @@ function shopSceneLayout(items, space, room, ref) {
           x = bed.x + (i % 2 ? 1 : -1) * (bed.rw / 2 + w / 2 + distance);
           y = bed.y - bed.rd * .32;
         } else if (cat === "coffee_table" && sofa) {
-          x = sofa.x; y = sofa.y + sofa.rd / 2 + d / 2 + 12;
+          x = sofa.x; y = sofa.y + sofa.rd / 2 + d / 2 + 18;
         } else if (cat === "office_chair" && desk) {
-          x = desk.x; y = desk.y + desk.rd / 2 + d / 2 + 12;
+          x = desk.x; y = desk.y + desk.rd / 2 + d / 2 + 4;
         } else if (cat === "dining_chair" && table) {
           x = table.x + (Math.floor(i / 2) - (Math.ceil(qty / 2) - 1) / 2) * (w + 10);
           y = table.y + (i % 2 ? 1 : -1) * (table.rd / 2 + d / 2 + 9);
