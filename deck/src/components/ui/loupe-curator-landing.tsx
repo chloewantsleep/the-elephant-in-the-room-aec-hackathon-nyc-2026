@@ -22,30 +22,30 @@ export const progressFrom = (top: number, height: number, stage: number) => {
 }
 
 /** Track lengths, in stage heights. */
-export const TRACK = { intro: 8.5, words: 3.4, zoom: 8, pile: 3.6 } as const
+export const TRACK = { intro: 11, words: 3.4, zoom: 8, pile: 3.6 } as const
 /** The panel after a pinned stage slides over its last stage-height of travel; the story is over by then. */
 export const coverAt = (len: number) => 1 - 1 / (len - 1)
 
-// never = a window that never plays (the old team / manifesto beats are gone; the photo opens straight into the room)
+// never = a window that never plays
 const NEVER = [2, 3] as const
 export const INTRO = {
-  fly: [0, 0.112],
-  lineOut: [0.024, 0.064],
-  open: [0.056, 0.096],
-  flip: NEVER,            // no flicking through photos: the gap opens on your room and stays on it
-  grow: [0.088, 0.208],     // the gap grows into your room, as it is
-  teamIn: NEVER,
-  shrink: NEVER,
-  close: NEVER,
+  fly: [0, 0.09],
+  lineOut: [0.02, 0.05],
+  open: [0.045, 0.08],
+  flip: NEVER,              // no flicking through photos
+  grow: [0.07, 0.17],       // the gap grows into the team (the event asks for the team up front)
+  teamIn: [0.14, 0.19],     // names fade in, then hold
+  shrink: [0.27, 0.31],     // the team shrinks back into the small window…
+  close: [0.305, 0.32],      // …and closes
   para: NEVER,
   paraOut: NEVER,
-  reopen: NEVER,
-  regrow: NEVER,
-  caption: [0.224, 0.304],
-  captionOut: [0.336, 0.368],
-  callouts: [0.368, 0.432],
-  strip: [0.4, 0.496],
-  swap: [0.46, 0.8],      // every sofa gets its turn before the next panel covers the room (coverAt ≈ 0.87)     // with no hand on it, the sofa swaps itself as you scroll
+  reopen: [0.32, 0.335],     // a small window opens again…
+  regrow: [0.335, 0.44],     // …and zooms out as your room
+  caption: [0.45, 0.51],
+  captionOut: [0.53, 0.555],
+  callouts: [0.555, 0.6],
+  strip: [0.58, 0.65],
+  swap: [0.61, 0.86],       // every sofa gets its turn before the next panel covers the room (coverAt = 0.9)
 } as const
 export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.6], shrink: [0.63, 0.75] } as const
 export const PILE = { ink: [0, 0.26], drop: [0.06, 0.5], swap: [0.56, 0.68], type: [0.64, 0.8] } as const
@@ -158,7 +158,7 @@ export const goldenAfter = (taps: number) => Math.floor(taps / GOLDEN_TAPS) % 2 
 
 /** Reduced motion: the scroll snaps between still poses instead of playing the motion. */
 export const REDUCED = {
-  intro: [[0, 0], [0.16, 0.26], [0.4, 0.48]],
+  intro: [[0, 0], [0.2, 0.22], [0.4, 0.48], [0.58, 0.62]],
   pile: [[0, 0.3], [0.5, 1]],
 } as const
 export function poseFor(p: number, poses: readonly (readonly [number, number])[]) {
@@ -271,6 +271,49 @@ const AFTER: Item[] = [
   { k: "rocksjon-armchair", name: "ROCKSJÖN Armchair", price: 199, spec: "Seat 19⅝″ deep · 18½″ high", why: "Suggested: a second upright seat to talk across.", checks: ["Sitting upright", "Talk face to face", "Under $2,500"] },
 ]
 const BUDGET = 2500
+// screen recordings (16:9); drop the files in deck/public/video/ and set src
+// tech stack: one real labeled record (data/products.json + data/sofa-annotations.json, ikea:s59580059) and the pipeline from the README
+type Label = [attr: string, value: string, status: "documented" | "derived" | "unknown", source?: string]
+const RECORD: { desc: string; labels: Label[]; habit: [string, string] } = {
+  desc: "SÖDERHAMN off-white sofa bed, modern design, light grey fabric, square cushions, metal legs.",
+  labels: [
+    ["seat_depth", "36⅝″", "documented", "Seat depth: 36 5/8″"],
+    ["seat_width", "84¼″", "documented", "Seat width: 84 1/4″"],
+    ["washable_cover", "yes", "documented", "…can be machine washed…"],
+    ["arm_above_seat", "11⅜″", "derived", "armrest − seat height"],
+    ["firmness", "?", "unknown"],
+    ["back_angle", "?", "unknown"],
+  ],
+  habit: ["Leaning sideways to read", "seat_width · seat_depth · padded_arms"],
+}
+const DATA_STATS: [string, string][] = [
+  ["371", "real products, IKEA + Home Depot"],
+  ["371", "one-line visual descriptions"],
+  ["1,732", "product photos, each labeled"],
+  ["30", "sofas, every measurement sourced"],
+  ["6", "habit profiles"],
+]
+const FLOW: [step: string, title: string, body: string, tool: string][] = [
+  ["01", "You", "Words, a room photo, a sketch.", "Voice · photo · pen"],
+  ["02", "Understand", "Each need keeps your exact words. You confirm or correct it.", "Gemini 3.8 Flash"],
+  ["03", "Find what you own", "Spots your furniture and cuts it out to keep or ditch.", "Gemini vision"],
+  ["04", "Match", "Filters and ranks the labeled catalog. No made-up fallback.", "Ontology + rules"],
+  ["05", "Show", "Scene state is the source of truth. The picture follows it.", "Gemini 3.1 Flash Image"],
+  ["06", "Shop", "List, budget, FF&E schedule as PDF or CSV.", "Real links + prices"],
+]
+const STACK: [string, string[]][] = [
+  ["Models", ["Gemini 3.8 Flash", "Gemini vision", "Gemini 3.1 Flash Image", "Claude (sketch reading)"]],
+  ["Data", ["Schema.org Product + PropertyValue", "Per-attribute provenance", "Sofa ontology"]],
+  ["App", ["HTML · CSS · JS", "Python", "Vercel functions"]],
+  ["Pitch", ["Vite", "React", "TypeScript"]],
+]
+const REELS: { title: string; src?: string }[] = [
+  { title: "Elephant, start to finish" },
+  { title: "Evaluate your existing space" },
+  { title: "Customize with a sketch" },
+  { title: "Fast local iteration" },
+  { title: "Adaptation" },
+]
 const GRID_AFTER = [...AFTER, ...GRID.slice(1)]
 
 // 6 · one room, one view, different times of life; then every stage shrinks into a row
@@ -295,7 +338,7 @@ const TEAM: { name: string; url: string; key: string }[] = [
   { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
   { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },
 ]
-const COL_SPEED = [0, 0.2, 0.07, 0.28]
+const COL_SPEED = [0, 0.16, 0.06, 0.22, 0.1, 0.26]
 const PILE_KINDS = ["armchair", "sofa", "rug", "shelf", "coffee", "pendant", "floorlamp", "side", "mirror", "cabinet", "dchair", "stool", "desk", "bed", "dresser", "nightstand", "sofa", "armchair"]
 const BITS = [
   [-0.19, -0.12, 0], [0.16, -0.17, 1], [0.22, 0.04, 2], [-0.24, 0.1, 0], [0.05, 0.21, 1], [-0.08, -0.22, 2], [0.27, -0.05, 0],
@@ -571,9 +614,7 @@ const THEME =
   ".lcl-ghead .lcl-note{margin-top:4px}" +
   ".lcl-tm-sub{margin:0;max-width:30em;text-align:center;font-size:clamp(16px,1.5vw,24px);line-height:1.3;color:var(--soft);opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 12px))}" +
   ".lcl-life0 .lcl-tm-title{max-width:16em;text-align:center;line-height:1.05}" +
-  ".lcl-team{--tn:1;display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.6vh,16px);padding:clamp(24px,6vh,64px) 0 clamp(12px,3vh,32px)}" +
-  ".lcl-team .lcl-tm-fig{max-height:38vh}" +
-  "@media (max-width:720px){.lcl-swap{grid-template-columns:1fr 1fr}.lcl-arrow{display:none}.lcl-chat li{flex-direction:column;gap:4px}.lcl-team .lcl-tm-fig{max-height:24vh}}" +
+  "@media (max-width:720px){.lcl-swap{grid-template-columns:1fr 1fr}.lcl-arrow{display:none}.lcl-chat li{flex-direction:column;gap:4px}}" +
   // 2 · the sofa hotspot (the product's pill + line + dot), its highlight, the quick picks
   ".lcl-spot{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse var(--rx) var(--ry) at var(--hx) var(--hy),transparent 82%,rgba(0,0,0,.5) 100%);animation:lcl-pulse 1.8s ease;transition:opacity .3s}" +
   ".lcl-spot::after{content:\"\";position:absolute;left:calc(var(--hx) - var(--rx));top:calc(var(--hy) - var(--ry));width:calc(var(--rx) * 2);height:calc(var(--ry) * 2);border-radius:50%;box-shadow:0 0 0 2px var(--lime),0 0 46px 12px rgba(217,242,107,.32)}" +
@@ -636,6 +677,44 @@ const THEME =
   ".lcl-checks{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px}" +
   ".lcl-check{display:inline-flex;align-items:center;gap:5px;font-size:12px;line-height:1.2;color:var(--ink)}" +
   ".lcl-check svg{width:15px;height:15px;flex:none}.lcl-check circle{fill:#2fae5b}.lcl-check path{fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}" +
+  ".lcl-reels{position:relative;z-index:3;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(12px,1.6vw,22px);max-width:1240px;margin:0 auto;padding:4vh clamp(16px,2vw,32px) 22vh;background:var(--paper)}" +
+  ".lcl-reel{margin:0;min-width:0}.lcl-reel-main{grid-column:1 / -1}" +
+  ".lcl-reel-box{position:relative;display:block;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 14px 34px rgba(0,0,0,.06)}" +
+  ".lcl-reel-main .lcl-reel-box{border-radius:26px}" +
+  ".lcl-reel-box video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}" +
+  ".lcl-reel-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--soft);font-size:9.5px}" +
+  ".lcl-reel-ph svg{width:30px;height:30px;padding:9px;box-sizing:content-box;border-radius:50%;background:var(--lime);fill:#141414}" +
+  ".lcl-reel figcaption{margin-top:10px;font-size:clamp(14px,1.15vw,18px);letter-spacing:-.01em}" +
+  ".lcl-reel-main figcaption{font-size:clamp(18px,1.6vw,26px)}" +
+  "@media (max-width:720px){.lcl-reels{grid-template-columns:1fr 1fr}}" +
+  // living-room grid: six narrow columns, mixed picture heights (pinterest board)
+  ".lcl-gr{max-width:1320px;margin:0 auto}.lcl-gr .lcl-cname{font-size:12px}.lcl-gr .lcl-check{font-size:10.5px}.lcl-gr .lcl-check svg{width:13px;height:13px}.lcl-gr .lcl-need{font-size:11px}.lcl-gr .lcl-need .lcl-say{border-radius:10px;line-height:1.75;-webkit-box-decoration-break:clone;box-decoration-break:clone}" +
+  ".lcl-gc:nth-child(even) .lcl-card:first-child .lcl-pic,.lcl-gc:nth-child(odd) .lcl-card:nth-child(2) .lcl-pic{aspect-ratio:1}.lcl-gc:nth-child(3n) .lcl-card:nth-child(2) .lcl-pic{aspect-ratio:3/4}" +
+  // tech stack
+  ".lcl-stack{position:relative;z-index:3;max-width:1240px;margin:0 auto;padding:8vh clamp(16px,2vw,32px) 22vh;background:var(--paper)}" +
+  ".lcl-stack .lcl-sh{margin:0;max-width:18em;font-weight:400;font-size:clamp(26px,3vw,46px);letter-spacing:-.03em;line-height:1.05}" +
+  ".lcl-sk-top{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,3fr);gap:clamp(14px,2vw,28px);align-items:stretch}" +
+  ".lcl-rec,.lcl-stats,.lcl-flow li,.lcl-tech>div{border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 14px 34px rgba(0,0,0,.05)}" +
+  ".lcl-rec{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:clamp(14px,2vw,28px);padding:clamp(14px,1.6vw,22px)}" +
+  ".lcl-rec-pic{position:relative;display:block;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:var(--card)}" +
+  ".lcl-rec-body{display:flex;flex-direction:column;gap:8px;min-width:0}.lcl-rec-name{font-weight:400;font-size:clamp(18px,1.5vw,24px);letter-spacing:-.02em}" +
+  ".lcl-rec-desc{margin:0;font-size:14px;line-height:1.4}" +
+  ".lcl-labels{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;font-size:10.5px}" +
+  ".lcl-labels li{display:grid;grid-template-columns:11.5em 4em 7em 1fr;gap:8px;align-items:baseline;padding:6px 0;border-top:1px solid rgba(0,0,0,.07)}" +
+  ".lcl-labels b{font-weight:500}.lcl-labels i{font-style:normal;justify-self:start;padding:1px 7px;border-radius:999px;background:#2fae5b;color:#fff}.lcl-labels li[data-st=derived] i{background:#d9a22b}.lcl-labels li[data-st=unknown] i{background:rgba(0,0,0,.12);color:var(--ink)}" +
+  ".lcl-labels em{font-style:normal;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+  ".lcl-rec-habit{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:8px;font-size:13px}.lcl-rec-habit .lcl-say{padding:.35em .9em;border-radius:999px;background:var(--ink);color:var(--paper)}" +
+  ".lcl-stats{list-style:none;margin:0;padding:clamp(14px,1.6vw,22px);display:flex;flex-direction:column;justify-content:space-between;gap:10px}" +
+  ".lcl-stats li{display:flex;flex-direction:column}.lcl-stats b{font-weight:400;font-size:clamp(26px,2.6vw,40px);letter-spacing:-.03em;line-height:1}.lcl-stats span{color:var(--soft);font-size:12.5px}" +
+  ".lcl-flow{list-style:none;margin:clamp(14px,2vw,28px) 0 0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,1vw,14px)}" +
+  ".lcl-flow li{position:relative;display:flex;flex-direction:column;gap:6px;padding:16px 14px}.lcl-flow b{font-weight:400;font-size:17px;letter-spacing:-.02em}.lcl-flow p{margin:0;font-size:12.5px;line-height:1.35;color:var(--soft)}" +
+  ".lcl-flow li:not(:last-child)::after{content:'';position:absolute;right:calc(clamp(8px,1vw,14px) * -.5 - 4px);top:22px;width:8px;height:8px;border-top:1.5px solid var(--ink);border-right:1.5px solid var(--ink);transform:rotate(45deg);opacity:.35}" +
+  ".lcl-tool{margin-top:auto;align-self:flex-start;padding:3px 8px;border-radius:999px;background:var(--lime);color:#141414;font-size:9.5px}" +
+  ".lcl-loop{margin:12px 0 0;text-align:center;color:var(--soft);font-size:10.5px}" +
+  ".lcl-tech{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1vw,14px);margin-top:clamp(14px,2vw,28px)}.lcl-tech>div{display:flex;flex-direction:column;gap:10px;padding:16px}" +
+  ".lcl-tpills{display:flex;flex-wrap:wrap;gap:6px}.lcl-tpills>span{padding:5px 10px;border-radius:999px;background:rgba(20,20,20,.06);font-size:12.5px}" +
+  "@media (max-width:1000px){.lcl-sk-top{grid-template-columns:1fr}.lcl-stats{flex-direction:row;flex-wrap:wrap}.lcl-flow{grid-template-columns:repeat(3,minmax(0,1fr))}.lcl-flow li::after{display:none}.lcl-tech{grid-template-columns:1fr 1fr}}" +
+  "@media (max-width:720px){.lcl-rec{grid-template-columns:1fr}.lcl-rec-pic{aspect-ratio:4/3}.lcl-labels li{grid-template-columns:11.5em 3.5em 1fr}.lcl-labels em{display:none}.lcl-flow{grid-template-columns:1fr 1fr}.lcl-tech{grid-template-columns:1fr}.lcl-gr .lcl-need{font-size:12px}}" +
   "" +
   "@media (max-width:720px){.lcl-talk-in{grid-template-columns:1fr;align-content:center;gap:16px;padding:0 4px}.lcl-room{width:min(70vw,34vh);justify-self:center;order:-1}.lcl-talk .lcl-sh{font-size:22px;margin-bottom:10px}.lcl-talk .lcl-chat li{flex-direction:row;gap:8px}.lcl-talk .lcl-chat li>span:first-child{width:56px}.lcl-hs-pill b{font-size:12px}.lcl-pin .lcl-hs-pill{padding:6px 10px}.lcl-co .lcl-hs-pill{left:-14px}.lcl-rt figcaption{display:none}}"
 
@@ -851,7 +930,7 @@ export default function LoupeCuratorLanding({
         st.clock += dt / 1000
         again = true
       }
-      const fade = 1 - span(p, [0.04, 0.08])
+      const fade = 1 - span(p, [0.03, 0.06])
       const cam = span(p, INTRO.fly) * FIELD.travel + st.clock * FIELD.idle
       const tw = st.tw
       st.thumbs.forEach((el, j) => {
@@ -884,6 +963,12 @@ export default function LoupeCuratorLanding({
       put(I, "--g", bWords.w.toFixed(1) + "px")
       // keep the headline centered while the gap is closed; drift back to the true center as it opens
       put(e.l2, "transform", "translate(" + (st.l2dx * (1 - smooth(span(p, INTRO.open)))).toFixed(1) + "px,-50%)")
+      // the team lives in the window until it closes; the room takes over when it reopens
+      const tm = p < INTRO.close[1] ? 1 : 0
+      put(I, "--tm", String(tm))
+      put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
+      put(e.team, "visibility", tm ? "visible" : "hidden")
+      put(e.team, "pointerEvents", tm && span(p, INTRO.teamIn) > 0.5 && p < INTRO.shrink[0] ? "auto" : "none")
       put(I, "--cap", span(p, INTRO.caption).toFixed(3))
       put(I, "--capo", (1 - span(p, INTRO.captionOut)).toFixed(3))
       const c = span(p, INTRO.callouts)
@@ -1168,10 +1253,10 @@ export default function LoupeCuratorLanding({
     const st = s.current
     const base = absTop()
     const stops = [
-      base + st.off.intro + 0.2 * travel("intro"),
-      base + st.off.intro + 0.28 * travel("intro"),
+      base + st.off.intro + 0.22 * travel("intro"),
       base + st.off.intro + 0.48 * travel("intro"),
-      base + st.off.intro + 0.82 * travel("intro"),
+      base + st.off.intro + 0.62 * travel("intro"),
+      base + st.off.intro + 0.86 * travel("intro"),
       base + st.off.talk + 0.5 * ((st.len.talk || 0) - st.H),
       base + st.off.talk + (st.len.talk || 0),
       base + st.off.grid + st.H * 0.3,
@@ -1392,6 +1477,7 @@ export default function LoupeCuratorLanding({
 
       {/* 1 · intro: the photo field, the gap, the curator */}
       <section className="lcl-track" ref={reg("intro")} style={{ "--len": TRACK.intro } as CSSProperties}>
+        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.22).toFixed(2) + ")" } as CSSProperties} />
         <div className="lcl-stage" ref={reg("introStage")}>
           {FIELD_KINDS.map((k, j) => (
             <div key={j} className="lcl-th" data-th="">
@@ -1413,6 +1499,23 @@ export default function LoupeCuratorLanding({
                 </div>
               ))}
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
+              {/* meet the team: inside the growing window, right after the opening line */}
+              <div className="lcl-tm" ref={reg("team")}>
+                <span className="lcl-mono lcl-tm-label">Meet the team</span>
+                <h2 className="lcl-tm-title">The people behind {brand}</h2>
+                <div className="lcl-tm-row">
+                  {TEAM.map((m, k) => (
+                    <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
+                      <span className="lcl-tm-fig">
+                        <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
+                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
+                      </span>
+                      <b>{m.name}</b>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
             </div>
             <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="Start with your room. No empty room required.">
               <span className="lcl-pillbg">{letters("Start with your room. No empty room required.", "cap")}</span>
@@ -1522,9 +1625,9 @@ export default function LoupeCuratorLanding({
           <p className="lcl-note">The sofa is where it starts. Tables, lights and storage come next.</p>
         </div>
         <div className="lcl-gr">
-          {[0, 1, 2, 3].map((cIdx) => (
+          {COL_SPEED.map((_, cIdx) => (
             <div key={cIdx} className="lcl-gc" data-gcol="">
-              {GRID.map((it, i) => (i % 4 === cIdx ? card(it, "grid" + i, i === 0 ? "flyDst" : undefined, false, undefined, i) : null))}
+              {GRID.map((it, i) => (i % COL_SPEED.length === cIdx ? card(it, "grid" + i, i === 0 ? "flyDst" : undefined, false, undefined, i) : null))}
             </div>
           ))}
         </div>
@@ -1556,7 +1659,6 @@ export default function LoupeCuratorLanding({
       {/* a revised need changes the pick; what didn't change still holds */}
       <section className="lcl-life" ref={reg("life")}>
         <div className="lcl-story">
-          <h2 className="lcl-sh">Life changes. Your room can too.</h2>
           {chat([
             ["you", "We mostly sit upright and chat now."],
             ["el", "Update the sofa from tucked-up reading to upright talking? Budget and the rocking chair stay."],
@@ -1577,6 +1679,93 @@ export default function LoupeCuratorLanding({
           <b>Room total {usd(total(GRID))} → {usd(total(GRID_AFTER))}</b>
         </div>
         <p className="lcl-note">Back angle and cushion feel aren't in the data. Sit-test before you buy.</p>
+      </section>
+
+      {/* product recordings, 16:9: the whole flow, then four close-ups */}
+      <section className="lcl-reels">
+        {REELS.map((rl, k) => (
+          <figure key={rl.title} className={"lcl-reel" + (k === 0 ? " lcl-reel-main" : "")}>
+            <span className="lcl-reel-box">
+              {rl.src ? (
+                <video src={rl.src} autoPlay muted loop playsInline preload="metadata" />
+              ) : (
+                <span className="lcl-reel-ph lcl-mono">
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M6 4.5v7l5.5-3.5Z" />
+                  </svg>
+                  Recording · 16:9
+                </span>
+              )}
+            </span>
+            <figcaption>{rl.title}</figcaption>
+          </figure>
+        ))}
+      </section>
+
+      {/* tech stack: descriptive labels first, then the pipeline and the tools */}
+      <section className="lcl-stack" id="stack">
+        <div className="lcl-ghead">
+          <span className="lcl-mono lcl-cmeta">Under the hood</span>
+          <h2 className="lcl-sh">Every piece is described, so your words can find it.</h2>
+          <p className="lcl-note">Plain-language labels and sourced measurements turn “I curl up with a book” into a search over real products.</p>
+        </div>
+        <div className="lcl-sk-top">
+          <div className="lcl-rec">
+            <span className="lcl-rec-pic">
+              <Tile k={SODERHAMN.k} />
+            </span>
+            <div className="lcl-rec-body">
+              <span className="lcl-mono lcl-cmeta">One product, labeled · ikea:s59580059</span>
+              <b className="lcl-rec-name">{SODERHAMN.name}</b>
+              <p className="lcl-rec-desc">“{RECORD.desc}”</p>
+              <ul className="lcl-labels lcl-mono">
+                {RECORD.labels.map(([a, v, st, src]) => (
+                  <li key={a} data-st={st}>
+                    <span>{a}</span>
+                    <b>{v}</b>
+                    <i>{st}</i>
+                    {src && <em>{src}</em>}
+                  </li>
+                ))}
+              </ul>
+              <span className="lcl-rec-habit">
+                <span className="lcl-say lcl-voice">{RECORD.habit[0]}</span>
+                <span className="lcl-mono lcl-cmeta">→ {RECORD.habit[1]}</span>
+              </span>
+            </div>
+          </div>
+          <ul className="lcl-stats">
+            {DATA_STATS.map(([n, l]) => (
+              <li key={l}>
+                <b>{n}</b>
+                <span>{l}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <ol className="lcl-flow">
+          {FLOW.map(([n, t, b, tool]) => (
+            <li key={n}>
+              <span className="lcl-mono lcl-cmeta">{n}</span>
+              <b>{t}</b>
+              <p>{b}</p>
+              <span className="lcl-mono lcl-tool">{tool}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="lcl-mono lcl-loop">↺ Feedback updates the brief, then the match, then the picture.</p>
+        <div className="lcl-tech">
+          {STACK.map(([g, xs]) => (
+            <div key={g}>
+              <span className="lcl-mono lcl-cmeta">{g}</span>
+              <span className="lcl-tpills">
+                {xs.map((x) => (
+                  <span key={x}>{x}</span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* 6 · one room, one view, different times of life → a row of them */}
@@ -1683,21 +1872,6 @@ export default function LoupeCuratorLanding({
               <ActionEl a={signInAction} label="Sign in" className="lcl-btn lcl-mono" cursor="Sign in" />
               <ActionEl a={joinAction} label="Join waitlist" className="lcl-btn lcl-btn-lime lcl-mono" cursor="Join" />
             </span>
-          </div>
-          <div className="lcl-team" id="team">
-            <span className="lcl-mono lcl-tm-label">Meet the team</span>
-            <h2 className="lcl-tm-title">The people behind {brand}</h2>
-            <div className="lcl-tm-row">
-              {TEAM.map((m, k) => (
-                <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
-                  <span className="lcl-tm-fig">
-                    <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
-                    <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
-                  </span>
-                  <b>{m.name}</b>
-                </a>
-              ))}
-            </div>
           </div>
           <p className="lcl-big2" aria-label={brand}>
             {sunAt < 0 ? brand : brand.slice(0, sunAt)}
