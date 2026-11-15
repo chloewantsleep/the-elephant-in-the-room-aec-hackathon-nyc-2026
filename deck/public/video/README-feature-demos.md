@@ -7,6 +7,7 @@ are at `/video/<name>.mp4`.
 |---|---|---|
 | `1-evaluate-environment.mp4` | The furniture already in the room is found; tap a piece to take it out of the photo | 8 s |
 | `2-sketch.mp4` | Sketch Ideas: drawing where a new piece should go on the photo | 20 s |
+| `3-switch.mp4` | Switch a piece on the render: another color or a similar product, shown at once (1920x1080, 1.64x faster) | 20 s |
 | `4-multiple-export.mp4` | Shopping list, the room as an isometric plan, the itemized list with PDF / CSV export | 13 s |
 
 Each has a poster image (its first frame) with the same name, `.jpg`.
