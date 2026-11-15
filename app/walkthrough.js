@@ -12,9 +12,9 @@
   // the sample lounge demo (app.js demoRoom): swap to its prepared similar products and show them instantly, no baked picture
   const DEMO_SWAPS = { sofa: "ikea:20245049", armchair: "ikea:30533493", coffee_table: "ikea:70497582" };   // STOCKHOLM, EKENÄSET, FRÖTORP
   const demo = () => typeof demoRoom === "function" && demoRoom();
-  // swapping pieces + re-rendering stays in the app, but is left out of the walkthrough (its saved results only
-  // match on the machine that made them); #swaps puts those two steps back
-  const SHOW_SWAPS = /(^|[#&])swaps\b/.test(location.hash);
+  // swapping pieces + re-rendering: shown again now that saved looks are found by content (demo-cache/demo-index.json),
+  // so they match on any machine; #noswaps leaves those two steps out
+  const SHOW_SWAPS = !/(^|[#&])noswaps\b/.test(location.hash);
   // one runner at a time: skip/back bump `gen` and queue `pending`; the runner's waits see gen !== live and unwind
   let on = false, beat = 0, fast = false, paused = false, gen = 0, live = 0, running = false, pending = null;
   const $ = s => document.querySelector(s);
@@ -93,7 +93,14 @@
     if (typeof chatOpen !== "undefined") chatOpen = false;
     showImage(); render();
     await loadBakedFurniture(); render();
-    if (typeof demoWarm === "function") demoWarm();   // demo: get the saved picture and its looks ready in the background
+    // demo: load the saved picture and every look (options, colors, swaps) before the first beat, so switching is instant
+    if (typeof demoWarm === "function" && demoRoom()) {
+      const w = demoWarm();
+      let done = false; w.finally(() => { done = true; });
+      if (!done) cap.innerHTML = `<span class="wt-s">Getting the demo ready…</span>`;
+      await until(() => done, 30000);
+      caption();
+    }
   }
 
   const BEATS = [
