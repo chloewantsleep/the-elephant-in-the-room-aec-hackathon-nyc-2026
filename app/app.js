@@ -178,11 +178,16 @@ function toast(msg) {
   clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), Math.max(2200, Math.min(7000, msg.length * 45)));
 }
 
-/* ---------------- image <-> screen mapping (object-fit: contain, centered: the whole photo shows) ---------------- */
+/* ---------------- image <-> screen mapping: the photo always spans the window edge to edge ----------------
+   wider window -> cover (trims top/bottom, mostly ceiling: anchored 70% down); taller window -> contain (blur above/below) */
+const FIT_Y = 0.7;
 function geom() {
   const W = innerWidth, H = innerHeight, nw = room.naturalWidth || 1, nh = room.naturalHeight || 1;
-  const sc = Math.min(W / nw, H / nh), dw = nw * sc, dh = nh * sc;
-  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.5, W, H };
+  const sc = W / nw, dw = W, dh = nh * sc, ay = dh > H ? FIT_Y : 0.5;
+  const fit = dh > H ? "cover" : "contain", pos = `50% ${ay * 100}%`;
+  if (room.style.objectFit !== fit) room.style.objectFit = fit;          // keep the <img> in step with this math
+  if (room.style.objectPosition !== pos) room.style.objectPosition = pos;
+  return { dw, dh, ox: 0, oy: (H - dh) * ay, W, H };
 }
 function toScreen([px, py]) {
   const g = geom();
@@ -1454,8 +1459,8 @@ addEventListener("keydown", e => {
   else if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
   else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+addEventListener("resize", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+room.addEventListener("load", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
 Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))

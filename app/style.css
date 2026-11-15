@@ -38,7 +38,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 #stage { position: fixed; inset: 0; }
 #room {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: contain; object-position: 50% 50%;   /* the whole photo, nothing cropped; the blurred #backdrop fills around it (keep in sync with geom() in app.js) */
+  object-fit: cover; object-position: 50% 70%;   /* width always fits the window; geom() in app.js sets the exact fit */
   user-select: none; -webkit-user-drag: none;
   transition: filter .5s ease;
 }
