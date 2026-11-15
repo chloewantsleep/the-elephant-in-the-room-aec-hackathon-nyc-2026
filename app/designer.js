@@ -103,7 +103,10 @@ function renderLayout(){document.getElementById('layout-sheet')?.remove();}
 function recordEdit(text){syncLayout();B.history.push({role:'assistant',text,manual:true,event:true});if(S.options[S.opt])S.options[S.opt].items=structuredClone(S.scene);saveBrief();}
 function manualRequirement(effect,value,text){for(const r of B.requirements)if(r.status==='confirmed'&&r.effect===effect&&r.category==='all')r.status='superseded';B.requirements.push({id:`manual-${B.revision}-${effect}`,effect,value:String(value),category:'all',status:'confirmed',text,quote:text,priority:'must',scope:'room',evidence_kind:'user_statement',certainty:'explicit',situation:'Room setup confirmed by the user',outcome:'Limits product picks and layout',impact:effect==='budget'?'The design total can’t exceed the budget':'Layout checked against measured sizes'});}
 document.addEventListener('submit',e=>{
- if(e.target.id==='designer-form'){e.preventDefault();sendDesigner();}
+ if(e.target.id==='designer-form'){e.preventDefault();
+  // step 01: the bar answers the Needs chat (app.js); after that, or with the conversation open, it talks to the designer
+  if(S.step===NEEDS&&!chatOpen&&typeof chatFree==='function'){const t=chatDraft.trim();if(!t)return;chatDraft='';S.needsMin=false;chatFree(t);render();document.getElementById('designer-message')?.focus();return;}
+  sendDesigner();}
  if(e.target.id==='space-setup'){
   e.preventDefault();if(chatBusy)return;const f=new FormData(e.target),width=+f.get('width')/2.54,depth=+f.get('depth')/2.54,c=+f.get('clearance')/2.54;
   if(c>=width){chatError='The walkway must be narrower than the room.';renderDesigner();return;}

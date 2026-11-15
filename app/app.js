@@ -275,11 +275,24 @@ function planOptions() {
 }
 
 function generate() {
-  if(typeof designGate==='function' && !designGate()) {chatMode='setup';chatOpen=true;renderDesigner();return;}
-  S.generating=true;renderDesigner();
-  S.options=planOptions();S.opt=0;S.scene=structuredClone(S.options[0].items);
-  S.generating=false;S.dirty=false;S.sel=null;S.step=DESIGN;
-  syncLayout();saveBrief();render();
+  if (typeof designGate === "function" && !designGate()) { chatMode = "setup"; chatOpen = true; renderDesigner(); return; }
+  S.generating = true; S.stage = 0; S.sel = null; S.step = DESIGN;
+  render();
+  const n = stagesText().length;
+  const tick = () => {   // walk through the stages, then show the options and render option 1
+    S.stage++;
+    if (S.stage >= n) {
+      S.options = planOptions(); S.opt = 0;
+      S.scene = structuredClone(S.options[0].items);
+      S.generating = false; S.dirty = false;
+      syncLayout(); saveBrief(); render();
+      renderScene();
+      return;
+    }
+    renderPanel();
+    setTimeout(tick, 520);
+  };
+  setTimeout(tick, 520);
 }
 function stagesText() {
   return [
@@ -611,7 +624,7 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); }
+  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); if (typeof renderDesigner === "function") renderDesigner(); }
   else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = "";   // shop lives in the left drawer
@@ -738,6 +751,7 @@ function needsCard() {
       <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
           · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
+      ${S.chat.log.length > 2 ? `<button class="icon-btn" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
       <button class="icon-btn" data-action="needs-min" title="Minimize" aria-label="Minimize">–</button>
     </div>
     ${S.sizeOpen ? `<div class="size-row">
@@ -749,12 +763,7 @@ function needsCard() {
       ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       ${brief}
     </div>
-    <form class="chat-input" data-chat>
-      <input type="text" placeholder="${q ? "Or just type: budget 2500, seats 4…" : "Add anything else…"}" aria-label="Message">
-      <button class="send" aria-label="Send">↑</button>
-      ${S.chat.log.length > 2 ? `<button type="button" class="restart" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
-    </form>
-  </div>`;
+  </div>`;   // you type in the one bar at the bottom (docked-chat.js); on this step it answers this chat
 }
 function afterChatRender() {
   const log = $(".chat-log");
@@ -786,7 +795,10 @@ function optionsView() {
 }
 
 /* edit */
-function editHint() { return ""; }
+// the next step, always one clear button: tap a piece to change it, or move on to the list
+function editHint() {
+  return `<button class="btn options-cta" data-action="next">Done · shop the list →</button>`;
+}
 function detailCard() {
   const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
@@ -1251,9 +1263,10 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.live=true;S.space.confirmed=false;S.scene=null;S.options=[];S.layout=null;layoutOpen=false;S.sel=null;B.setupApproved=false;chatMode='conversation';chatOpen=false;
+      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.space.confirmed=false;S.scene=null;S.options=[];S.layout=null;layoutOpen=false;S.sel=null;B.setupApproved=false;chatMode='conversation';chatOpen=false;
       if(typeof selectedObject!=='undefined'){selectedObject=null;objectNotice='';renderObjectSelection();}
-      saveBrief(); render(); startPhotoConversation();
+      saveBrief(); showImage(); render(); toast("Room photo loaded · looking for your furniture");
+      scanFurniture(); startPhotoConversation();
     };
     img.src = r.result;
   };
