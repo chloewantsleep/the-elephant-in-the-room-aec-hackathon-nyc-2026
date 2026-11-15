@@ -223,7 +223,7 @@ const HST_SOFA = { u: 0.3, v: 0.62, ru: 0.27, rv: 0.11 } as const
 const IMG_RATIO = 1250 / 1400
 
 // 3 · the talk track opens on the problem alone; it lifts away over this window, then the talk plays
-const TALK_PROB = [0, 1]
+const TALK_PROB = [0.45, 1]
 // a chat line: who, what they said, and what Elephant turned it into
 type Line = [string, string, string[]?]
 // 4 · the comparison: the sofa you have, then real candidates; the last one flies into the room's list
@@ -724,7 +724,7 @@ const THEME =
   // 3 · the talk: spoken lines in pills (as in the app's chat), decisions pinned on the room
   ".lcl-say{display:inline}.lcl-chat li:not([data-el]) .lcl-say{padding:.3em .85em;border-radius:999px;background:var(--ink);color:var(--paper)}" +
   ".lcl-pb{position:relative;z-index:2;margin-top:calc(var(--h) * -1);background:var(--paper)}" +
-  ".lcl-talk{position:relative;height:calc(var(--h) * 1.35)}" +
+  ".lcl-talk{position:relative;height:calc(var(--h) * 1.7)}" +
   ".lcl-probbig{position:sticky;top:0;z-index:1;height:var(--h);margin:0 0 calc(var(--h) * -1);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 clamp(16px,4vw,64px);font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:1.02;letter-spacing:-.045em;text-wrap:balance;pointer-events:none;opacity:calc(1 - var(--pq,0) * 1.15);transform:translateY(calc(var(--pq,0) * -22vh)) scale(calc(1 - var(--pq,0) * .06))}" +
   ".lcl-talk-in{opacity:var(--pq,0);transform:translateY(calc((1 - var(--pq,0)) * 10vh))}" +
   ".lcl-talk-in{position:sticky;top:0;height:var(--h);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:clamp(20px,4vw,64px);max-width:1240px;margin:0 auto;padding:0 clamp(0px,2vw,24px)}" +
@@ -789,7 +789,7 @@ const THEME =
   ".lcl-stack{position:relative;z-index:3;max-width:1240px;margin:0 auto;padding:8vh clamp(16px,2vw,32px) 22vh;background:var(--paper)}" +
   ".lcl-stack .lcl-sh{margin:0;font-weight:400;font-size:clamp(30px,3.4vw,56px);letter-spacing:-.035em;line-height:1.04}" +
   // how it understands you: sticky stage; --h-* are phase progresses (0..1) set by the frame loop
-  ".lcl-how{position:relative;z-index:3;height:calc(var(--h) * 5);margin-top:calc(var(--h) * -.55);background:linear-gradient(to bottom,transparent,var(--paper) 38vh)}" +
+  ".lcl-how{position:relative;z-index:3;height:calc(var(--h) * 5);margin-top:calc(var(--h) * -.3);background:linear-gradient(to bottom,transparent,var(--paper) 30vh)}" +
   ".lcl-how-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:flex-start;padding-top:7vh!important;gap:clamp(24px,5vh,56px);max-width:1240px;margin:0 auto;padding:0 clamp(16px,2vw,32px)}" +
   ".lcl-how-head{text-align:center}.lcl-how-head .lcl-sh{margin:8px 0 0;font-size:clamp(30px,3.4vw,56px)}" +
   ".lcl-how-cols{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,2vw,28px);align-items:start}" +
