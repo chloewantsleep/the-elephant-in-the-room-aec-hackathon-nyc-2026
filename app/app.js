@@ -485,7 +485,7 @@ async function loadBakedFurniture() {
     const items = (await r.json()).items;
     if (photoKey() !== key) return;   // user switched photos meanwhile
     S.existing = { photoKey: key, status: "done", baked: true,
-                   items: items.map(e => ({ ...e, keep: true, status: e.iso ? "done" : "error" })) };
+                   items: items.map(e => ({ ...e, keep: false, status: e.iso ? "done" : "error" })) };
     S.dirty = true;
   } catch { /* no baked file: the user can still scan */ }
 }
@@ -498,7 +498,7 @@ async function scanFurniture() {
   try {
     const det = await apiPost("/api/detect", { photo: photoForApi() });
     if (!alive()) return;
-    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
+    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: false, status: "loading", iso: null, crop: null }));
     run.status = run.items.length ? "isolating" : "done";
     S.dirty = true; render();
     if (!run.items.length) { toast("No furniture found in this photo"); return; }
@@ -719,7 +719,7 @@ function needsCard() {
   const strip = !ex ? `<button class="link-btn" data-action="scan">Find furniture in this photo</button>`
     : ex.status === "detecting" ? `<span class="muted"><i class="spin dark"></i> Finding your furniture…</span>`
     : ex.status === "error" ? `<button class="link-btn" data-action="scan-again">Retry furniture scan</button>`
-    : `<div class="fx-head"><span>Your furniture</span><span class="muted">keeping ${kept} of ${total} · tap to ditch</span></div>
+    : `<div class="fx-head"><span>Your furniture</span><span class="muted">${kept ? `keeping ${kept} of ${total} · tap to change` : `${total} found · tap what you keep`}</span></div>
        <div class="fx-strip">${ex.items.map(e => `<button class="fx ${e.keep ? "" : "ditched"}" data-ex="${e.id}" data-action="keep-toggle" data-id="${e.id}"
            title="${esc(cap(e.label))}${e.keep ? " · tap to ditch" : " · tap to keep"}">
            <span class="fx-img">${e.iso ? `<img src="${esc(e.iso)}" alt="">` : e.crop ? `<img src="${esc(e.crop)}" alt=""><i class="shimmer"></i>` : `<i class="shimmer"></i>`}

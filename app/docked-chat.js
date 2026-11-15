@@ -41,7 +41,7 @@ renderDesigner=function(){
  input.placeholder=S.space.photo==='upload'?'What would you like to change…':'Add a photo and tell me about your space…';
  const send=host.querySelector('#designer-form [type="submit"]');send.hidden=!chatDraft.trim();send.disabled=chatBusy;
  host.querySelector('[data-action="voice"]').setAttribute('aria-pressed',String(voiceActive));
- const expand=host.querySelector('.composer-top');expand.hidden=chatOpen;
+ host.querySelector('[data-action="dock-expand"]').hidden=chatOpen;   // minimize (–) stays: it folds the card and the input together
  host.querySelector('#composer-start').innerHTML=S.space.photo!=='upload'?'<button data-action="upload">Upload photo</button><button data-action="context">Import memory</button>':'';
  if(chatOpen){const body=content.querySelector('.chat-body');if(body&&(B.contexts||[]).length)body.insertAdjacentHTML('afterbegin',`<details class="context-thumbs"><summary>Reference images · ${B.contexts.length}</summary>${B.contexts.map(c=>`<figure><img src="${esc(c.image)}" alt="${esc(c.name)}"><figcaption>${esc(c.name)} <button data-action="context-remove" data-id="${esc(c.id)}">Remove</button></figcaption></figure>`).join('')}</details>`);if(body)body.scrollTop=body.scrollHeight;}
 };
