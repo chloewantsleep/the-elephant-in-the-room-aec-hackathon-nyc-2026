@@ -670,9 +670,17 @@ const DEMO_SPACE = { x: 0.3306, y: 0, w: 0.6695, h: 1 };
 const rsOf = new Map(), shownOf = new Map();   // shown picture <-> picture in the render's own space
 const renderSpace = img => rsOf.get(img) || img;
 const toShown = ([x, y]) => [DEMO_SPACE.x * 100 + DEMO_SPACE.w * x, DEMO_SPACE.y * 100 + DEMO_SPACE.h * y];
+// The render's sofa and rug run off its left edge, so on the plain photo they faded out at the seam. DEMO_SEAM is the
+// photo with that strip finished by Gemini (sofa arm, rug, floor; the lounge chair gone) and identical to the render
+// right of the seam, so the paste blends invisibly. It only fits the render's own beige sectional: any other sofa
+// look is pasted onto the plain photo, so no beige arm sticks out of it.
+const DEMO_SEAM = "assets/example-lounge-wide-seam.jpg";
+const baseSofaShown = scene => { const s = (scene || []).find(it => it.cat === "sofa"), t = TEST_SET.find(t => t.cat === "sofa");
+  return !s || !t || (s.pid === t.pid && !s.vid); };
 async function showOnPhoto(rsImg) {   // render-space picture -> the same picture on the full photo
   if (shownOf.has(rsImg)) return shownOf.get(rsImg);
-  const shown = await Variants.pasteInto(photoSrc(), rsImg, DEMO_SPACE);
+  const under = rsImg === demoBaseRs || baseSofaShown(S.scene) ? DEMO_SEAM : photoSrc();
+  const shown = await Variants.pasteInto(under, rsImg, DEMO_SPACE);
   shownOf.set(rsImg, shown); rsOf.set(shown, rsImg);
   return shown;
 }
