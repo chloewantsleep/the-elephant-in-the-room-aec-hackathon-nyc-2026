@@ -275,7 +275,7 @@ function shopSceneLayout(items, space, room, ref) {
           y += Math.floor(i / 3) * (d + 6);
         }
 
-        const hint = ref?.demoExact && !item.sketched ? sample?.positions?.[i] : null;   // hand-measured spots fit only the baked demo render
+        const hint = null;   // the hand-measured demo spots were taken on the old demo render; the render is read instead
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
         const rw = turn % 2 ? d : w, rd = turn % 2 ? w : d;
         const piece = { x, y, z, turn, w, d, h, rw, rd, id: row.id, cat };
@@ -329,14 +329,17 @@ function shopReference(items) {
 // Until it answers, or if it can't, the plan uses the planned spots.
 const shopRenderBoxes = new Map();
 async function readRenderBoxes(items, image) {
-  if (!image?.startsWith("data:image/") || image === photoSrc() || shopRenderBoxes.has(image)) return;
+  // an AI render of this design, or the baked demo render when this is exactly its design
+  const demoRender = typeof example === "function" && image === example().render && shopReference(items).demoExact;
+  if (!image || image === photoSrc() || (!image.startsWith("data:image/") && !demoRender) || shopRenderBoxes.has(image)) return;
   shopRenderBoxes.set(image, { status: "pending" });
   try {
     const locate = items.filter(it => !it.own || exById(it.own)).map(it => {
       const p = view(it);
       return { id: it.slotId, category: it.cat, name: [p.name, p.variant].filter(Boolean).join(", ").slice(0, 120), qty: it.qty || 1 };
     });
-    const pic = new Image(); pic.src = image; await pic.decode();
+    const pic = new Image();   // onload, not decode(): decode() can stall while the tab is in the background
+    await new Promise((done, fail) => { pic.onload = done; pic.onerror = fail; pic.src = image; });
     const scale = Math.min(1, 1024 / Math.max(pic.naturalWidth, pic.naturalHeight));
     const canvas = Object.assign(document.createElement("canvas"),
       { width: Math.round(pic.naturalWidth * scale), height: Math.round(pic.naturalHeight * scale) });

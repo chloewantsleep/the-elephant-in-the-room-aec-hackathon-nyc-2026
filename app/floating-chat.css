@@ -141,3 +141,6 @@ body.cart-expanded #designer-drawer { display:none; }
 .dock-history > summary::-webkit-details-marker { display:none; }
 .dock-history[open] { padding:10px 14px; border-radius:var(--r-card); background:var(--card); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); }
 .dock-history[open] > summary { padding:0 0 6px; background:none; backdrop-filter:none; }
+
+/* replies show as a toast while the designer is closed: keep it readable, not screen-wide */
+#toast { max-width:min(560px, calc(100vw - 64px)); white-space:normal; text-align:center; line-height:1.45; }

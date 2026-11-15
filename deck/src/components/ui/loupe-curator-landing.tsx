@@ -22,29 +22,32 @@ export const progressFrom = (top: number, height: number, stage: number) => {
 }
 
 /** Track lengths, in stage heights. */
-export const TRACK = { intro: 9, words: 3.4, zoom: 7, pile: 3.6 } as const
+export const TRACK = { intro: 8.5, words: 3.4, zoom: 8, pile: 3.6 } as const
 /** The panel after a pinned stage slides over its last stage-height of travel; the story is over by then. */
 export const coverAt = (len: number) => 1 - 1 / (len - 1)
 
+// never = a window that never plays (the old team / manifesto beats are gone; the photo opens straight into the room)
+const NEVER = [2, 3] as const
 export const INTRO = {
-  fly: [0, 0.184],
-  lineOut: [0.035, 0.096],
-  open: [0.079, 0.14],
-  flip: [0.079, 0.158],
-  grow: [0.149, 0.289],  // the gap grows into the team
-  teamIn: [0.254, 0.315], // names fade in
-  shrink: [0.385, 0.43],  // the team shrinks back into the small window…
-  close: [0.43, 0.455],   // …and closes
-  para: [0.46, 0.555],    // the manifesto inks in on the paper
-  paraOut: [0.555, 0.575],
-  reopen: [0.565, 0.59],  // a window opens again…
-  regrow: [0.59, 0.645],  // …and zooms out as the room photo
-  caption: [0.64, 0.7],
-  captionOut: [0.72, 0.75],
-  callouts: [0.75, 0.82],
-  strip: [0.78, 0.9],
+  fly: [0, 0.112],
+  lineOut: [0.024, 0.064],
+  open: [0.056, 0.096],
+  flip: NEVER,            // no flicking through photos: the gap opens on your room and stays on it
+  grow: [0.088, 0.208],     // the gap grows into your room, as it is
+  teamIn: NEVER,
+  shrink: NEVER,
+  close: NEVER,
+  para: NEVER,
+  paraOut: NEVER,
+  reopen: NEVER,
+  regrow: NEVER,
+  caption: [0.224, 0.304],
+  captionOut: [0.336, 0.368],
+  callouts: [0.368, 0.432],
+  strip: [0.4, 0.496],
+  swap: [0.46, 0.8],      // every sofa gets its turn before the next panel covers the room (coverAt ≈ 0.87)     // with no hand on it, the sofa swaps itself as you scroll
 } as const
-export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.8] } as const
+export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.6], shrink: [0.63, 0.75] } as const
 export const PILE = { ink: [0, 0.26], drop: [0.06, 0.5], swap: [0.56, 0.68], type: [0.64, 0.8] } as const
 export const WORDS = { from: 0.9, to: -1.9, gap: 0.85 } as const
 
@@ -155,7 +158,7 @@ export const goldenAfter = (taps: number) => Math.floor(taps / GOLDEN_TAPS) % 2 
 
 /** Reduced motion: the scroll snaps between still poses instead of playing the motion. */
 export const REDUCED = {
-  intro: [[0, 0], [0.25, 0.4], [0.6, 0.84]],
+  intro: [[0, 0], [0.16, 0.26], [0.4, 0.48]],
   pile: [[0, 0.3], [0.5, 1]],
 } as const
 export function poseFor(p: number, poses: readonly (readonly [number, number])[]) {
@@ -191,62 +194,98 @@ export type LoupeCuratorLandingProps = {
   style?: CSSProperties
 }
 
-type Curator = { name: string; bio: string; tags: string[]; deck: string[] }
-
-// The three "curators" are the three steps of the product; their portraits are our venue photo and its Gemini renders.
-const CURATORS: Curator[] = [
-  {
-    name: "01 · Needs",
-    bio: "Snap your room and chat. We find what you already own and turn each piece into a product shot. Keep it or ditch it.",
-    tags: ["Take a photo", "Chat your needs", "What to keep"],
-    deck: ["armchair", "coffee", "floorlamp", "rug", "pendant"],
-  },
-  {
-    name: "02 · Design",
-    bio: "Three options from real, in-stock pieces that fit your wall and your budget, rendered into your own photo.",
-    tags: ["Fit check", "Budget", "AI render"],
-    deck: ["sofa", "coffee", "shelf", "rug", "floorlamp"],
-  },
-  {
-    name: "03 · Edit & Shop",
-    bio: "Click anything to swap or recolor it. Only that piece re-renders. Leave with a list that matches the picture.",
-    tags: ["Swap", "Recolor", "Shopping list"],
-    deck: ["sofa", "armchair", "side", "mirror", "cabinet"],
-  },
+// Products, prices and seat dimensions: data/products.json (catalog snapshot) and data/sofa-annotations.json on main.
+// Room images: our venue photo (curator-*) and the in-place sofa renders in demo-renders/highlights (hl-*). Same view, same frame.
+type Item = { k: string; name: string; price: number; owned?: boolean; spec?: string; why?: string; need?: string; shop?: string; checks?: string[] }
+const usd = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })
+const meta = (it: Item) => (it.owned ? "Already yours · $0" : (it.shop || "IKEA") + " · " + usd(it.price))
+/** The catalog on main: two retailers, one product schema. */
+const CATALOG = { total: 371, sources: "IKEA + Home Depot" } as const
+const SOURCES: [string, number][] = [
+  ["IKEA", 316],
+  ["Home Depot", 55],
 ]
 
-// The "collections" are real Gemini renders of our example rooms (photos taken at the hackathon venue).
+// 2 · your room, and the sofas that can drop into the same spot
+type Swap = { img: string; tile: string; name: string; meta: string }
+const SWAPS: Swap[] = [
+  { img: "curator-0", tile: "armchair", name: "Lounge chairs", meta: "Yours, as it is" },
+  { img: "hl-1", tile: "hyltarp", name: "HYLTARP Sectional", meta: "IKEA · $2,149" },
+  { img: "hl-5", tile: "stockholm", name: "STOCKHOLM Sofa, leather", meta: "IKEA · $2,499" },
+  { img: "hl-6", tile: "vimle", name: "VIMLE Sofa with chaise", meta: "IKEA · $1,899" },
+  { img: "hl-7", tile: "soderhamn", name: "SÖDERHAMN Sofa", meta: "IKEA · $1,375" },
+  { img: "hl-8", tile: "stockholm25", name: "STOCKHOLM 2025 Sofa", meta: "IKEA · $1,999" },
+]
+const ROOM_IMGS = ["curator-0", "hl-1", "hl-2", "hl-3", "hl-4", "hl-5", "hl-6", "hl-7", "hl-8"]
+/** Where the sofa sits in these frames (fractions of the image), and its rough extent for the highlight. */
+const SOFA_AT = { u: 0.27, v: 0.66, ru: 0.23, rv: 0.1 } as const
+const IMG_RATIO = 1250 / 1400
+
+// 3 · "Hey Elephant…": what you say, what Elephant decides, and where it lands on the room
+type Line = [string, string, string[]?]
+const TALK: Line[] = [
+  ["you", "Hey Elephant, we\u2019ve got to refine our room."],
+  ["you", "I curl up with a book."],
+  ["el", "Legs tucked up, or stretched out?", ["posture unclear", "ask, don\u2019t assume"]],
+  ["you", "Tucked up."],
+  ["el", "Seat depth first, then seat width.", ["seat_depth \u2191 \u00d73", "seat_width \u2191 \u00d71"]],
+  ["you", "Keep the rocking chair."],
+  ["el", "Kept, in every option.", ["rocking chair: keep", "$0, not in cart"]],
+  ["you", "It\u2019s too dark to read at night."],
+  ["el", "Adding light where you read.", ["lamp", "aim at the sofa"]],
+  ["you", "All in, under $2,500."],
+  ["el", "Every pick now checks the total.", ["total \u2264 $2,500"]],
+]
+/** Decisions pinned on the room: [after TALK line, u, v, category, decision, flip]. */
+const PINS: [number, number, number, string, string, boolean, number][] = [
+  [4, 0.27, 0.62, "Sofa", "Seat depth first, then width", false, 54],
+  [6, 0.84, 0.74, "Rocking chair", "Kept \u00b7 yours", true, 54],
+  [8, 0.525, 0.3, "Lamp", "Light the reading spot", false, 44],   // on the rattan pendant over the coffee table
+]
+
+// 4 · the comparison: the sofa you have, then real candidates; the last one flies into the room's list
+const HYLTARP: Item = { k: "hyltarp", name: "HYLTARP Sectional", price: 0, owned: true, spec: "Seat 23⅝″ deep", why: "Keep it if that’s deep enough.", checks: ["Costs nothing", "Already in place", "Rocking chair still fits"] }
+const STOCKHOLM25: Item = { k: "stockholm25", name: "STOCKHOLM 2025 Sofa", price: 1999, spec: "Seat 27⅛″ deep · 84⅝″ wide", why: "Deeper, but most of the budget.", checks: ["Deeper than yours", "Wide seat", "Under $2,500"] }
+const SODERHAMN: Item = { k: "soderhamn", name: "SÖDERHAMN Sleeper sofa", price: 1375, spec: "Seat 36⅝″ deep · 84¼″ wide", why: "Deepest seat here, within budget.", checks: ["Tucked-up reading", "Room to turn", "Under $2,500"] }
+const ROCKSJON: Item = { k: "rocksjon-loveseat", name: "ROCKSJÖN Loveseat", price: 329, spec: "Seat 19⅝″ deep · 18½″ high" }
+const PICKS: Item[] = [HYLTARP, STOCKHOLM25, SODERHAMN]
+// need: why this piece is in the room, traced to something said in the talk, not its size or material
+const GRID: Item[] = [
+  { ...SODERHAMN, need: "Room to read with your legs tucked up." },
+  { k: "poang", name: "Your rocking chair", price: 0, owned: true, need: "You asked to keep it.", checks: ["Keep the rocking chair", "Second reading seat", "Costs nothing"] },
+  { k: "hd-gooseneck", name: "Hampton Bay Gooseneck Floor Lamp", price: 49.97, shop: "Home Depot", need: "Light you can aim at the page at night.", checks: ["Light to read", "Aims at the page", "Under $2,500"] },
+  { k: "coffee", name: "LACK Coffee table", price: 29.99, need: "Leaves the budget for the sofa.", checks: ["Reach from the sofa", "Leaves budget", "Under $2,500"] },
+  { k: "side", name: "LACK Side table", price: 16.99, need: "Book and tea within reach.", checks: ["Book within reach", "Fits by the sofa", "Under $2,500"] },
+  { k: "pendant", name: "SINNERLIG Pendant lamp", price: 99.99, need: "Warmer light for dark evenings.", checks: ["Light to read", "Warm evenings", "Under $2,500"] },
+  { k: "rug", name: "STOENSE Rug, low pile", price: 119.99, need: "Softens the reading corner.", checks: ["Soft reading corner", "Under $2,500"] },
+  { k: "hd-bookcase", name: "StyleWell 5-Shelf Classic Bookcase", price: 96.75, shop: "Home Depot", need: "A home for the books.", checks: ["Home for books", "Near the reading spot", "Under $2,500"] },
+  { k: "cabinet", name: "VIHALS Sideboard", price: 199, need: "Hides clutter, keeps it calm.", checks: ["Hides clutter", "Under $2,500"] },
+  { k: "mirror", name: "NISSEDAL Mirror", price: 99.99, need: "Bounces light into a dark room.", checks: ["Brighter room", "Light to read", "Under $2,500"] },
+  { k: "stool", name: "TJUSIG Bench with shoe storage", price: 69.99, need: "Shoes off at the door.", checks: ["Shoes off at the door", "Under $2,500"] },
+  { k: "dchair", name: "TEODORES Chair", price: 55, need: "A spare seat when friends visit.", checks: ["Spare seat for friends", "Under $2,500"] },
+]
+const total = (items: Item[]) => items.reduce((a, it) => a + it.price, 0)
+// 5 · life changes: the sofa need is revised, a related seat is suggested, budget and the kept chair carry over
+const AFTER: Item[] = [
+  { ...ROCKSJON, why: "Shallower, higher seat for sitting upright.", checks: ["Sitting upright", "Higher seat", "Under $2,500"] },
+  { k: "rocksjon-armchair", name: "ROCKSJÖN Armchair", price: 199, spec: "Seat 19⅝″ deep · 18½″ high", why: "Suggested: a second upright seat to talk across.", checks: ["Sitting upright", "Talk face to face", "Under $2,500"] },
+]
+const BUDGET = 2500
+const GRID_AFTER = [...AFTER, ...GRID.slice(1)]
+
+// 6 · one room, one view, different times of life; then every stage shrinks into a row
 const COLLECTIONS = [
-  { name: "As it is", by: 0, thumbs: ["armchair", "coffee", "rug", "floorlamp", "pendant", "shelf"] },
-  { name: "Essentials", by: 1, thumbs: ["sofa", "coffee", "armchair", "rug", "floorlamp", "shelf"] },
-  { name: "Statement", by: 1, thumbs: ["sofa", "armchair", "pendant", "coffee", "rug", "floorlamp"] },
-  { name: "One recolor", by: 2, thumbs: ["sofa", "armchair", "coffee", "rug", "floorlamp", "side"] },
-  { name: "Keep & swap", by: 0, thumbs: ["pendant", "stool", "cabinet", "dchair", "mirror", "side"] },
-  { name: "Dining bar", by: 1, thumbs: ["dchair", "cabinet", "pendant", "rug", "side", "mirror"] },
+  { name: "Moving in", img: "curator-0", thumbs: ["armchair", "coffee", "rug", "floorlamp", "pendant", "shelf"] },
+  { name: "Reading nights", img: "hl-1", thumbs: ["hyltarp", "poang", "pendant", "rug", "hd-gooseneck", "hd-bookcase"] },
+  { name: "Friends over", img: "curator-1", thumbs: ["sofa", "coffee", "armchair", "rug", "floorlamp", "shelf"] },
+  { name: "A quieter year", img: "hl-7", thumbs: ["soderhamn", "poang", "pendant", "rug", "coffee", "side"] },
+  { name: "New colors", img: "curator-2", thumbs: ["sofa", "armchair", "coffee", "rug", "floorlamp", "side"] },
+  { name: "Next chapter", img: "hl-8", thumbs: ["stockholm25", "poang", "pendant", "rug", "coffee", "shelf"] },
 ]
 
 const FIELD_KINDS = ["sofa", "armchair", "coffee", "pendant", "rug", "floorlamp", "shelf", "side", "bed", "nightstand", "dresser", "desk", "dchair", "stool", "mirror", "cabinet", "armchair", "sofa"]
-const FLICK = ["tile-sofa", "curator-1", "tile-armchair", "curator-2", "tile-rug", "tile-pendant", "curator-0", "tile-shelf"]
+const FLICK = ["tile-sofa", "hl-5", "tile-armchair", "hl-6", "tile-rug", "tile-pendant", "hl-8", "curator-0"]
 
-const PICKS: [string, string, string][] = [
-  ["armchair", "STRANDMON Wing chair", "IKEA \u00b7 $399"],
-  ["rug", "STOENSE Rug", "IKEA \u00b7 $120"],
-  ["sofa", "KIVIK Sofa", "IKEA \u00b7 $1,299"]
-]
-const GRID: [string, string, string][] = [
-  ["sofa", "KIVIK Sofa", "IKEA \u00b7 $1,299"],
-  ["armchair", "STRANDMON Wing chair", "IKEA \u00b7 $399"],
-  ["coffee", "LACK Coffee table", "IKEA \u00b7 $29.99"],
-  ["side", "LACK Side table", "IKEA \u00b7 $16.99"],
-  ["floorlamp", "LERSTA Floor/reading lamp", "IKEA \u00b7 $22.99"],
-  ["pendant", "SINNERLIG Pendant lamp", "IKEA \u00b7 $99.99"],
-  ["rug", "STOENSE Rug", "IKEA \u00b7 $120"],
-  ["shelf", "KALLAX Shelf unit", "IKEA \u00b7 $79.99"],
-  ["cabinet", "VIHALS Sideboard", "IKEA \u00b7 $199"],
-  ["mirror", "NISSEDAL Mirror", "IKEA \u00b7 $99.99"],
-  ["stool", "TJUSIG Bench with shoe storage", "IKEA \u00b7 $69.99"],
-  ["dchair", "TEODORES Chair", "IKEA \u00b7 $55"]
-]
 // Meet the team: each member's cut-out (from the tape collage) on a glass card; hover shows their photo
 const TEAM: { name: string; url: string; key: string }[] = [
   { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", key: "yimeng" },
@@ -256,7 +295,6 @@ const TEAM: { name: string; url: string; key: string }[] = [
   { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
   { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },
 ]
-const GRID_TOTAL = "$2,492"
 const COL_SPEED = [0, 0.2, 0.07, 0.28]
 const PILE_KINDS = ["armchair", "sofa", "rug", "shelf", "coffee", "pendant", "floorlamp", "side", "mirror", "cabinet", "dchair", "stool", "desk", "bed", "dresser", "nightstand", "sofa", "armchair"]
 const BITS = [
@@ -264,24 +302,17 @@ const BITS = [
   [-0.15, 0.2, 1], [0.12, 0.13, 0], [-0.28, -0.03, 2], [0.02, -0.26, 0], [0.19, 0.24, 2], [-0.04, 0.27, 1], [0.3, 0.16, 0],
 ]
 const BIG_WORDS: [string, string][] = [
-  ["Keep", "-14vw"],
-  ["what you", "-24vw"],
-  ["love", "8vw"],
+  ["Life", "-16vw"],
+  ["changes.", "-4vw"],
+  ["Rooms too.", "6vw"],
 ]
 
 /* --------------------------------------------------------------- artwork */
 // Photos were generated for this template and are embedded as WebP (see IMG at the end of the file).
 
 function Tile({ k }: { k: string }) {
-  return <img className="lcl-img lcl-prod" src={IMG["tile-" + k] || IMG["tile-sofa"]} alt="" draggable={false} />
-}
-
-function Avatar({ i }: { i: number }) {
-  return (
-    <span className="lcl-av" aria-hidden="true">
-      <img src={IMG["curator-" + i]} alt="" draggable={false} />
-    </span>
-  )
+  const src = IMG["tile-" + k] || IMG["tile-sofa"]
+  return <img className={"lcl-img lcl-prod" + (src.endsWith(".jpg") ? " lcl-white" : "")} src={src} alt="" draggable={false} />
 }
 
 function Sun() {
@@ -355,12 +386,12 @@ const CSS =
   ".lcl-flick{opacity:0}" +
   ".lcl-full[data-flip] .lcl-flick{opacity:1}" +
   ".lcl-cap{position:absolute;left:0;right:0;top:50%;margin:0;transform:translateY(-50%);color:#fff;text-align:center;font-weight:400;font-size:clamp(22px,3vw,50px);letter-spacing:-.025em;padding:0 16px;text-shadow:0 1px 30px rgba(0,0,0,.25)}" +
-  ".lcl-cap>span{opacity:calc(clamp(0, var(--cap,0) * (var(--n) + 6) - var(--i), 1) * var(--capo,1))}" +
+  ".lcl-cap>span>span{opacity:calc(clamp(0, var(--cap,0) * (var(--n) + 6) - var(--i), 1) * var(--capo,1))}" +
   ".lcl-co{position:absolute;inset:0;color:#fff;opacity:clamp(0, var(--c,0) * 3, 1);pointer-events:none}" +
   ".lcl-co[data-live] .lcl-hit,.lcl-ui[data-live] .lcl-hit{pointer-events:auto}" +
   ".lcl-vx{position:absolute;inset:0;width:100%;height:100%;overflow:visible}" +
   ".lcl-vx line{stroke:rgba(255,255,255,.8);stroke-width:1;stroke-dasharray:1 1;stroke-dashoffset:calc(1 - var(--c,0))}" +
-  ".lcl-vlab{position:absolute;transform:translate(-100%,-50%);padding-right:10px;font-size:13px;white-space:nowrap;opacity:clamp(0, (var(--c,0) - .3) * 3, 1)}" +
+  ".lcl-vlab{position:absolute;transform:translate(-100%,-50%);padding-right:10px;font-size:clamp(15px,1.5vw,24px);letter-spacing:-.02em;white-space:nowrap;opacity:clamp(0, (var(--c,0) - .3) * 3, 1)}" +
   ".lcl-bio{position:absolute;top:16px;right:16px;width:min(270px,30%);margin:0;font-size:12.5px;line-height:1.4;opacity:clamp(0, (var(--c,0) - .45) * 2.4, .92);transform:translateY(calc((1 - var(--c,0)) * -12px))}" +
   ".lcl-tags{position:absolute;right:12%;top:36%;display:flex;flex-direction:column;font-size:clamp(20px,2.2vw,34px);line-height:1.08;letter-spacing:-.02em}" +
   ".lcl-tags>span{opacity:clamp(0, (var(--c,0) - .25 - var(--k) * .2) * 5, 1);transform:translateY(calc((1 - clamp(0, (var(--c,0) - .25 - var(--k) * .2) * 5, 1)) * 14px))}" +
@@ -411,7 +442,7 @@ const CSS =
   ".lcl-wcol{position:absolute;left:0;right:0;top:0;will-change:transform}" +
   ".lcl-big{position:absolute;left:0;right:0;margin:0;transform:translate(var(--x,0px),-50%);font-weight:400;font-size:clamp(84px,17vw,300px);line-height:1;letter-spacing:-.055em;text-align:center;white-space:nowrap}" +
   ".lcl-big>span{position:relative;display:inline-block}" +
-  ".lcl-big>span>span{display:inline-block;transform:translateY(calc(var(--e,0) * (.1em + var(--i) * .16em) + sin(var(--i) * 1.7) * var(--e,0) * .18em)) rotate(calc(var(--e,0) * var(--i) * 5deg));opacity:calc(1 - var(--e,0) * .3)}" +
+  ".lcl-big>span>span{display:inline-block;white-space:pre;transform:translateY(calc(var(--e,0) * (.1em + var(--i) * .16em) + sin(var(--i) * 1.7) * var(--e,0) * .18em)) rotate(calc(var(--e,0) * var(--i) * 5deg));opacity:calc(1 - var(--e,0) * .3)}" +
   ".lcl-doodle{position:absolute;right:-.42em;top:-.32em;width:.46em;height:.46em;overflow:visible}" +
   ".lcl-doodle path{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 1;stroke-dashoffset:calc(1 - var(--dd,0))}" +
   /* zoom + collections */
@@ -513,7 +544,100 @@ const THEME =
   ".lcl-tm-card b{font-weight:400;font-size:clamp(13px,1.15vw,18px);letter-spacing:-.01em;border-bottom:1px solid transparent;transition:border-color .2s}" +
   ".lcl-tm-card:hover b{border-color:currentColor}" +
   "@media (max-width:720px){.lcl-tm-row{grid-template-columns:repeat(3,1fr)}.lcl-tm-fig{max-height:24vh}}" +
-  ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--lime);color:#141414}"
+  ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--lime);color:#141414}" +
+  // the story: habit -> condition -> comparison -> revision, in the deck's own type and glass cards
+  ".lcl-img.lcl-prod.lcl-white{mix-blend-mode:multiply;filter:none;padding:12%}.lcl-fly{mix-blend-mode:multiply}" +
+  ".lcl-mani{padding-bottom:70vh}.lcl-grid{padding-bottom:46vh;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 40vh),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 40vh),transparent)}" +   // the white panel fades into the paper instead of ending on an edge
+  ".lcl-story{width:100%;max-width:1040px;margin:0 auto;padding-top:14vh}" +
+  ".lcl-sh{margin:0 0 clamp(18px,3.2vh,34px);font-weight:400;font-size:clamp(30px,3.6vw,60px);line-height:1.05;letter-spacing:-.035em}" +
+  ".lcl-chat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:clamp(10px,1.6vh,18px);font-size:clamp(20px,2.2vw,36px);line-height:1.15;letter-spacing:-.025em}" +
+  ".lcl-chat li{opacity:clamp(0, var(--tc,0) * 5 - var(--i), 1);transform:translateY(calc((1 - clamp(0, var(--tc,0) * 5 - var(--i), 1)) * 14px))}" +
+  ".lcl-chat li{display:flex;align-items:baseline;gap:16px}" +
+  ".lcl-chat li>span:first-child{flex:none;width:76px;color:var(--soft)}" +
+  ".lcl-chat li[data-el]{color:color-mix(in srgb,var(--ink) 58%,transparent)}" +
+  ".lcl-note{margin:0;color:var(--soft);font-size:13px;line-height:1.4}" +
+  ".lcl-cmp{padding-top:12vh}.lcl-cmp .lcl-sh{margin-bottom:10px}" +
+  ".lcl-mani .lcl-col{padding-top:clamp(20px,4vh,40px)}.lcl-mani .lcl-col>:first-child{display:block}" +
+  ".lcl-ctag{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:var(--lime);color:#141414;font-size:9px}" +
+  ".lcl-was .lcl-ctag{background:rgba(255,255,255,.8)}" +
+  ".lcl-cwhy{display:block;margin-top:7px;font-size:13.5px;line-height:1.3}" +
+  ".lcl-life{position:relative;z-index:5;margin-top:calc(var(--h) * -.7);background:var(--paper);padding:0 clamp(16px,2vw,32px) 24vh}" +
+  ".lcl-swap{display:grid;grid-template-columns:1fr 44px 1fr 1fr;align-items:start;gap:clamp(12px,1.6vw,24px);max-width:1040px;margin:clamp(28px,5vh,56px) auto 0}" +
+  ".lcl-was .lcl-card>span:not(.lcl-pic){opacity:.5}.lcl-was .lcl-pic img{filter:grayscale(1) opacity(.45)}.lcl-was .lcl-cname{text-decoration:line-through}" +
+  ".lcl-arrow{display:grid;place-items:center;width:44px;height:44px;margin-top:calc(min(260px,22vw) * .5);border-radius:50%;background:var(--lime);color:#141414}.lcl-arrow svg{width:14px;height:14px}" +
+  ".lcl-kept{flex-wrap:wrap;align-items:center;max-width:1040px;margin:clamp(24px,4vh,40px) auto 12px}" +
+  ".lcl-kept b{font-weight:500;color:var(--ink);padding:7px 12px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--rule)}" +
+  ".lcl-life>.lcl-note{max-width:1040px;margin:0 auto}" +
+  ".lcl-ghead .lcl-note{margin-top:4px}" +
+  ".lcl-tm-sub{margin:0;max-width:30em;text-align:center;font-size:clamp(16px,1.5vw,24px);line-height:1.3;color:var(--soft);opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 12px))}" +
+  ".lcl-life0 .lcl-tm-title{max-width:16em;text-align:center;line-height:1.05}" +
+  ".lcl-team{--tn:1;display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.6vh,16px);padding:clamp(24px,6vh,64px) 0 clamp(12px,3vh,32px)}" +
+  ".lcl-team .lcl-tm-fig{max-height:38vh}" +
+  "@media (max-width:720px){.lcl-swap{grid-template-columns:1fr 1fr}.lcl-arrow{display:none}.lcl-chat li{flex-direction:column;gap:4px}.lcl-team .lcl-tm-fig{max-height:24vh}}" +
+  // 2 · the sofa hotspot (the product's pill + line + dot), its highlight, the quick picks
+  ".lcl-spot{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse var(--rx) var(--ry) at var(--hx) var(--hy),transparent 82%,rgba(0,0,0,.5) 100%);animation:lcl-pulse 1.8s ease;transition:opacity .3s}" +
+  ".lcl-spot::after{content:\"\";position:absolute;left:calc(var(--hx) - var(--rx));top:calc(var(--hy) - var(--ry));width:calc(var(--rx) * 2);height:calc(var(--ry) * 2);border-radius:50%;box-shadow:0 0 0 2px var(--lime),0 0 46px 12px rgba(217,242,107,.32)}" +
+  "@keyframes lcl-pulse{0%{opacity:0}30%{opacity:1}100%{opacity:0}}" +
+  ".lcl-co:has(.lcl-hot:hover,.lcl-hs-pill:hover,.lcl-deck:hover) .lcl-spot{opacity:1;animation:none}" +
+  ".lcl-hot{position:absolute;left:calc(var(--hx) - var(--rx));top:calc(var(--hy) - var(--ry));width:calc(var(--rx) * 2);height:calc(var(--ry) * 2);border-radius:50%;cursor:pointer}" +
+  ".lcl-hs{position:absolute;left:var(--hx);top:var(--hy);width:0;height:0}" +
+  ".lcl-hs-dot{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.35),0 2px 10px rgba(0,0,0,.25)}" +
+  ".lcl-hs-line{position:absolute;left:-.75px;bottom:8px;width:1.5px;height:var(--lh,92px);background:rgba(255,255,255,.9)}" +
+  ".lcl-hs-pill{position:absolute;bottom:calc(var(--lh,92px) + 8px);left:-38px;display:flex;align-items:center;gap:12px;padding:7px 20px 7px 7px;border:0;border-radius:999px;background:rgba(255,255,255,.3);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);color:#fff;font:inherit;text-align:left;white-space:nowrap;cursor:pointer;transition:background .2s}" +
+  ".lcl-hs-pill:hover{background:rgba(255,255,255,.45)}" +
+  ".lcl-hs-pill img{width:40px;height:40px;border-radius:50%;object-fit:contain;background:#fff;padding:3px}" +
+  ".lcl-hs-pill small{display:block;font-size:11px;opacity:.85;line-height:1.3}.lcl-hs-pill b{display:block;font-weight:600;font-size:14px;line-height:1.35}" +
+  ".lcl-flip .lcl-hs-pill{left:auto;right:-38px}" +
+  ".lcl-sc{background:#fff;border-radius:12px;overflow:hidden}.lcl-sc .lcl-img.lcl-white{mix-blend-mode:normal}.lcl-sc[data-on]{outline:2px solid var(--lime);outline-offset:3px}" +
+  // 3 · the talk: spoken lines in pills (as in the app's chat), decisions pinned on the room
+  ".lcl-say{display:inline}.lcl-chat li:not([data-el]) .lcl-say{padding:.3em .85em;border-radius:999px;background:var(--ink);color:var(--paper)}" +
+  ".lcl-talk{position:relative;height:calc(var(--h) * 3.2)}" +
+  ".lcl-talk-in{position:sticky;top:0;height:var(--h);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:clamp(20px,4vw,64px);max-width:1240px;margin:0 auto;padding:0 clamp(0px,2vw,24px)}" +
+  ".lcl-talk .lcl-sh{font-size:clamp(26px,2.9vw,48px);max-width:14em}" +
+  ".lcl-talk .lcl-chat{font-size:clamp(15px,1.4vw,22px);gap:clamp(6px,1.1vh,12px)}" +
+  ".lcl-talk .lcl-chat li{opacity:clamp(0, (var(--tc,0) * 12 - var(--i)) * 3, 1);transform:translateY(calc((1 - clamp(0, (var(--tc,0) * 12 - var(--i)) * 3, 1)) * 12px))}" +
+  ".lcl-room{position:relative;width:min(44vw,calc((var(--h) - 96px) * .893));aspect-ratio:1250/1400}.lcl-room>img{border-radius:26px}" +
+  ".lcl-pin{opacity:clamp(0, var(--tc,0) * 12 - var(--i), 1)}.lcl-pin .lcl-hs-pill{padding:8px 16px;cursor:default}" +
+  ".lcl-budget{position:absolute;left:14px;bottom:14px;padding:8px 14px;border-radius:999px;background:var(--lime);color:#141414;opacity:clamp(0, var(--tc,0) * 12 - var(--i), 1)}" +
+  ".lcl-brief{position:absolute;left:16px;top:16px;color:#fff;font-size:9.5px;text-shadow:0 1px 8px rgba(0,0,0,.4)}" +
+  // 6 · the row the stages shrink into
+  ".lcl-row{position:absolute;inset:0;z-index:2;pointer-events:none}" +
+  ".lcl-rt{position:absolute;margin:0;opacity:clamp(0, var(--sh,0) * 2.2 - (5 - var(--k)) * .18, 1)}" +
+  ".lcl-rt img{border-radius:12px}.lcl-rt:last-child img{visibility:hidden}" +
+  ".lcl-rt figcaption{margin-top:10px;text-align:center;font-size:9.5px;color:var(--ink)}" +
+  // voice input: mic + live waveform while it "records", then the transcript
+  ".lcl-chat li{--x:calc(var(--tc,0) * 12 - var(--i))}" +
+  ".lcl-voice{position:relative;display:inline-flex;align-items:center;gap:8px}" +
+  ".lcl-mic{width:11px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round}" +
+  ".lcl-wave{position:absolute;left:30px;top:50%;display:flex;align-items:center;gap:3px;height:16px;transform:translateY(-50%);opacity:clamp(0, min(var(--x) * 5, (.75 - var(--x)) * 6), 1)}" +
+  ".lcl-wave i{display:block;width:3px;height:100%;border-radius:2px;background:var(--lime);animation:lcl-wv .9s ease-in-out infinite;animation-delay:calc(var(--k) * -.13s)}" +
+  "@keyframes lcl-wv{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}" +
+  ".lcl-txt{opacity:clamp(0, (var(--x) - .6) * 4, 1)}" +
+  ".lcl-trace{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;opacity:clamp(0, (var(--x) - .5) * 3, 1)}" +
+  ".lcl-trace b{font-weight:500;font-size:9.5px;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--lime) 55%,transparent);color:#141414}" +
+  ".lcl-trace b:first-child::before{content:\"\\2192  \"}" +
+  // the room's list: why each piece, one at a time
+  ".lcl-need{--x:calc(var(--gr,0) * 14 - var(--i));display:block;margin-top:8px;font-size:13px;line-height:1.3;opacity:clamp(0, var(--x) * 3, 1);transform:translateY(calc((1 - clamp(0, var(--x) * 3, 1)) * 8px))}" +
+  ".lcl-need .lcl-say{padding:.35em .9em;border-radius:999px;background:var(--ink);color:var(--paper)}.lcl-need .lcl-wave{height:12px}" +
+  // any line that sits on a photo gets a translucent pill behind it
+  ".lcl-pillbg,.lcl-tags>span,.lcl-di,.lcl-vlab{background:rgba(20,20,20,.4);backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1);border-radius:999px}" +
+  ".lcl-pillbg{display:inline-block;padding:.12em .6em;opacity:calc(clamp(0, var(--cap,0) * 5, 1) * var(--capo,1))}" +
+  ".lcl-tags{align-items:flex-start;gap:6px}.lcl-tags>span{padding:.1em .5em}.lcl-tags>span:last-child{color:rgba(255,255,255,.75)}" +
+  ".lcl-di{padding:.04em .45em}" +
+  ".lcl-vlab{padding:.3em .8em;margin-right:10px}" +
+  ".lcl-lede{margin:-10px 0 clamp(14px,2.4vh,26px);max-width:30em;color:var(--soft);font-size:clamp(14px,1.2vw,18px);line-height:1.35}" +
+  ".lcl-src{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:18px 0 12px}" +
+  ".lcl-src-card{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 18px;border-radius:18px;background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.05)}" +
+  ".lcl-src-card b{font-weight:500;font-size:clamp(16px,1.4vw,22px);letter-spacing:-.02em}.lcl-src-card small{color:var(--soft);font-size:9.5px}" +
+  ".lcl-src-one{background:var(--lime);box-shadow:none}.lcl-src-one small{color:#141414;opacity:.7}" +
+  ".lcl-src-more{background:transparent;box-shadow:none;border:1.5px dashed rgba(20,20,20,.22)}.lcl-src-more b{color:var(--soft)}" +
+  ".lcl-src-arrow{display:grid;place-items:center;width:32px}.lcl-src-arrow svg{width:14px;height:14px}" +
+  // what a piece checks off: a green tick per need it meets
+  ".lcl-checks{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px}" +
+  ".lcl-check{display:inline-flex;align-items:center;gap:5px;font-size:12px;line-height:1.2;color:var(--ink)}" +
+  ".lcl-check svg{width:15px;height:15px;flex:none}.lcl-check circle{fill:#2fae5b}.lcl-check path{fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}" +
+  "" +
+  "@media (max-width:720px){.lcl-talk-in{grid-template-columns:1fr;align-content:center;gap:16px;padding:0 4px}.lcl-room{width:min(70vw,34vh);justify-self:center;order:-1}.lcl-talk .lcl-sh{font-size:22px;margin-bottom:10px}.lcl-talk .lcl-chat li{flex-direction:row;gap:8px}.lcl-talk .lcl-chat li>span:first-child{width:56px}.lcl-hs-pill b{font-size:12px}.lcl-pin .lcl-hs-pill{padding:6px 10px}.lcl-co .lcl-hs-pill{left:-14px}.lcl-rt figcaption{display:none}}"
 
 const FONTS =
   "@font-face{font-family:LclSans;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,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) format(\"woff2\")}" +
@@ -585,7 +709,7 @@ export default function LoupeCuratorLanding({
   const reg = (k: string) => (el: El | null) => {
     els.current[k] = el
   }
-  const [curator, setCurator] = useState(0)
+  const [view, setView] = useState("curator-0")
   const [col, setCol] = useState(0)
   const [saved, setSaved] = useState({} as Record<string, boolean>)
   const [seed, setSeed] = useState(1)
@@ -612,7 +736,9 @@ export default function LoupeCuratorLanding({
     top: 0,
     last: 0,
     clock: 0,
-    curator: 0,
+    view: "curator-0",
+    picked: false,
+    row: [] as Box[],
     col: 0,
     fk: -1,
     count: -1,
@@ -633,7 +759,16 @@ export default function LoupeCuratorLanding({
     raf: 0,
     cache: new WeakMap() as WeakMap<object, Record<string, string>>,
   })
-  s.current.curator = curator
+  s.current.view = view
+  const pick = SWAPS.find((sw) => sw.img === view) || SWAPS[1]   // a HYLTARP color still reads as HYLTARP
+  const choose = (img: string) => {
+    s.current.picked = true
+    setView(img)
+  }
+  const nextPick = () => {
+    const i = SWAPS.indexOf(SWAPS.find((sw) => sw.img === view) || SWAPS[1])
+    choose(SWAPS[(i + 1) % SWAPS.length].img)
+  }
 
   const put = (el: El | null | undefined, prop: string, val: string) => {
     if (!el) return
@@ -658,6 +793,11 @@ export default function LoupeCuratorLanding({
 
   // decode the team photos up front so hovering a card swaps instantly
   useEffect(() => {
+    ROOM_IMGS.forEach((k) => {
+      const im = new Image()
+      im.src = IMG[k]
+      im.decode?.().catch(() => {})
+    })
     TEAM.forEach((m) => {
       const im = new Image()
       im.src = "/img/team-" + m.key + ".jpg"
@@ -703,7 +843,7 @@ export default function LoupeCuratorLanding({
     const seen = (k: string) => at(k) < H && at(k) + (st.len[k] || 0) > 0
     const pin = (k: string) => progressFrom(at(k), st.len[k] || 0, H)
 
-    // 1 · the photo field, the gap, the zoom, the curator
+    // 1 · the photo field, the gap, your room; 2 · the sofa swaps in place
     if (seen("intro")) {
       let p = pin("intro")
       if (st.still) p = poseFor(p, REDUCED.intro)
@@ -711,7 +851,7 @@ export default function LoupeCuratorLanding({
         st.clock += dt / 1000
         again = true
       }
-      const fade = 1 - span(p, [0.1, 0.175])
+      const fade = 1 - span(p, [0.04, 0.08])
       const cam = span(p, INTRO.fly) * FIELD.travel + st.clock * FIELD.idle
       const tw = st.tw
       st.thumbs.forEach((el, j) => {
@@ -744,15 +884,6 @@ export default function LoupeCuratorLanding({
       put(I, "--g", bWords.w.toFixed(1) + "px")
       // keep the headline centered while the gap is closed; drift back to the true center as it opens
       put(e.l2, "transform", "translate(" + (st.l2dx * (1 - smooth(span(p, INTRO.open)))).toFixed(1) + "px,-50%)")
-      // swap team -> room while the window is at its smallest
-      const tm = p < INTRO.close[1] ? 1 : 0   // the window is closed in between, so just swap
-      put(I, "--tm", tm.toFixed(3))
-      put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
-      put(e.team, "visibility", tm > 0.001 ? "visible" : "hidden")
-      const pa = span(p, INTRO.para), po = 1 - span(p, INTRO.paraOut)
-      put(e.para, "--t", pa.toFixed(3))
-      put(e.para, "opacity", (Math.min(span(p, [INTRO.close[1], INTRO.para[0] + 0.01]), po)).toFixed(3))
-      put(e.team, "pointerEvents", tm > 0.5 && span(p, INTRO.teamIn) > 0.5 ? "auto" : "none")
       put(I, "--cap", span(p, INTRO.caption).toFixed(3))
       put(I, "--capo", (1 - span(p, INTRO.captionOut)).toFixed(3))
       const c = span(p, INTRO.callouts)
@@ -764,13 +895,23 @@ export default function LoupeCuratorLanding({
         ;(e.flick as HTMLImageElement | null)?.setAttribute("src", IMG[FLICK[f]])
       }
       flag(e.portrait, "data-flip", f >= 0)
-      if (e.portrait && e.portrait.getAttribute("data-v") !== "v" + st.curator) e.portrait.setAttribute("data-v", "v" + st.curator)
+      // with no hand on it, the room tries the next sofa every few scrolls; a click takes over until you scroll back up
+      if (p < INTRO.callouts[0]) st.picked = false
+      if (!st.picked) {
+        const sw = span(p, INTRO.swap)
+        const img = SWAPS[sw <= 0 ? 0 : 1 + Math.min(SWAPS.length - 2, Math.floor(sw * (SWAPS.length - 1)))].img
+        if (img !== st.view) {
+          st.view = img
+          setView(img)
+        }
+      }
       flag(e.callouts, "data-live", c > 0.6)
     }
 
-    // 2 · manifesto inks in; the grid panel rises; the last pick flies into the grid
+    // 3 · the talk lands on the room; 4 · the grid panel rises; the last pick flies into the grid
     if (seen("mani") || seen("grid")) {
       put(e.mani, "--t", clamp01((H * 0.7 - at("mani")) / (H * 1.6)).toFixed(3))
+      put(e.talk, "--tc", (st.still ? 1 : progressFrom(at("talk"), st.len.talk || 0, H) * 1.15).toFixed(3))
       const gTop = at("grid")
       put(e.mani, "--dim", smooth(clamp01((H - gTop) / H)).toFixed(3))
       const k = st.still ? (gTop < H * 0.5 ? 1 : 0) : clamp01((H * 0.95 - gTop) / (H * 0.75))
@@ -783,12 +924,16 @@ export default function LoupeCuratorLanding({
         flag(e.flyDst, "data-away", k < 1)
         put(e.gtitle, "--tg", (titleGapAt(k) * fl.m.w * 1.06).toFixed(1) + "px")
       }
+      put(e.grid, "--gr", (st.still ? 1 : clamp01((H * 0.8 - gTop) / ((st.len.grid || H) * 0.5))).toFixed(3))
       const gp = clamp01((H - gTop) / ((st.len.grid || H) + H))
       st.cols.forEach((el, j) => put(el, "transform", "translate3d(0," + (st.still ? 0 : -gp * H * (COL_SPEED[j] || 0)).toFixed(1) + "px,0)"))
     }
 
-    // 3 · giant words over the lime sweep
-    if (st.words.length && seen("words")) {   // section removed from the deck; kept guarded
+    // the revision: its conversation inks in as it rises
+    if (seen("life")) put(e.life, "--tc", (st.still ? 1 : clamp01((H * 0.85 - at("life")) / (H * 0.7))).toFixed(3))
+
+    // 5 · giant words over the lime sweep
+    if (st.words.length && seen("words")) {
       const q = clamp01((H - at("words")) / H)
       const p = st.still ? 0.4 : pin("words")
       const n = st.words.length
@@ -806,12 +951,17 @@ export default function LoupeCuratorLanding({
       if (st.still) p = poseFor(p, zoomPoses(n))
       const Z = e.zoom
       const w0 = Math.min(W * 0.1, 130)
-      const b = zoomBox(span(p, ZOOM.open), span(p, ZOOM.grow), W, H, w0, w0 * 0.66)
+      const g = zoomBox(span(p, ZOOM.open), span(p, ZOOM.grow), W, H, w0, w0 * 0.66)
+      // at the end the full-bleed stage shrinks into the last slot of a row of every stage
+      const sh = st.still ? 0 : smooth(span(p, ZOOM.shrink))
+      const t = st.row[n - 1]
+      const b: Box = sh > 0 && t ? { x: lerp(g.x, t.x, sh), y: lerp(g.y, t.y, sh), w: lerp(g.w, t.w, sh), h: lerp(g.h, t.h, sh), r: lerp(g.r, 12, sh) } : g
       put(e.scenes, "clipPath", insetOf(b, W, H))
       put(e.scenes, "visibility", b.w < 1 ? "hidden" : "visible")
-      put(e.scenesIn, "transform", "scale(" + coverScale(b, W, H).toFixed(4) + ")")
-      put(Z, "--g", b.w.toFixed(1) + "px")
-      const u = smooth(span(p, ZOOM.ui))
+      put(e.scenesIn, "transform", "translate3d(" + (b.x + b.w / 2 - W / 2).toFixed(1) + "px," + (b.y + b.h / 2 - H / 2).toFixed(1) + "px,0) scale(" + coverScale(b, W, H).toFixed(4) + ")")
+      put(Z, "--g", g.w.toFixed(1) + "px")
+      put(Z, "--sh", sh.toFixed(3))
+      const u = smooth(span(p, ZOOM.ui)) * (1 - smooth(span(p, [ZOOM.shrink[0], ZOOM.shrink[0] + 0.04])))
       put(Z, "--u", u.toFixed(3))
       const a = drumAt(p, n)
       put(Z, "--a", a.toFixed(4))
@@ -910,11 +1060,36 @@ export default function LoupeCuratorLanding({
       const stage = els.current.introStage as HTMLElement | null
       st.W = root.clientWidth
       st.H = stage ? stage.clientHeight : window.innerHeight
-      for (const k of ["intro", "mani", "grid", "words", "zoom", "pile", "foot"]) {
+      for (const k of ["intro", "mani", "grid", "life", "words", "zoom", "pile", "foot"]) {
         const el = els.current[k] as HTMLElement | null
         st.off[k] = el ? el.offsetTop : 0   // (measured per section)
         st.len[k] = el ? el.offsetHeight : 0
       }
+      // the talk sits inside the comparison section, so its offset is the section's plus its own
+      const talk = els.current.talk as HTMLElement | null
+      st.off.talk = talk ? st.off.mani + talk.offsetTop : 0
+      st.len.talk = talk ? talk.offsetHeight : 0
+      // where the sofa lands on screen with the room photo cover-fitted to the stage
+      const cs = Math.max(st.W / IMG_RATIO, st.H)
+      const iw = IMG_RATIO * cs
+      const co = els.current.callouts as HTMLElement | null
+      if (co) {
+        co.style.setProperty("--hx", ((st.W - iw) / 2 + SOFA_AT.u * iw).toFixed(1) + "px")
+        co.style.setProperty("--hy", ((st.H - cs) / 2 + SOFA_AT.v * cs).toFixed(1) + "px")
+        co.style.setProperty("--rx", (SOFA_AT.ru * iw).toFixed(1) + "px")
+        co.style.setProperty("--ry", (SOFA_AT.rv * cs).toFixed(1) + "px")
+      }
+      // the closing row of life stages
+      const n = COLLECTIONS.length
+      const rw = Math.min(st.W * 0.13, 168)
+      const gap = Math.min(st.W * 0.012, 16)
+      const x0 = (st.W - (n * rw + (n - 1) * gap)) / 2
+      st.row = COLLECTIONS.map((_, i) => ({ x: x0 + i * (rw + gap), y: st.H / 2 - rw * 0.62, w: rw, h: rw * 1.12, r: 12 }))
+      Array.from(root.querySelectorAll("[data-rt]")).forEach((el, i) => {
+        const b = st.row[i]
+        const h = el as HTMLElement
+        h.style.cssText = "left:" + b.x + "px;top:" + b.y + "px;width:" + b.w + "px;height:" + b.h + "px;--k:" + i
+      })
       const wl = els.current.wl as HTMLElement | null, wr = els.current.wr as HTMLElement | null
       st.l2dx = wl && wr ? (wl.offsetWidth - wr.offsetWidth) / 2 : 0
       st.thumbs = Array.from(root.querySelectorAll("[data-th]")) as El[]
@@ -979,7 +1154,7 @@ export default function LoupeCuratorLanding({
     layoutPile()
     schedule()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [curator, still, seed])
+  }, [still, seed])
 
   // ---- jumps (a click may read layout; the frame may not)
   const scrollToY = (y: number) => window.scrollTo({ top: Math.max(0, y), behavior: s.current.still ? "auto" : "smooth" })
@@ -993,12 +1168,14 @@ export default function LoupeCuratorLanding({
     const st = s.current
     const base = absTop()
     const stops = [
-      base + st.off.intro + 0.34 * travel("intro"),
-      base + st.off.intro + 0.54 * travel("intro"),
-      base + st.off.intro + 0.7 * travel("intro"),
-      base + st.off.intro + 0.84 * travel("intro"),
-      base + st.off.mani + st.H,
+      base + st.off.intro + 0.2 * travel("intro"),
+      base + st.off.intro + 0.28 * travel("intro"),
+      base + st.off.intro + 0.48 * travel("intro"),
+      base + st.off.intro + 0.82 * travel("intro"),
+      base + st.off.talk + 0.5 * ((st.len.talk || 0) - st.H),
+      base + st.off.talk + (st.len.talk || 0),
       base + st.off.grid + st.H * 0.3,
+      base + st.off.life - st.H * 0.05,
       ...(st.len.words ? [base + st.off.words + 0.45 * travel("words")] : []),
       base + st.off.zoom + 0.06 * travel("zoom"),
       base + st.off.zoom + drumHold(0, COLLECTIONS.length) * travel("zoom"),
@@ -1099,30 +1276,88 @@ export default function LoupeCuratorLanding({
     cursorRef.current?.removeAttribute("data-on")
   }
 
-  const c = CURATORS[curator]
   const collection = COLLECTIONS[Math.max(0, Math.min(COLLECTIONS.length - 1, col))]
   const golden = goldenAfter(taps)
   const sunAt = brand.toLowerCase().indexOf("o")
-  const paraWords = ("Most people don't start from an empty room. " + brand + " designs around what you already own, with").split(" ")
-  const boxWords = ["real", "furniture", "that fits."]
-  const tailWords = "Every piece in the picture has a real size, a real price and a link to buy it. What you see is what you get.".split(" ")
-  const inkN = paraWords.length + boxWords.length + tailWords.length
-  const pileA = "No guessing. No returns. No empty rooms.".split(" ")
-  const pileB = "Just real furniture that fits.".split(" ")
+  const pileA = (brand + " starts with what you have,").split(" ")
+  const pileB = "finds what fits, and adapts as your life changes.".split(" ")
   const pileN = pileA.length + pileB.length
   const ctaText = "Try it in your own room"
 
-  const card = (item: [string, string, string], key: string, refKey?: string) => (
+  const micWave = (
+    <>
+      <svg className="lcl-mic" viewBox="0 0 12 16" aria-hidden="true">
+        <path d="M6 1.5a2 2 0 0 1 2 2v4a2 2 0 0 1-4 0v-4a2 2 0 0 1 2-2ZM2.5 7.5a3.5 3.5 0 0 0 7 0M6 11v3" />
+      </svg>
+      <span className="lcl-wave" aria-hidden="true">
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((k) => (
+          <i key={k} style={{ "--k": k } as CSSProperties} />
+        ))}
+      </span>
+    </>
+  )
+  const card = (item: Item, key: string, refKey?: string, detail = false, tag?: string, need?: number) => (
     <button type="button" key={key} ref={refKey ? reg(refKey) : undefined} className="lcl-card" onClick={() => toggleSave(key)} data-cursor={saved[key] ? "Saved" : "Save pick"} aria-pressed={!!saved[key]}>
       <span className="lcl-pic">
-        <Tile k={item[0]} />
+        <Tile k={item.k} />
+        {tag && <span className="lcl-ctag lcl-mono">{tag}</span>}
         <span className="lcl-plus" data-on={saved[key] ? "" : undefined}>
           <Plus on={!!saved[key]} />
         </span>
       </span>
-      <span className="lcl-cname">{item[1]}</span>
-      <span className="lcl-cmeta lcl-mono">{item[2]}</span>
+      <span className="lcl-cname">{item.name}</span>
+      <span className="lcl-cmeta lcl-mono">{meta(item)}</span>
+      {item.checks && (
+        <span className="lcl-checks">
+          {item.checks.map((c) => (
+            <span key={c} className="lcl-check">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <circle cx="8" cy="8" r="8" />
+                <path d="M4.6 8.3L7 10.6L11.4 5.8" />
+              </svg>
+              {c}
+            </span>
+          ))}
+        </span>
+      )}
+      {detail && item.spec && <span className="lcl-cmeta lcl-mono">{item.spec}</span>}
+      {detail && item.why && <span className="lcl-cwhy">{item.why}</span>}
+      {need != null && item.need && (
+        <span className="lcl-need" style={{ "--i": need } as CSSProperties}>
+          <span className="lcl-say lcl-voice">
+            {micWave}
+            <span className="lcl-txt">{item.need}</span>
+          </span>
+        </span>
+      )}
     </button>
+  )
+  // spoken lines arrive like voice input: a live waveform, then the transcript; Elephant's lines show what it turned them into
+  const chat = (lines: Line[]) => (
+    <ol className="lcl-chat">
+      {lines.map(([who, text, trace], i) => (
+        <li key={i} data-el={who === "el" ? "" : undefined} style={{ "--i": i } as CSSProperties}>
+          <span className="lcl-mono">{who === "el" ? brand : "You"}</span>
+          {who === "el" ? (
+            <span className="lcl-say">
+              {text}
+              {trace && (
+                <span className="lcl-trace lcl-mono">
+                  {trace.map((t) => (
+                    <b key={t}>{t}</b>
+                  ))}
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="lcl-say lcl-voice">
+              {micWave}
+              <span className="lcl-txt">{text}</span>
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
   )
 
   return (
@@ -1157,7 +1392,6 @@ export default function LoupeCuratorLanding({
 
       {/* 1 · intro: the photo field, the gap, the curator */}
       <section className="lcl-track" ref={reg("intro")} style={{ "--len": TRACK.intro } as CSSProperties}>
-        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.34).toFixed(2) + ")" } as CSSProperties} />
         <div className="lcl-stage" ref={reg("introStage")}>
           {FIELD_KINDS.map((k, j) => (
             <div key={j} className="lcl-th" data-th="">
@@ -1165,90 +1399,48 @@ export default function LoupeCuratorLanding({
             </div>
           ))}
           <h1 className="lcl-h1 lcl-l1">
-            <span ref={reg("l1")}>{words("Dream about the space", 0.1, 0.16)}</span>
+            <span ref={reg("l1")}>{words(brand, 0.1, 0.16)}</span>
           </h1>
           <p className="lcl-h1 lcl-l2" ref={reg("l2")}>
-            <span className="lcl-wl" ref={reg("wl")}>{words("and Elephant makes it", 0.85, 0.16)}</span>
-            <span className="lcl-wr" ref={reg("wr")}>{words("come true", 1.45, 0.16)}</span>
+            <span className="lcl-wl" ref={reg("wl")}>{words("brings a room", 0.5, 0.16)}</span>
+            <span className="lcl-wr" ref={reg("wr")}>{words("that fits your life", 0.9, 0.16)}</span>
           </p>
-          {/* the manifesto, between the team and the room photo */}
-            <p className="lcl-para lcl-para-in" ref={reg("para")} style={{ "--n": inkN, opacity: 0 } as CSSProperties}>
-              {paraWords.map((w, i) => (
-                <span key={"a" + i} className="lcl-ink" style={{ "--i": i } as CSSProperties}>
-                  {w}{" "}
-                </span>
-              ))}
-              <span className="lcl-box" style={{ "--i": paraWords.length + boxWords.length - 1 } as CSSProperties}>
-                {boxWords.map((w, i) => (
-                  <span key={"b" + i} className="lcl-ink" style={{ "--i": paraWords.length + i } as CSSProperties}>
-                    {w}
-                    {i < boxWords.length - 1 ? " " : ""}
-                  </span>
-                ))}
-              </span>{" "}
-              {tailWords.map((w, i) => (
-                <span key={"c" + i} className="lcl-ink" style={{ "--i": paraWords.length + boxWords.length + i } as CSSProperties}>
-                  {w}{" "}
-                </span>
-              ))}
-            </p>
           <div className="lcl-full" ref={reg("portrait")} data-v="v0" style={{ clipPath: "inset(50%)" }}>
             <div className="lcl-zin" ref={reg("portraitIn")}>
-              {CURATORS.map((cu, k) => (
-                <div key={k} className={"lcl-pv lcl-pv" + k}>
-                  <img className="lcl-img" src={IMG["curator-" + k]} alt={k === curator ? "Screenshot of step " + cu.name : ""} draggable={false} />
+              {ROOM_IMGS.map((k) => (
+                <div key={k} className="lcl-pv" style={{ opacity: k === view ? 1 : 0 }}>
+                  <img className="lcl-img" src={IMG[k]} alt={k === view ? "Your room with " + pick.name : ""} draggable={false} />
                 </div>
               ))}
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
-              <div className="lcl-tm" ref={reg("team")}>
-                <span className="lcl-mono lcl-tm-label">Meet the team</span>
-                <h2 className="lcl-tm-title">The people behind {brand}</h2>
-                <div className="lcl-tm-row">
-                  {TEAM.map((m, k) => (
-                    <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
-                      <span className="lcl-tm-fig">
-                        <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
-                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
-                      </span>
-                      <b>{m.name}</b>
-                    </a>
-                  ))}
-                </div>
-              </div>
             </div>
-            <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="316 real products plus your own. Real sizes and real prices.">
-              {letters("316 real products plus your own. Real sizes and real prices.", "cap")}
+            <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="Start with your room. No empty room required.">
+              <span className="lcl-pillbg">{letters("Start with your room. No empty room required.", "cap")}</span>
             </p>
             <div className="lcl-co" ref={reg("callouts")}>
-              <svg className="lcl-vx" aria-hidden="true">
-                <line x1="27%" y1="50%" x2="56%" y2="0%" pathLength={1} />
-                <line x1="27%" y1="50%" x2="49%" y2="100%" pathLength={1} />
-              </svg>
-              <span className="lcl-vlab" style={{ left: "27%", top: "50%" }}>
-                {c.name}
-              </span>
-              <p className="lcl-bio">{c.bio}</p>
-              <div className="lcl-tags">
-                {c.tags.map((t, k) => (
-                  <span key={t} style={{ "--k": k } as CSSProperties}>
-                    {t}
+              {/* hover the sofa: it lights up; pick another and it drops into the same spot */}
+              <i key={view} className="lcl-spot" aria-hidden="true" />
+              <span className="lcl-hot lcl-hit" data-cursor="Swap it" onClick={nextPick} aria-hidden="true" />
+              <div className="lcl-hs">
+                <i className="lcl-hs-line" />
+                <button type="button" className="lcl-hs-pill lcl-hit" onClick={nextPick} data-cursor="Swap it">
+                  <img src={IMG["tile-" + pick.tile]} alt="" draggable={false} />
+                  <span>
+                    <small>{view === "curator-0" ? "Already in your room" : "Sofa \u00b7 " + pick.meta.replace("IKEA \u00b7 ", "")}</small>
+                    <b>{pick.name}</b>
                   </span>
-                ))}
+                </button>
+                <i className="lcl-hs-dot" />
               </div>
-              <div className="lcl-dots">
-                {CURATORS.map((cu, k) => (
-                  <button key={k} type="button" className="lcl-dot lcl-hit" aria-label={"Show " + cu.name} aria-current={k === curator ? "true" : undefined} onClick={() => setCurator(k)} data-cursor={cu.name} />
-                ))}
+              <div className="lcl-tags">
+                <span style={{ "--k": 0 } as CSSProperties}>Hover a piece.</span>
+                <span style={{ "--k": 1 } as CSSProperties}>Pick another.</span>
+                <span style={{ "--k": 2 } as CSSProperties}>Same spot, same room.</span>
               </div>
-              <button type="button" className="lcl-btn lcl-btn-lime lcl-next lcl-hit" data-magnet="" data-cursor="Next step" aria-label="Next step" onClick={() => setCurator((k) => (k + 1) % CURATORS.length)}>
-                <span>
-                  <Chevron d="M4.5 3L7.5 6L4.5 9" />
-                </span>
-              </button>
               <div className="lcl-deck">
-                {c.deck.map((k, j) => (
-                  <button key={curator + "-" + j} type="button" className="lcl-sc lcl-hit" style={{ "--k": j } as CSSProperties} data-cursor="Open pick" aria-label={"Pick " + (j + 1) + " from " + c.name} onClick={() => jumpToCollection(j % COLLECTIONS.length)}>
-                    <Tile k={k} />
+                {SWAPS.slice(1).map((sw, j) => (
+                  <button key={sw.img} type="button" className="lcl-sc lcl-hit" style={{ "--k": j } as CSSProperties} data-on={pick === sw ? "" : undefined} data-cursor={sw.name} aria-label={"Try " + sw.name} onClick={() => choose(sw.img)}>
+                    <Tile k={sw.tile} />
                   </button>
                 ))}
               </div>
@@ -1257,50 +1449,152 @@ export default function LoupeCuratorLanding({
         </div>
       </section>
 
-      {/* 2 · the picks column, slides over the pinned intro (the manifesto moved into the intro) */}
+      {/* 4 + 5 · a habit becomes a design condition, then a comparison; slides over the pinned intro */}
       <section className="lcl-mani" ref={reg("mani")}>
-        <div className="lcl-col">{PICKS.map((it, k) => card(it, "pick" + k, k === PICKS.length - 1 ? "flySrc" : undefined))}</div>
+        <div className="lcl-talk" ref={reg("talk")}>
+          <div className="lcl-talk-in">
+            <div className="lcl-talk-l">
+              <h2 className="lcl-sh">Say your habits. We take care of the rest.</h2>
+              <p className="lcl-lede">{brand} listens for what you really need, turns it into design decisions, and keeps them.</p>
+              {chat(TALK)}
+            </div>
+            <div className="lcl-room">
+              <img className="lcl-img" src={IMG["hl-1"]} alt="The room being refined" draggable={false} />
+              {PINS.map(([after, u, v, cat, text, flip, lh]) => (
+                <div key={cat} className={"lcl-hs lcl-pin" + (flip ? " lcl-flip" : "")} style={{ left: u * 100 + "%", top: v * 100 + "%", "--i": after, "--lh": lh + "px" } as CSSProperties}>
+                  <i className="lcl-hs-line" />
+                  <span className="lcl-hs-pill">
+                    <span>
+                      <small>{cat}</small>
+                      <b>{text}</b>
+                    </span>
+                  </span>
+                  <i className="lcl-hs-dot" />
+                </div>
+              ))}
+              <span className="lcl-budget lcl-mono" style={{ "--i": 10 } as CSSProperties}>
+                Budget · {usd(BUDGET)} total
+              </span>
+              <span className="lcl-brief lcl-mono">Room brief · updates as you talk</span>
+            </div>
+          </div>
+        </div>
+        <div className="lcl-story lcl-cmp">
+          <h2 className="lcl-sh">Find real products. Compare what fits.</h2>
+          <div className="lcl-src">
+            {SOURCES.map(([name, n]) => (
+              <span key={name} className="lcl-src-card">
+                <b>{name}</b>
+                <small className="lcl-mono">{n} products</small>
+              </span>
+            ))}
+            {/* the catalog today is these two; the schema is store-agnostic, so more stores plug in the same way */}
+            <span className="lcl-src-card lcl-src-more">
+              <b>+ more stores</b>
+              <small className="lcl-mono">Same schema, next up</small>
+            </span>
+            <i className="lcl-src-arrow" aria-hidden="true">
+              <Chevron d="M4.5 3L7.5 6L4.5 9" />
+            </i>
+            <span className="lcl-src-card lcl-src-one">
+              <b>One catalog</b>
+              <small className="lcl-mono">{CATALOG.total} products today · size · price · photo · link</small>
+            </span>
+          </div>
+          <p className="lcl-note">Different stores, compared side by side. Prices are a snapshot, not live stock.</p>
+        </div>
+        <div className="lcl-col">{PICKS.map((it, k) => card(it, "pick" + k, k === PICKS.length - 1 ? "flySrc" : undefined, true, k === 0 ? "Yours" : k === PICKS.length - 1 ? "Fits tucked up" : undefined))}</div>
       </section>
 
       {/* the white collection panel; its first pick arrives from the column above */}
       <section className="lcl-grid" ref={reg("grid")}>
         <div className="lcl-ghead">
-          <span className="lcl-mono lcl-cmeta">Shopping list</span>
+          <span className="lcl-mono lcl-cmeta">Then the whole room</span>
           <h2 className="lcl-gtitle" ref={reg("gtitle")}>
             <span>Living</span>
             <i aria-hidden="true" />
             <span>Room</span>
           </h2>
           <div className="lcl-chips lcl-mono">
-            <span>{GRID.length} real pieces</span>
-            <span>{GRID_TOTAL} total</span>
+            <span>{GRID.length} pieces from {CATALOG.sources}</span>
+            <span>{usd(total(GRID))} at catalog prices</span>
           </div>
+          <p className="lcl-note">The sofa is where it starts. Tables, lights and storage come next.</p>
         </div>
         <div className="lcl-gr">
           {[0, 1, 2, 3].map((cIdx) => (
             <div key={cIdx} className="lcl-gc" data-gcol="">
-              {GRID.map((it, i) => (i % 4 === cIdx ? card(it, "grid" + i, i === 0 ? "flyDst" : undefined) : null))}
+              {GRID.map((it, i) => (i % 4 === cIdx ? card(it, "grid" + i, i === 0 ? "flyDst" : undefined, false, undefined, i) : null))}
             </div>
           ))}
         </div>
       </section>
 
-      {/* 4 · look closer → collections */}
+      {/* 5 · the big state: life changes */}
+      <section className="lcl-track lcl-words" ref={reg("words")} style={{ "--len": TRACK.words } as CSSProperties}>
+        <div className="lcl-stage">
+          <div className="lcl-sweep" ref={reg("sweep")} />
+          <div className="lcl-wclip">
+            <div className="lcl-wcol" ref={reg("wcol")}>
+              {BIG_WORDS.map(([w, x], k) => (
+                <h2 key={w} className="lcl-big" data-word="" style={{ top: "calc(var(--h) * " + k * WORDS.gap + ")", "--x": x } as CSSProperties}>
+                  <span>
+                    {letters(w, "w" + k)}
+                    {k === BIG_WORDS.length - 1 && (
+                      <svg className="lcl-doodle" viewBox="0 0 40 40" aria-hidden="true">
+                        <path pathLength={1} d="M8 30C4 22 10 10 20 9C30 8 35 18 29 24C24 29 15 25 17 19C19 13 27 15 26 20M30 6L34 2M36 12L39 10" />
+                      </svg>
+                    )}
+                  </span>
+                </h2>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* a revised need changes the pick; what didn't change still holds */}
+      <section className="lcl-life" ref={reg("life")}>
+        <div className="lcl-story">
+          <h2 className="lcl-sh">Life changes. Your room can too.</h2>
+          {chat([
+            ["you", "We mostly sit upright and chat now."],
+            ["el", "Update the sofa from tucked-up reading to upright talking? Budget and the rocking chair stay."],
+            ["you", "Yes."],
+          ])}
+        </div>
+        <div className="lcl-swap">
+          <div className="lcl-was">{card(SODERHAMN, "was", undefined, true, "Before")}</div>
+          <i className="lcl-arrow" aria-hidden="true">
+            <Chevron d="M4.5 3L7.5 6L4.5 9" />
+          </i>
+          {AFTER.map((it, k) => card(it, "after" + k, undefined, true, k === 0 ? "Now" : "Suggested"))}
+        </div>
+        <div className="lcl-chips lcl-mono lcl-kept">
+          <span>Still true</span>
+          <b>Budget {usd(BUDGET)}</b>
+          <b>Rocking chair kept</b>
+          <b>Room total {usd(total(GRID))} → {usd(total(GRID_AFTER))}</b>
+        </div>
+        <p className="lcl-note">Back angle and cushion feel aren't in the data. Sit-test before you buy.</p>
+      </section>
+
+      {/* 6 · one room, one view, different times of life → a row of them */}
       <section className="lcl-track" ref={reg("zoom")} style={{ "--len": TRACK.zoom } as CSSProperties}>
         <div className="lcl-stage">
           <p className="lcl-h1 lcl-l2">
             <span className="lcl-wl">
-              <span>See it in</span>
+              <span>Your room,</span>
             </span>
             <span className="lcl-wr">
-              <span>your room</span>
+              <span>through life</span>
             </span>
           </p>
           <div className="lcl-full" ref={reg("scenes")} style={{ clipPath: "inset(50%)" }}>
             <div className="lcl-zin" ref={reg("scenesIn")}>
               {COLLECTIONS.map((co, k) => (
                 <div key={k} className="lcl-scene" data-scene="">
-                  <img className="lcl-img" src={IMG["scene-" + k]} alt="" draggable={false} />
+                  <img className="lcl-img" src={IMG[co.img]} alt={k === col ? "The same room: " + co.name : ""} draggable={false} />
                 </div>
               ))}
             </div>
@@ -1309,8 +1603,8 @@ export default function LoupeCuratorLanding({
                 <line x1="20%" y1="50%" x2="44%" y2="0%" pathLength={1} />
                 <line x1="20%" y1="50%" x2="40%" y2="100%" pathLength={1} />
               </svg>
-              <span className="lcl-vlab lcl-disc lcl-mono" style={{ left: "20%", top: "50%", "--c": "var(--u)" } as CSSProperties}>
-                Renders
+              <span className="lcl-vlab lcl-disc"style={{ left: "20%", top: "50%", "--c": "var(--u)" } as CSSProperties}>
+                Same room, same view
               </span>
               <div className="lcl-drum">
                 {COLLECTIONS.map((co, k) => (
@@ -1319,19 +1613,20 @@ export default function LoupeCuratorLanding({
                   </button>
                 ))}
               </div>
-              <button type="button" className="lcl-chip lcl-hit" onClick={() => setCurator(collection.by)} data-cursor="See the step">
-                <Avatar i={collection.by} />
-                <span>
-                  <span className="lcl-mono">Made in step</span>
-                  <b>{CURATORS[collection.by].name}</b>
-                </span>
-              </button>
               {FLOATS.map(([x], j) => (
                 <div key={col + "-" + j} className="lcl-ft" data-float="" style={{ right: x + "%" }}>
                   <Tile k={collection.thumbs[j % collection.thumbs.length]} />
                 </div>
               ))}
             </div>
+          </div>
+          <div className="lcl-row" aria-hidden="true">
+            {COLLECTIONS.map((co, k) => (
+              <figure key={k} className="lcl-rt" data-rt="">
+                <img className="lcl-img" src={IMG[co.img]} alt="" draggable={false} />
+                <figcaption className="lcl-mono">{co.name}</figcaption>
+              </figure>
+            ))}
           </div>
         </div>
       </section>
@@ -1389,6 +1684,21 @@ export default function LoupeCuratorLanding({
               <ActionEl a={joinAction} label="Join waitlist" className="lcl-btn lcl-btn-lime lcl-mono" cursor="Join" />
             </span>
           </div>
+          <div className="lcl-team" id="team">
+            <span className="lcl-mono lcl-tm-label">Meet the team</span>
+            <h2 className="lcl-tm-title">The people behind {brand}</h2>
+            <div className="lcl-tm-row">
+              {TEAM.map((m, k) => (
+                <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
+                  <span className="lcl-tm-fig">
+                    <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
+                    <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
+                  </span>
+                  <b>{m.name}</b>
+                </a>
+              ))}
+            </div>
+          </div>
           <p className="lcl-big2" aria-label={brand}>
             {sunAt < 0 ? brand : brand.slice(0, sunAt)}
             {sunAt >= 0 && (
@@ -1400,14 +1710,14 @@ export default function LoupeCuratorLanding({
           </p>
           <div className="lcl-frow lcl-mono">
             <span>{launch}</span>
-            <span>{"Real furniture. Your actual room."}</span>
+            <span>{"Starts with what you have."}</span>
           </div>
         </div>
       </footer>
 
       {/* the pick in flight between the manifesto and the collection */}
       <div className="lcl-fly" ref={reg("fly")} aria-hidden="true">
-        <Tile k={PICKS[PICKS.length - 1][0]} />
+        <Tile k={PICKS[PICKS.length - 1].k} />
       </div>
 
       <div ref={cursorRef} className="lcl-cursor" aria-hidden="true">
@@ -1450,4 +1760,22 @@ const IMG: Record<string, string> = {
   "tile-stool": "/img/tile-stool.png",
   "tile-mirror": "/img/tile-mirror.png",
   "tile-cabinet": "/img/tile-cabinet.png",
+  "tile-soderhamn": "/img/tile-soderhamn.jpg",
+  "tile-rocksjon-loveseat": "/img/tile-rocksjon-loveseat.jpg",
+  "tile-rocksjon-armchair": "/img/tile-rocksjon-armchair.jpg",
+  "tile-hyltarp": "/img/tile-hyltarp.jpg",
+  "tile-stockholm": "/img/tile-stockholm.jpg",
+  "tile-vimle": "/img/tile-vimle.jpg",
+  "tile-stockholm25": "/img/tile-stockholm25.jpg",
+  "tile-poang": "/img/tile-poang.jpg",
+  "tile-hd-gooseneck": "/img/tile-hd-gooseneck.jpg",
+  "tile-hd-bookcase": "/img/tile-hd-bookcase.jpg",
+  "hl-1": "/img/hl-1.jpg",
+  "hl-2": "/img/hl-2.jpg",
+  "hl-3": "/img/hl-3.jpg",
+  "hl-4": "/img/hl-4.jpg",
+  "hl-5": "/img/hl-5.jpg",
+  "hl-6": "/img/hl-6.jpg",
+  "hl-7": "/img/hl-7.jpg",
+  "hl-8": "/img/hl-8.jpg",
 }

@@ -24,7 +24,8 @@ const CAT_LABEL = {
   side_table: "Side table", desk: "Desk", office_chair: "Office chair", dining_chair: "Dining chair",
   stool_bench: "Bench", dresser: "Dresser", nightstand: "Nightstand", wardrobe: "Wardrobe", shelving: "Shelving",
   tv_stand: "TV stand", cabinet: "Sideboard", floor_lamp: "Floor lamp", table_lamp: "Table lamp",
-  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror", other: "Other",
+  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror",
+  base_cabinet: "Base cabinets", other: "Other",
 };
 
 // Slots per room type. share = share of budget, maxW = max width as a fraction of the wall,
@@ -66,7 +67,7 @@ const TEMPLATES = {
 
 // Example rooms: photos taken at the AEC Hackathon NYC venue. Each has a matching demo render (no AI spend).
 const EXAMPLES = [
-  { name: "Lounge", src: "assets/example-lounge.jpg", room: "living", render: "assets/demo-render-lounge.jpg",
+  { name: "Lounge", src: "assets/example-lounge-wide.jpg", room: "living", render: "assets/demo-render-lounge-wide.jpg",
     furniture: "assets/examples/lounge.json" },
   { name: "Bar counter", src: "assets/example-bar.jpg", room: "dining", render: "assets/demo-render-bar.jpg",
     furniture: "assets/examples/bar.json" },
@@ -105,7 +106,7 @@ const S = {
   preview: null,       // index of the piece open in the product preview
   previewAlt: null,    // product id of a similar item being looked at inside the preview
   sizeOpen: false,
-  needsMin: false,     // the Needs window folded into an elephant bubble     // room size inputs are optional and folded away
+  needsMin: true,      // the Needs window folded into an elephant bubble     // room size inputs are optional and folded away
   chat: null,          // needs conversation {q: current question, log: [{from, text}]}
   existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
@@ -174,14 +175,19 @@ const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * 
 function toast(msg) {
   const t = $("#toast");
   t.textContent = msg; t.hidden = false;
-  clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2200);
+  clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), Math.max(2200, Math.min(7000, msg.length * 45)));
 }
 
-/* ---------------- image <-> screen mapping (object-fit: cover, position 50% 40%) ---------------- */
+/* ---------------- image <-> screen mapping: the photo always spans the window edge to edge ----------------
+   wider window -> cover (trims top/bottom, mostly ceiling: anchored 70% down); taller window -> contain (blur above/below) */
+const FIT_Y = 0.7;
 function geom() {
   const W = innerWidth, H = innerHeight, nw = room.naturalWidth || 1, nh = room.naturalHeight || 1;
-  const sc = Math.max(W / nw, H / nh), dw = nw * sc, dh = nh * sc;
-  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.4, W, H };
+  const sc = W / nw, dw = W, dh = nh * sc, ay = dh > H ? FIT_Y : 0.5;
+  const fit = dh > H ? "cover" : "contain", pos = `50% ${ay * 100}%`;
+  if (room.style.objectFit !== fit) room.style.objectFit = fit;          // keep the <img> in step with this math
+  if (room.style.objectPosition !== pos) room.style.objectPosition = pos;
+  return { dw, dh, ox: 0, oy: (H - dh) * ay, W, H };
 }
 function toScreen([px, py]) {
   const g = geom();
@@ -217,14 +223,67 @@ function slotsWithSketch(tpl = TEMPLATES[S.needs.room]) {
   if (!sk.length) return tpl;
   const slots = tpl.map(s => ({ ...s })), taken = new Set();
   sk.forEach((s, n) => {
-    const mine = { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
-                   maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
+    const mine = RUN_CATS.has(s.category)   // a run (base cabinets): priced by its length, not by a budget share
+      ? { cat: s.category, share: 0, pos: s.pos.slice(), sketched: true, sk: n, lengthIn: s.widthIn || 96, ends: s.ends }
+      : { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
+          maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
     const k = slots.findIndex((t, i) => t.cat === s.category && !t.sketched && !taken.has(i));
     if (k >= 0) { taken.add(k); slots[k] = { ...mine, share: slots[k].share, qty: slots[k].qty }; }
     else slots.push(mine);
   });
   const total = slots.reduce((a, s) => a + s.share, 0);
   return total > 1 ? slots.map(s => ({ ...s, share: s.share / total })) : slots;
+}
+
+/* ---------------- cabinet runs: a drawn line -> real modules that fill its length ----------------
+ * Base cabinets are sold in modules (12", 15", ... 36" wide). A run of a given length is filled with the fewest
+ * modules of one product line that reach it; up to a few inches are left for a filler strip, as a fitter would. */
+const RUN_CATS = new Set(["base_cabinet"]);
+const RUN_GAP = 3;   // inches a filler strip can close
+// product lines that sell the category, cheapest per inch first: [{family, mods: [{p, w}]}]
+function runLines(cat = "base_cabinet") {
+  const fam = {};
+  for (const p of P) if (p.category === cat && p.dims_in.width) (fam[p.family] = fam[p.family] || []).push({ p, w: Math.round(p.dims_in.width) });
+  const perIn = mods => mods.reduce((a, m) => a + m.p.price.amount / m.w, 0) / mods.length;
+  return Object.entries(fam).map(([family, mods]) => ({ family, mods: mods.sort((a, b) => b.w - a.w) }))
+    .sort((a, b) => perIn(a.mods) - perIn(b.mods));
+}
+function fillRun(lengthIn, mods) {
+  const L = Math.max(0, Math.round(lengthIn)), best = new Array(L + 1).fill(Infinity), from = [];
+  best[0] = 0;
+  for (let l = 1; l <= L; l++) mods.forEach((m, k) => {
+    if (m.w <= l && best[l - m.w] + 1 < best[l]) { best[l] = best[l - m.w] + 1; from[l] = k; }
+  });
+  let l = L; while (l > 0 && best[l] === Infinity) l--;
+  const pieces = [];
+  for (let x = l; x > 0; x -= mods[from[x]].w) pieces.push(mods[from[x]]);
+  pieces.sort((a, b) => b.w - a.w);   // wide ones first, so equal widths sit side by side
+  return { pieces, filled: l, gap: L - l, total: pieces.reduce((a, m) => a + m.p.price.amount, 0) };
+}
+// what a run of this length costs in each line (shown on the sketch chip)
+const runQuote = (lengthIn, cat = "base_cabinet") => runLines(cat).map(line => ({ family: line.family, ...fillRun(lengthIn, line.mods) }))
+  .filter(q => q.pieces.length);
+// scene items for a sketched run: one item per module width (qty = how many), placed along the drawn line
+function runItems(slot, rank) {
+  // the lines ranked by what THIS run costs in each: Essentials gets the cheapest, Statement the priciest
+  const quotes = runLines(slot.cat).map(line => ({ line, run: fillRun(slot.lengthIn, line.mods) }))
+    .filter(q => q.run.pieces.length).sort((a, b) => a.run.total - b.run.total);
+  if (!quotes.length) return [];
+  const { line, run } = quotes[Math.min(quotes.length - 1, Math.round(rank * (quotes.length - 1)))];
+  const [a, b] = slot.ends || [[slot.pos[0] - 10, slot.pos[1]], [slot.pos[0] + 10, slot.pos[1]]];
+  const at = t => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const groups = [];
+  for (const m of run.pieces) {
+    const g = groups[groups.length - 1];
+    if (g && g.m.p.id === m.p.id) g.n++; else groups.push({ m, n: 1 });
+  }
+  const modules = run.pieces.map(m => m.w + '"').join(" + ");
+  let start = 0;
+  return groups.map(({ m, n }) => {
+    const mid = (start + m.w * n / 2) / (run.filled || 1); start += m.w * n;
+    return { cat: slot.cat, qty: n, pid: m.p.id, vid: null, pos: at(mid), sketched: true, sk: slot.sk,
+             run: { family: line.family, lengthIn: Math.round(slot.lengthIn), filled: run.filled, modules } };
+  });
 }
 
 function planOptions() {
@@ -235,7 +294,7 @@ function planOptions() {
   const strict = BriefEngine.active(B).some(r => r.effect === "budget");   // a confirmed budget is never exceeded
   const used = {};
   const kept = keptPieces();
-  return STRATEGIES.map(strat => {
+  return STRATEGIES.map((strat, si) => {
     const usedOwn = new Set(), gaps = [];
     let remaining = cap;
     let items = tpl.map(slot => {
@@ -244,6 +303,12 @@ function planOptions() {
       return null;
     }).map((own, k) => own || tpl[k]).map(slot => {
       if (slot.own) return slot;
+      if (RUN_CATS.has(slot.cat) && slot.sketched) {   // a drawn cabinet run: cheapest line for Essentials ... priciest for Statement
+        const run = runItems(slot, si / (STRATEGIES.length - 1));
+        if (!run.length) gaps.push(slot.cat);
+        remaining -= sceneTotal(run);
+        return run;
+      }
       const qty = slot.qty || 1, budget = cap * slot.share / qty;
       // only products that fit and that the confirmed brief allows (brief-engine.js)
       let scored = P.filter(p => p.category === slot.cat && fits(p, slot))
@@ -264,7 +329,7 @@ function planOptions() {
       remaining -= pick.p.price.amount * qty;
       return { cat: slot.cat, qty, pid: pick.p.id, vid: null, pos: slot.pos.slice(), reasons: pick.a.reasons,
                ...(slot.sketched ? { maxW: slot.maxW, sketched: true, sk: slot.sk } : {}) };
-    }).filter(Boolean);
+    }).flat().filter(Boolean);   // a cabinet run adds several items
     kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
     if (S.space.confirmed) {   // measured room: drop what the layout can't place (layout-engine.js)
       const layout = LayoutEngine.plan(items, S.space, view);
@@ -312,7 +377,7 @@ const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn
   S.space.depthIn, S.space.corridor, S.space.clearanceIn, S.space.obstacles, B.revision,
   items.map(it => [it.pid, it.vid, it.qty, it.own, it.pos])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
-const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
+const photoKey = () => S.space.photo === "demo" ? "demo2-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
 const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
@@ -326,7 +391,8 @@ function itemPayload(it) {
   const p = view(it);
   return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
            description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round),
-           ...(it.sketched ? { sketched: true } : {}) };
+           ...(it.sketched ? { sketched: true } : {}),
+           ...(it.run ? { run: { line: it.run.family, length_in: it.run.lengthIn, modules: it.run.modules } } : {}) };
 }
 
 // What changed since the last render? null = too different, do a full render instead.
@@ -440,6 +506,7 @@ async function renderScene(manual = false) {
     return;
   }
   S.rendering = true; S.before = false; render();
+  let stale = false;
   try {
     // sketched pieces in this render? send the sketch itself as a layout guide (sketch.js)
     if (reqObj.items.some(it => it.sketched) && typeof sketchGuide === "function") {
@@ -447,7 +514,7 @@ async function renderScene(manual = false) {
       if (guide) reqObj.layout_guide = guide;
     }
     const j = await apiPost("/api/render", reqObj);
-    if(sig!==sceneSig()){toast('The design changed, so this image doesn’t show it. Render again.');return;}
+    if(sig!==sceneSig()){S.renders[sig]=j.image;stale=true;return;}   // you picked another option meanwhile: keep this one for later, render the new pick next
     rememberRender(sig, j.image);if(typeof logTransition==='function')logTransition('Render updated with the current picks and colors.');
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
@@ -455,6 +522,7 @@ async function renderScene(manual = false) {
     S.renderError=e.message; if(typeof logTransition==='function')logTransition('Render failed. Your picks are saved, so you can retry.');toast(e.message.slice(0,120));
   } finally {
     S.rendering = false; render();
+    if (stale && S.live) renderScene();
   }
 }
 
@@ -547,6 +615,7 @@ function renderSteps() {
   const next = ["Design my room", "Edit this design", "Shop the list"][S.step];
   const input = el.querySelector("input");
   if (!input) el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
+    <button type="button" class="back-arrow" data-action="back">←</button>
     <button type="button" class="needs-plus" data-action="needs-toggle">+</button>
     <input type="text" aria-label="Message">
     <button class="send" aria-label="Send">↑</button>
@@ -557,14 +626,13 @@ function renderSteps() {
   plus.hidden = S.step !== NEEDS; plus.classList.toggle("open", !S.needsMin);
   plus.classList.toggle("dot", !!(S.needsMin && S.chat && QUESTIONS[S.chat.q]));
   plus.title = S.needsMin ? "Open the chat" : "Minimize"; plus.setAttribute("aria-label", plus.title);
+  const back = el.querySelector(".back-arrow");   // go back a step: left end of the bar (Needs has none)
+  back.hidden = S.step === NEEDS; back.title = STEPS[S.step - 1] ? "Back to " + STEPS[S.step - 1] : ""; back.setAttribute("aria-label", back.title || "Back");
   arrow.hidden = !next; arrow.title = next || ""; arrow.setAttribute("aria-label", next || "Next");
   arrow.classList.toggle("ready", S.step !== NEEDS || !(S.chat && QUESTIONS[S.chat.q]));   // Needs: lights up once the brief is done
 }
 function renderSides() {
-  const b = $("#back"), n = $("#next");
-  b.hidden = S.step === 0; n.hidden = S.step === STEPS.length - 1;
-  b.innerHTML = `<span class="chev">‹</span>${STEPS[S.step - 1] || ""}`;
-  n.innerHTML = `${STEPS[S.step + 1] || ""}<span class="chev">›</span>`;
+  // the side Back/Next tabs are gone: back is the ← at the left of the bottom bar, next is the → beside send
 }
 function renderMode() {
   $("#mode").textContent = S.live ? "AI renders on · Gemini" : "Demo renders · AI off";
@@ -582,8 +650,23 @@ function renderTopbar() {
     action = `<button class="pill pill-cta" data-action="render">✦ ${label}</button>`;
   }
   else action = `<button class="pill" data-action="before">${S.before ? "Show render" : "Before"}</button>`;
+  if (!S.rendering) action += `<button class="pill" data-action="download-image" title="Download this image" aria-label="Download this image">↓ Download</button>`;
   t.hidden = false;
   t.innerHTML = `<span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
+}
+
+// save what's on screen (the render, or the photo when there's none yet) as a file
+async function downloadImage() {
+  const src = $("#room").src;
+  if (!src) return;
+  try {
+    const blob = await (await fetch(src)).blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `elephant-room-${S.before || !currentRender() ? "photo" : "design"}.${(blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch { window.open(src, "_blank"); }
 }
 
 function renderMeasure() {
@@ -606,20 +689,24 @@ function renderHotspots() {
     const p = view(it);
     const label = p.owned ? `${p.name} · yours` : `${p.family || p.name} · ${money(p.price.amount)}`;
     const w = 86 + label.length * 8.2;
-    let flip = x > innerWidth * 0.62, lh = 92, rect;
-    const rectFor = (lh, flip) => {
+    let flip = x > innerWidth * 0.62, lh = 92, rect, below = false;
+    const top = innerHeight * 0.06 + 72, bottom = innerHeight - 110;   // below the top bar, above the chat bar
+    const rectFor = (lh, flip, dn) => {
       const l = flip ? x + 38 - w : x - 38;
-      return { l, r: l + w, b: y - lh - 8, t: y - lh - 8 - 54 };
+      return dn ? { l, r: l + w, t: y + lh + 8, b: y + lh + 8 + 54 } : { l, r: l + w, b: y - lh - 8, t: y - lh - 8 - 54 };
     };
-    for (const tryFlip of [flip, !flip]) {
-      for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
-        rect = rectFor(lh, tryFlip);
-        if (!hit(rect) && rect.t > innerHeight * 0.06 + 72) break;   // stay below the top bar
-      }
-      if (!hit(rect)) { flip = tryFlip; break; }
+    const ok = r => !hit(r) && r.t >= top && r.b <= bottom;
+    search: for (const dn of [false, true]) for (const tryFlip of [flip, !flip]) for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
+      rect = rectFor(lh, tryFlip, dn);
+      if (ok(rect)) { flip = tryFlip; below = dn; break search; }
     }
+    if (!ok(rect)) { below = y < top + 160; lh = 92; rect = rectFor(lh, flip, below); }   // nothing fits: pick the side with room
+    // keep the label inside the window: slide it sideways, the line stays on the dot
+    const minL = 16, maxR = innerWidth - 84;   // 84: the right rail
+    const dx = rect.l < minL ? minL - rect.l : rect.r > maxR ? Math.max(minL - rect.l, maxR - rect.r) : 0;
+    rect = { ...rect, l: rect.l + dx, r: rect.r + dx };
     placed.push(rect);
-    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""}" data-idx="${i}" style="left:${x}px;top:${y}px;--lh:${lh}px">
+    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""} ${below ? "below" : ""}" data-idx="${i}" style="left:${x}px;top:${y}px;--lh:${lh}px;--dx:${Math.round(dx)}px">
       <div class="hs-line"></div>
       <button class="hs-pill" data-action="select" data-idx="${i}">
         <img src="${esc(imgOf(p))}" alt="">
@@ -753,7 +840,7 @@ function needsCard() {
   return `<div class="card needs-win">
     <div class="nw-head">
       <button class="photo-mini" data-action="upload" id="drop" title="Upload or drop a photo of your room"><img src="${esc(photoSrc())}" alt=""><i>↑</i></button>
-      <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
+      <div class="nw-title"><button class="nw-upload" data-action="upload" title="Upload or drop a photo of your room"><b>${demo ? "Upload your room ↑" : "Your room · change photo ↑"}</b></button>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
           · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
       ${S.chat.log.length > 2 ? `<button class="icon-btn" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
@@ -786,7 +873,7 @@ function progressCard() {
   </div>`;
 }
 function optionsView() {
-  return `<button class="btn sofa-browse" data-action="sofa-browse">Find your sofa ↗</button><div class="options">${S.options.map((o, i) => {
+  return `<div class="options">${S.options.map((o, i) => {
     // sketched pieces first, so what you drew is visible on the card
     const shown = o.items.filter(it => it.sketched).concat(o.items.filter(it => !it.sketched)).slice(0, 4);
     const imgs = shown.map(it => `<img src="${esc(imgOf(view(it)))}" alt="" class="${it.sketched ? "sk-thumb" : ""}">`).join("");
@@ -860,10 +947,11 @@ function cartRow({ it, i }) {
 }
 
 function renderCart() {
+  const pen = document.getElementById("skfab");   // grab the sketch pen before the rail is rebuilt, then put it back
   const on = S.step >= DESIGN && S.scene && !S.generating;
   const rail = $("#rail"), drawer = $("#drawer"), big = $("#cartx");
   if (!on) S.cart = "closed";
-  rail.hidden = !on;
+  rail.hidden = false;   // the rail is always on the right: shopping list (+ home once there's a design) and the sketch pen
   document.body.classList.toggle("has-rail", !!on);
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
@@ -871,14 +959,17 @@ function renderCart() {
   big.inert = S.cart !== "expanded";
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
   document.body.classList.toggle("cart-open", S.cart === "open");
-  if (!on) return;
+  if (!on) {   // no design yet: the list button is there, it just explains it's empty
+    rail.innerHTML = `<button class="rail-btn" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}</button>`;
+    if (pen) rail.append(pen); return;
+  }
   const buy = toBuy(), keep = keeping();
   const keepN = keep.reduce((n, x) => n + (x.it.qty || 1), 0);
   rail.innerHTML = `
     <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
     <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
-    <button class="rail-btn ${typeof dockShown !== "undefined" && dockShown ? "on" : ""}" data-action="${typeof dockShown !== "undefined" && dockShown ? "dock-hide" : "dock-show"}" title="Ask the designer" aria-label="Ask the designer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
 `;   // "see everything" lives behind the list's expand button
+  if (pen) rail.append(pen);   // the sketch pen lives in the rail, under the list (sketch.js keeps it up to date)
 
   drawer.innerHTML = `<div class="drawer-head">
       <h2>Shopping list</h2>
@@ -897,10 +988,6 @@ function renderCart() {
       <span>FF&amp;E schedule</span>
       <button class="btn" data-action="schedule-pdf" title="Print the schedule, or save it as a PDF">PDF</button>
       <button class="btn ghost" data-action="schedule" title="Download the schedule as a spreadsheet file">CSV</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn ghost" data-action="copy">Copy list</button>
-      <button class="btn" data-action="download">scene.json</button>
     </div>`;
 
   // expanded: a frosted-glass window floating over the room (visionOS style), filterable cards, product preview
@@ -1193,6 +1280,7 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
+  else if (act === "download-image") downloadImage();
   else if (act === "demo") {
     if (S.space.photo === "demo") S.space.ex = (S.space.ex + 1) % EXAMPLES.length;
     B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null;
@@ -1239,7 +1327,10 @@ document.addEventListener("click", e => {
     setLive(!S.live);
     render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
   }
-  else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
+  else if (act === "cart") {
+    if (!(S.step >= DESIGN && S.scene && !S.generating)) { toast(S.generating ? "Your list is on its way: the designs are almost ready." : "Your shopping list fills up once you pick a design. Press → to design your room."); return; }
+    S.cart = S.cart === "open" ? "closed" : "open"; renderCart();
+  }
   else if (act === "cart-expand") { S.cart = "expanded"; S.cartView = "list"; renderCart(); }
   else if (act === "shop-view") {
     S.cart = "expanded"; S.cartView = a.dataset.view; S.cartMenu = false;
@@ -1369,8 +1460,8 @@ addEventListener("keydown", e => {
   else if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
   else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+addEventListener("resize", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+room.addEventListener("load", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
 Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))
@@ -1391,7 +1482,7 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
       S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
-    S.step = S.scene ? Math.min(step||DESIGN, STEPS.length - 1) : NEEDS;
+    S.step = step && S.scene ? Math.min(step, STEPS.length - 1) : NEEDS;   // always open on Needs (a saved design stays loaded); #step=N still deep-links
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
