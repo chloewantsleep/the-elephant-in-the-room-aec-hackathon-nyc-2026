@@ -355,9 +355,9 @@ const FLOW: [title: string, body: string, tool: string][] = [
 ]
 // kinds of product compared, not brands (no head-to-head evidence). Map: x = real products you can buy now, y = knows how you live and remembers
 const VS: [who: string, note: string, x: number, y: number][] = [
-  ["AI room-image generators", "Pretty, but the furniture isn’t real.", 0.2, 0.24],
-  ["Store AR apps", "Real, but one store. No memory of you.", 0.8, 0.22],
-  ["Interior designers", "Knows you. Slow, costly, not always there.", 0.22, 0.78],
+  ["AI room-image generators", "Pretty, but the furniture isn’t real.", 0.25, 0.25],
+  ["Store AR apps", "Real, but one store. No memory of you.", 0.75, 0.25],
+  ["Interior designers", "Knows you. Slow, costly, not always there.", 0.25, 0.75],
 ]
 const VSP = { axes: [0.04, 0.2], d0: [0.18, 0.3], d1: [0.3, 0.42], d2: [0.42, 0.54], me: [0.6, 0.76], head: [0.78, 0.9] } as const
 const REELS: { title: string; src?: string; poster?: string }[] = [
@@ -840,7 +840,7 @@ const THEME =
   ".lcl-vs{position:relative;z-index:3;height:calc(var(--h) * 3.4);background:var(--paper)}" +
   ".lcl-vs-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,3vh,32px);padding:0 clamp(16px,2vw,32px)}" +
   ".lcl-vs .lcl-sh{margin:6px 0 0;font-weight:400;font-size:clamp(32px,4vw,68px);letter-spacing:-.04em;line-height:1}" +
-  ".lcl-vs-map{position:relative;width:min(980px,100%);height:min(58vh,560px);margin-left:28px}" +
+  ".lcl-vs-map{position:relative;width:min(980px,100%);height:min(58vh,560px);margin:0 auto}" +
   ".lcl-vs-ax{position:absolute;left:0;bottom:0;background:var(--ink)}.lcl-vs-ax-x{height:2px;width:calc(var(--vs-axes,0) * 100%)}.lcl-vs-ax-y{width:2px;height:calc(var(--vs-axes,0) * 100%)}" +
   ".lcl-vs-lx,.lcl-vs-ly{position:absolute;font-size:10.5px;color:var(--soft);opacity:var(--vs-axes,0)}.lcl-vs-lx{right:0;bottom:-26px}.lcl-vs-ly{left:-26px;bottom:0;transform-origin:0 100%;transform:rotate(-90deg) translateY(100%);white-space:nowrap}" +
   ".lcl-vs-q{position:absolute;left:50%;bottom:50%;right:0;top:0;border-radius:0 18px 0 0;background:var(--lime);opacity:calc(var(--vs-me,0) * .55)}" +
@@ -852,7 +852,7 @@ const THEME =
   ".lcl-vs-me .lcl-vs-mark{width:56px;padding:12px;border-radius:50%;background:var(--ink);color:var(--paper);box-sizing:content-box}.lcl-vs-say{margin-top:18px!important}" +
   ".lcl-vs-say{margin:0;color:#fff;font-size:clamp(17px,1.5vw,22px);opacity:var(--vs-head,0);transform:translateY(calc((1 - var(--vs-head,0)) * 16px))}" +
   ".lcl-vs-after{position:relative;z-index:3;background:var(--paper);padding:2vh clamp(16px,2vw,32px) 0}.lcl-vs-after .lcl-diff{margin:clamp(40px,7vh,90px) auto clamp(72px,12vh,140px)}" +
-  "@media (max-width:720px){.lcl-vs-map{height:52vh;margin-left:22px}.lcl-vs-dot,.lcl-vs-me{width:130px}.lcl-vs-dot small{font-size:10.5px}.lcl-vs-me small{font-size:11px}.lcl-vs-me .lcl-vs-mark{width:36px;padding:8px}}" +
+  "@media (max-width:720px){.lcl-vs-map{height:52vh;width:calc(100% - 24px);margin:0 0 0 24px}.lcl-vs-dot,.lcl-vs-me{width:130px}.lcl-vs-dot small{font-size:10.5px}.lcl-vs-me small{font-size:11px}.lcl-vs-me .lcl-vs-mark{width:36px;padding:8px}}" +
   ".lcl-steps{list-style:none;max-width:1040px;margin:0 auto;padding:0;counter-reset:st}" +
   ".lcl-steps li{counter-increment:st;display:grid;grid-template-columns:12em minmax(0,1fr) auto;gap:20px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(0,0,0,.1)}.lcl-steps li:last-child{border-bottom:1px solid rgba(0,0,0,.1)}" +
   ".lcl-steps b{font-weight:400;font-size:clamp(18px,1.5vw,22px);letter-spacing:-.02em}.lcl-steps b::before{content:counter(st, decimal-leading-zero) '  ';font:10px ui-monospace,monospace;color:var(--soft);white-space:pre}.lcl-steps span{color:var(--soft);font-size:14.5px}.lcl-steps em{font-style:normal;font-size:10.5px;text-align:right}" +
@@ -1980,7 +1980,7 @@ export default function LoupeCuratorLanding({
                 <small>{note}</small>
               </span>
             ))}
-            <span className="lcl-vs-me" style={{ left: "80%", bottom: "80%" } as CSSProperties}>
+            <span className="lcl-vs-me" style={{ left: "75%", bottom: "75%" } as CSSProperties}>
               <span className="lcl-mark lcl-vs-mark" aria-hidden="true">
                 <ElephantMark />
               </span>
