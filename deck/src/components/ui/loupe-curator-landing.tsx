@@ -1039,6 +1039,26 @@ export default function LoupeCuratorLanding({
   }
 
   // decode the team photos up front so hovering a card swaps instantly
+  // the recordings start from the beginning when you scroll to them, and stop when you scroll away
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root || typeof IntersectionObserver === "undefined") return
+    const vids = Array.from(root.querySelectorAll(".lcl-reel video")) as HTMLVideoElement[]
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) {
+          const v = en.target as HTMLVideoElement
+          if (en.isIntersecting) {
+            v.currentTime = 0
+            v.play().catch(() => {})
+          } else v.pause()
+        }
+      },
+      { threshold: 0.6 },
+    )
+    vids.forEach((v) => io.observe(v))
+    return () => io.disconnect()
+  }, [])
   useEffect(() => {
     ROOM_IMGS.forEach((k) => {
       const im = new Image()
@@ -2155,7 +2175,7 @@ export default function LoupeCuratorLanding({
           <figure key={rl.title} className={"lcl-reel" + (k === 0 ? " lcl-reel-main" : "")}>
             <span className="lcl-reel-box">
               {rl.src ? (
-                <video src={rl.src} poster={rl.poster} autoPlay muted loop playsInline preload="metadata" controls={k === 0} />
+                <video src={rl.src} poster={rl.poster} muted loop playsInline preload="metadata" controls={k === 0} />
               ) : (
                 <span className="lcl-reel-ph lcl-mono">
                   <svg viewBox="0 0 16 16" aria-hidden="true">
