@@ -264,6 +264,17 @@ const lockedSlot = it => S.space.photo === "demo" && !it.own && !it.sketched
   && TEST_SET.find(t => t.cat === it.cat && (t.pid === it.pid || t.similar.includes(it.pid))) || null;
 // colors shown for a piece: a similar product swapped in has only its first (default) color prepared
 const colorLimit = it => { const t = lockedSlot(it); return t && t.pid !== it.pid ? 1 : VARIANT_MAX; };
+// Demo room: options 2 and 3 are the test set with prepared colors / similar products, so all three show instantly
+const DEMO_OPTIONS = [
+  null,   // option 1: the test set as recommended
+  { name: "Balanced", set: { sofa: { vid: "ikea:s39514819" }, armchair: { vid: "ikea:s49627175" } } },   // sofa Gransel gray, chair Kelinge dark yellow
+  { name: "Statement", set: { sofa: { pid: "ikea:20245049" }, armchair: { pid: "ikea:s59318327" }, coffee_table: { pid: "ikea:70497582" } } },   // STOCKHOLM sofa, MORABO chair, FRÖTORP table
+];
+function demoOption(k) {
+  const o = DEMO_OPTIONS[k], items = testScene();
+  if (o) items.forEach(it => { const c = o.set[it.cat]; if (c) { it.pid = c.pid || it.pid; it.vid = c.pid ? null : c.vid || null; } });
+  return items;
+}
 function testScene() {
   const cats = new Set(TEST_SET.map(t => t.cat));
   return [...keptPieces().filter(e => !cats.has(e.category)).map(ownedItem),
@@ -378,10 +389,14 @@ function planOptions() {
     return { name: strat.name, items, gaps, shopOriginal: structuredClone(items) };
   });
   if (S.space.photo === "demo") {
-    // the test set, plus anything the user sketched (a sketched piece takes the test set's slot of that type)
-    const drawn = opts[0].items.filter(it => it.sketched);   // the test set plus anything the user sketched
+    // option 1 is always the test set (whatever the brief says), plus anything the user sketched
+    const drawn = opts[0].items.filter(it => it.sketched);
     const items = [...testScene(), ...drawn];
     opts[0] = { ...opts[0], name: "Test set", items, shopOriginal: structuredClone(items) };
+    if (demoRoom()) for (const k of [1, 2]) if (opts[k]) {   // the sample lounge: options 2-3 from the same prepared looks
+      const its = [...demoOption(k), ...structuredClone(drawn)];
+      opts[k] = { ...opts[k], name: DEMO_OPTIONS[k].name, items: its, shopOriginal: structuredClone(its), gaps: [] };
+    }
     S.needs.budget = Math.max(S.needs.budget, 6000);   // room for color changes / swaps (they must stay within budget)
   }
   opts.forEach(o => {
@@ -552,7 +567,7 @@ async function renderScene(manual = false) {
   if (!S.scene || !S.scene.length) return;
   const sig = sceneSig();
   S.renderError='';
-  if (!S.live) {
+  if (!S.live && !demoRoom()) {
     // demo mode: show a saved render instead of calling Gemini (saves credits while we build)
     if (S.renders[sig]) { S.before = false; render(); return; }
     const ex = S.existing?.photoKey === photoKey() ? S.existing.items : [];
@@ -581,6 +596,12 @@ async function renderScene(manual = false) {
     return;
   }
   if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); prepareVariants(); return; }
+  if (demoRoom() && isDemoDerived(S.scene)) {
+    S.rendering = true; S.before = false; render();
+    try { await demoCompose(); } catch (e) { toast(e.message.slice(0, 120)); }
+    finally { S.rendering = false; render(); if (renderQueued) { renderQueued = false; renderScene(manual); } }
+    return;
+  }
   const reqObj = renderRequest();
   // sketched pieces don't go in the big render: each is added afterwards into a small crop around its sketch
   const sketchedNames = new Set(reqObj.items.filter(x => x.sketched).map(x => x.name));
@@ -701,7 +722,7 @@ const colorsReady = () => variantsCover() && S.scene.every((it, i) => ["same", "
 const REPAIR_MAX = 2;   // extra edit renders to add products the render left out
 async function prepareVariants(depth = 0) {
   const L = lastRender();
-  if (!L?.real || !(S.live || MOCK_VARIANTS) || V?.base === renderSpace(L.image) || (L.fromVariants && V)) return;
+  if (!L?.real || !(S.live || MOCK_VARIANTS || demoRoom()) || V?.base === renderSpace(L.image) || (L.fromVariants && V)) return;
   // L.items = exactly what this render shows (the scene may have been edited since)
   const base = renderSpace(L.image), mapped = base !== L.image;   // mapped: shown on the full photo (demo render)
   if (prepared.has(base) && prepared.get(base).tracked) {   // seen this picture before: labels + looks right away
@@ -766,8 +787,9 @@ async function prepareVariants(depth = 0) {
     todo.forEach(({ it }, k) => {
       if (!boxes[k]) return;
       const at = run.mapped ? toShown(boxCenter(boxes[k])) : boxCenter(boxes[k]);   // label spot on the shown picture
-      for (const list of [S.scene, S.options[S.opt]?.items, run.scene])
-        list?.filter(x => x.cat === it.cat && x.pid === it.pid && !x.own).forEach(x => { x.at = at.slice(); });   // label spot only (pos is part of sceneSig)
+      const lists = run.mapped ? [S.scene, run.scene, ...S.options.map(o => o.items)] : [S.scene, S.options[S.opt]?.items, run.scene];
+      lists.forEach(list => list?.filter(x => x.cat === it.cat && !x.own && !x.sketched && (run.mapped || x.pid === it.pid))
+        .forEach(x => { x.at = at.slice(); }));   // label spot only (pos is part of sceneSig)
     });
     renderHotspots();
     const jobs = [], fresh = new Set();
@@ -872,6 +894,34 @@ async function reusableEntry(prev, it, box, base) {
   return d / (64 * 64 * 3) < 6 ? e : null;
 }
 
+// the test set with only prepared looks (colors of the test pieces, similar products in their first color): composable
+function isDemoDerived(scene) {
+  const plain = (scene || []).filter(it => !it.sketched);
+  return plain.length === TEST_SET.length && !plain.some(it => it.own) && plain.every(it => {
+    const t = TEST_SET.find(t => t.cat === it.cat);
+    if (!t) return false;
+    if (it.pid === t.pid) return !it.vid || colorChoices(byId[t.pid]).some(c => c.id === it.vid);
+    return t.similar.includes(it.pid) && !it.vid;
+  }) && !scene.some(it => it.sketched && !(V?.items[scene.indexOf(it)]?.layer));
+}
+// show the current scene from the demo render + prepared looks (loads + prepares the demo render the first time)
+let demoBaseRs = null;
+async function demoCompose() {
+  if (!(V?.mapped && V.base === demoBaseRs && V.tracked)) {
+    demoBaseRs = (await apiPost("/api/cached_render", { key: DEMO_BASE })).image;
+    const shown = await showOnPhoto(demoBaseRs), cur = S.scene;
+    S.scene = testScene();   // the scene the saved render shows
+    rememberRender(sceneSig(), shown, true);
+    S.scene = cur;
+    await prepareVariants();   // labels + every prepared look (all saved)
+  }
+  for (let t = 0; t < 150 && !colorsReady(); t++) {
+    if (!S.scene.some((it, i) => ["queued", "loading"].includes(lookState(it, i).s))) break;
+    await new Promise(r => setTimeout(r, 200));
+  }
+  if (!(await showColors())) toast("This combination isn't in the demo set");
+}
+
 // same pieces, products and colors (order doesn't matter)
 const sameItems = (a, b) => a.length === b.length && b.every(x => a.some(y => y.cat === x.cat && y.pid === x.pid
   && (y.vid || null) === (x.vid || null) && (y.own || null) === (x.own || null)));
@@ -959,8 +1009,12 @@ async function placeSketched(base, items) {
 async function showColors() {
   if (!colorsReady()) return false;
   const sig = sceneSig(), run = V;
+  // floor first (a rug's crop covers the furniture on it), then bigger pieces before smaller, so each piece sits on top
+  const area = b => (b[2] - b[0]) * (b[3] - b[1]);
   const overlays = S.scene.map((it, i) => { const l = lookState(it, i), e = V.items[i];
-    return l.s === "ready" ? l.overlay : l.s === "same" && e?.layer ? e.layer : null; }).filter(Boolean);
+    const o = l.s === "ready" ? l.overlay : l.s === "same" && e?.layer ? e.layer : null;
+    return o && { o, rug: it.cat === "rug", size: e?.crop ? area(e.crop.box) : 0 }; }).filter(Boolean)
+    .sort((a, b) => b.rug - a.rug || b.size - a.size).map(x => x.o);
   let img = S.renders[sig] || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
   if (!S.renders[sig] && run.mapped) img = await showOnPhoto(img);   // the demo render: shown on the full photo
   if (V !== run || sceneSig() !== sig) return false;   // something else changed meanwhile
@@ -971,7 +1025,7 @@ async function showColors() {
 // called by the colorway / swap buttons after it.vid or it.pid changed
 function previewPicked(it) {
   const p = view(it), name = `${p.family || p.name} · ${p.variant}`;
-  if (!S.live && !MOCK_VARIANTS) { toast(`${name} · turn on AI renders (top right) to preview it instantly`); return; }
+  if (!S.live && !MOCK_VARIANTS && !demoRoom()) { toast(`${name} · turn on AI renders (top right) to preview it instantly`); return; }
   if (!V && lastRender()?.real) {   // nothing prepared yet (e.g. AI renders were just turned on): start now
     prepareVariants();
     toast(`${name} · preparing previews, it shows in a moment`); return;
