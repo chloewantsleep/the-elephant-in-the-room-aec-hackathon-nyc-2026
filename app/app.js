@@ -94,7 +94,7 @@ const S = {
   renders: {},         // scene signature -> rendered image (data URL); avoids paying twice
   rendering: false,
   last: null,          // latest render + the scene it shows (for edit-mode updates)
-  live: false,         // false = demo renders (no Gemini spend); flip with the top-right toggle or #live=1
+  live: true,          // true = real AI renders (repeat requests come from the server cache for free); false = demo renders
   cart: "closed",      // closed | open (left drawer) | expanded (big grid)
   cartFilter: "all",
   cartCat: "all",      // category dropdown in the expanded view
@@ -205,24 +205,59 @@ const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ?
 // Pieces the user sketched on this photo (sketch.js): [{category, widthIn, pos}]
 const sketched = () => S.sketch?.photoKey === photoKey() ? S.sketch.items : [];
 
-// What to design: the room template plus the sketched pieces. A sketched piece of a type the template already has
-// takes that slot (the template's floor lamp moves to where you drew one); other sketched pieces are added.
+// What to design: the room template plus the sketched pieces. A sketched piece is always added (drawn over something
+// that's already there, it replaces that piece instead: sketchCovers).
 // Each sketched piece goes at the spot and about the size it was drawn. Budget share per piece comes from the
 // templates (a sofa gets more than a lamp), scaled down if the extra pieces push the total over the budget.
 const SHARE = Object.fromEntries(Object.values(TEMPLATES).flat().reverse().map(s => [s.cat, s.share]));
 function slotsWithSketch(tpl = TEMPLATES[S.needs.room]) {
   const sk = sketched(), wall = S.space.wallIn;
   if (!sk.length) return tpl;
-  const slots = tpl.map(s => ({ ...s })), taken = new Set();
+  const slots = tpl.map(s => ({ ...s }));
   sk.forEach((s, n) => {
     const mine = { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
                    maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
-    const k = slots.findIndex((t, i) => t.cat === s.category && !t.sketched && !taken.has(i));
-    if (k >= 0) { taken.add(k); slots[k] = { ...mine, share: slots[k].share, qty: slots[k].qty }; }
-    else slots.push(mine);
+    slots.push(mine);   // a sketch only ADDS a piece; it replaces something only when drawn over it (sketchCovers)
   });
   const total = slots.reduce((a, s) => a + s.share, 0);
   return total > 1 ? slots.map(s => ({ ...s, share: s.share / total })) : slots;
+}
+
+// TEST SET (sample room + test images only): option 1 is this hand-picked living room instead of the mock planner.
+// Placement is described in words for the render AI (no fixed coordinates); labels follow where it really puts them.
+// Pieces already in the photo of these categories are replaced; other pieces in the photo are kept.
+// LOCKED for the demo: the products and their 4 similar products (all already rendered on the demo picture)
+const TEST_SET = [
+  { cat: "coffee_table", pid: "ikea:20586552", place: "in the foreground, in the middle of the seating area",
+    similar: ["ikea:10489311", "ikea:70497582", "ikea:20487873", "ikea:60627980"] },           // TONSTAD, FRÖTORP, IDANÄS, UGGLERUM
+  { cat: "sofa",         pid: "ikea:s09514830", place: "a large sofa on one side of the coffee table, facing it",
+    similar: ["ikea:00586096", "ikea:s39634845", "ikea:20245049", "ikea:s59580059"] },         // STOCKHOLM 2025, VIMLE, STOCKHOLM, SÖDERHAMN
+  { cat: "armchair",     pid: "ikea:s49502038", place: "a small chair on the other side of the coffee table, facing the sofa",
+    similar: ["ikea:s59578565", "ikea:s59318327", "ikea:40525925", "ikea:30533493"] },         // SALTSJÖBADEN, MORABO, PERSBOL, EKENÄSET
+  { cat: "rug",          pid: "ikea:80635451", place: "on the floor under the coffee table, the sofa and the chair",
+    similar: ["ikea:90625705", "ikea:20595698", "ikea:00602001", "ikea:90607688"] },           // MARKBLÅMME, JÄRNVÄG, GREJSIMOJS, STOENSE
+  { cat: "pendant_lamp", pid: "ikea:70315030", place: "hanging from the ceiling above the seating area",
+    similar: ["ikea:50513738", "ikea:20585996", "ikea:90637633", "ikea:10601586"] },           // NÖSUND, STOCKHOLM 2025, VINTERFINT, TRUBBRUFSE
+];
+// DEMO SKETCH: any shape drawn on the sample room is this lamp, at one fixed spot (where or how it was drawn doesn't
+// matter), so every demo run sends the same request (instant + free after the first time). Off with #newrenders=1.
+const DEMO_LAMP = { pid: "ikea:50513738", similar: ["ikea:70315030", "ikea:20585996"],   // NÖSUND; SINNERLIG, STOCKHOLM 2025
+                    strokes: [[[25, 12], [37, 12], [37, 24], [25, 24], [25, 12]]] };   // hanging (on its cord) between the column and the pendant
+function demoSketch(m) {   // called by sketch.js for each shape when the user presses Done
+  if (!ONLY_SKETCH_NEW || S.space.photo !== "demo") return;
+  m.cat = "pendant_lamp"; m.strokes = structuredClone(DEMO_LAMP.strokes); m.widthIn = null; m.demoLamp = true;
+}
+const isDemoLamp = it => it.sketched && it.cat === "pendant_lamp" && ONLY_SKETCH_NEW && S.space.photo === "demo";
+
+// the locked slot this piece belongs to (the test piece itself, or one of its similar products swapped in)
+const lockedSlot = it => S.space.photo === "demo" && !it.own && !it.sketched
+  && TEST_SET.find(t => t.cat === it.cat && (t.pid === it.pid || t.similar.includes(it.pid))) || null;
+// colors shown for a piece: a similar product swapped in has only its first (default) color prepared
+const colorLimit = it => { const t = lockedSlot(it); return t && t.pid !== it.pid ? 1 : VARIANT_MAX; };
+function testScene() {
+  const cats = new Set(TEST_SET.map(t => t.cat));
+  return [...keptPieces().filter(e => !cats.has(e.category)).map(ownedItem),
+          ...TEST_SET.filter(t => byId[t.pid]).map(t => ({ cat: t.cat, qty: 1, pid: t.pid, vid: null, pos: [50, 50], place: t.place }))];
 }
 
 function planOptions() {
@@ -233,7 +268,7 @@ function planOptions() {
   const strict = BriefEngine.active(B).some(r => r.effect === "budget");   // a confirmed budget is never exceeded
   const used = {};
   const kept = keptPieces();
-  return STRATEGIES.map(strat => {
+  const opts = STRATEGIES.map(strat => {
     const usedOwn = new Set(), gaps = [];
     let remaining = cap;
     let items = tpl.map(slot => {
@@ -247,10 +282,13 @@ function planOptions() {
       let scored = P.filter(p => p.category === slot.cat && fits(p, slot))
         .map(p => ({ p, a: BriefEngine.assess(p, slot.cat, B) })).filter(x => x.a.eligible);
       if (!scored.length && slot.sketched) {   // a sketch is a rough size: nothing that small? take the closest sizes
+        // (what the user drew always gets a product: brief limits don't drop it)
+        const near = w => Math.abs((w ?? 1e9) - (slot.maxW * S.space.wallIn / 1.25));
         scored = P.filter(p => p.category === slot.cat).map(p => ({ p, a: BriefEngine.assess(p, slot.cat, B) }))
-          .filter(x => x.a.eligible).sort((a, b) => (a.p.dims_in.width ?? 1e9) - (b.p.dims_in.width ?? 1e9)).slice(0, 3);
+          .sort((a, b) => b.a.eligible - a.a.eligible || near(a.p.dims_in.width) - near(b.p.dims_in.width)).slice(0, 3);
       }
-      const pool = strict ? scored.filter(x => x.p.price.amount * qty <= remaining) : scored;
+      // a confirmed budget is a hard cap, except for sketched pieces: what the user drew is always rendered
+      const pool = strict && !slot.sketched ? scored.filter(x => x.p.price.amount * qty <= remaining) : scored;
       if (!pool.length) { gaps.push(slot.cat); return null; }
       const fresh = pool.filter(x => !(used[slot.cat] || []).includes(x.p.id));
       const cands = (fresh.length ? fresh : pool).filter(x => x.p.price.amount <= budget * 1.35);
@@ -272,6 +310,36 @@ function planOptions() {
     }
     return { name: strat.name, items, gaps };
   });
+  if (S.space.photo === "demo") {
+    // the test set, plus anything the user sketched (a sketched piece takes the test set's slot of that type)
+    const drawn = opts[0].items.filter(it => it.sketched);   // the test set plus anything the user sketched
+    opts[0] = { ...opts[0], name: "Test set", items: [...testScene(), ...drawn] };
+    S.needs.budget = Math.max(S.needs.budget, 6000);   // room for color changes / swaps (they must stay within budget)
+  }
+  opts.forEach(o => {
+    o.items.forEach(it => { if (isDemoLamp(it) && byId[DEMO_LAMP.pid]) { it.pid = DEMO_LAMP.pid; it.vid = null; } });   // demo: fixed lamp
+    o.items = sketchCovers(o.items);
+  });
+  return opts;
+}
+
+// A sketch drawn OVER a piece that's already there replaces it (a sketch elsewhere only adds). "Over" = the sketch
+// covers at least 40% of the piece's box: the piece's box in the photo (yours) or where the last render put it (new).
+function sketchCovers(items) {
+  const sk = items.filter(it => it.sketched), shapes = typeof savedShapes === "function" ? savedShapes() : [];
+  if (!sk.length || typeof skBox !== "function") return items;
+  const area = b => Math.max(0, b[2] - b[0]) * Math.max(0, b[3] - b[1]);
+  const inter = (a, b) => area([Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.min(a[2], b[2]), Math.min(a[3], b[3])]);
+  const boxesOf = it => it.own ? (e => e ? e.boxes || [e.box] : [])(exById(it.own))
+    : V ? Object.entries(V.items).filter(([i]) => V.scene[i]?.pid === it.pid && V.scene[i]?.cat === it.cat).map(([, e]) => e.crop.box) : [];
+  const covered = new Set();
+  for (const s of sk) {
+    const sh = shapes[s.sk];
+    if (!sh) continue;
+    const [x0, y0, x1, y1] = skBox(sh.strokes), sb = [y0 * 10, x0 * 10, y1 * 10, x1 * 10];   // 0-1000, like the boxes
+    for (const it of items) if (!it.sketched && boxesOf(it).some(b => area(b) && inter(sb, b) >= 0.4 * area(b))) covered.add(it);
+  }
+  return items.filter(it => !covered.has(it));
 }
 
 function generate() {
@@ -322,31 +390,37 @@ function showImage() {
 function itemPayload(it) {
   const p = view(it);
   return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
-           description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round),
-           ...(it.sketched ? { sketched: true } : {}) };
+           description: (it.place ? `Placement: ${it.place}. ` : "") + (p.description || ""), image: p.images.main_local || p.images.main,
+           ...(it.sketched ? { pos: it.pos.map(Math.round), sketched: true } : {}) };
+  // no position otherwise: the render AI decides where each piece goes; labels follow where it really is (tracking)
 }
 
 // What changed since the last render? null = too different, do a full render instead.
 function editsSinceLast() {
   const L = lastRender();
   if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
-  // the diff below matches pieces by category; with two of the same kind (e.g. a sketched second armchair) do a full render
+  // sketched pieces are diffed on their own (they're added into a crop around the sketch, see renderScene); the rest
+  // is matched by category, and two of the same kind there means a full render
+  const plain = items => items.filter(it => !it.sketched), Lp = plain(L.items), Sp = plain(S.scene);
   const dup = items => new Set(items.map(it => it.cat)).size !== items.length;
-  if (dup(L.items) || dup(S.scene)) return null;
-  const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
-  const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
-  // a piece the sketch moved (newly sketched, or sketched somewhere else) counts as changed, so the render moves it
-  const spot = it => it.sketched ? it.pos.map(Math.round).join() : "";
-  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own && spot(a) === spot(b);
-  const changed = S.scene.filter(it => !before[it.cat] || !same(before[it.cat], it))
-    .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
-  const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
+  if (dup(Lp) || dup(Sp)) return null;
+  const before = Object.fromEntries(Lp.map(it => [it.cat, it]));
+  const now = Object.fromEntries(Sp.map(it => [it.cat, it]));
+  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own;
+  const sameSketch = (a, b) => same(a, b) && a.pos.map(Math.round).join() === b.pos.map(Math.round).join();
+  const skNow = S.scene.filter(it => it.sketched), skBefore = L.items.filter(it => it.sketched);
+  const changed = Sp.filter(it => !before[it.cat] || !same(before[it.cat], it))
+    .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }))
+    .concat(skNow.filter(it => !skBefore.some(b => sameSketch(b, it))).map(itemPayload));   // new / moved sketches
+  const removed = Lp.filter(it => !now[it.cat]).concat(skBefore.filter(b => !skNow.some(it => sameSketch(b, it))))
+    .map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
   const n = changed.length + removed.length;
   return n && n <= 3 ? { changed, removed } : null;
 }
 
+const renderBase = () => ({ room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style, brief:BriefEngine.active(B).map(r=>({text:r.text,impact:r.impact,scope:r.scope,productId:r.productId,category:r.category})) } });
 function renderRequest() {
-  const base = { room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style, brief:BriefEngine.active(B).map(r=>({text:r.text,impact:r.impact,scope:r.scope,productId:r.productId,category:r.category})) } };
+  const base = renderBase();
   const edits = editsSinceLast();
   if (edits) {
     // edit mode: start from the current render and change only these pieces (keeps everything else stable)
@@ -356,7 +430,7 @@ function renderRequest() {
   const ex = S.existing?.photoKey === photoKey() ? S.existing.items : [];
   const here = e => ({ label: e.label, category: e.category, count: e.count || 1,
                        positions: (e.boxes || [e.box]).map(b => boxCenter(b).map(Math.round)) });
-  return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
+  return { ...base, room_image: S.space.photo === "demo" ? apiSrc(example().src) : S.space.data,
            items: S.scene.filter(it => !it.own).map(itemPayload),
            keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
            remove_existing: ex.filter(e => !e.id.startsWith("picked-") && !S.scene.some(it => it.own === e.id)).map(here) };
@@ -381,9 +455,12 @@ const passcode = {
   set(v) { try { localStorage.setItem("elephant-passcode", v); } catch { /* private mode: ask again next time */ } },
 };
 
+// VS Code Live Preview serves the page on another local port (3000); the AI server (python server.py) is on 8000
+const API_BASE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port !== (window.ELEPHANT_API_PORT || "8000")
+  ? `http://127.0.0.1:${window.ELEPHANT_API_PORT || "8000"}` : "";
 async function apiPost(path, obj) {
   const body = JSON.stringify(obj);
-  const call = () => fetch(path, { method: "POST", body,
+  const call = () => fetch(API_BASE + path, { method: "POST", body,
     headers: { "Content-Type": "application/json", "X-Passcode": passcode.get() } });
   let res = await call();
   if (res.status === 401) {   // deployed site: AI calls cost money, so they need the team passcode
@@ -399,8 +476,10 @@ async function apiPost(path, obj) {
 }
 
 
+let renderQueued = false;   // a render asked for while another one runs (e.g. a sketch finished): runs right after it
 async function renderScene(manual = false) {
-  if (S.rendering || !S.scene || !S.scene.length) return;
+  if (S.rendering) { renderQueued = true; toast("Rendering… your latest change is next"); return; }
+  if (!S.scene || !S.scene.length) return;
   const sig = sceneSig();
   S.renderError='';
   if (!S.live) {
@@ -409,7 +488,7 @@ async function renderScene(manual = false) {
     const ex = S.existing?.photoKey === photoKey() ? S.existing.items : [];
     const keepsMine = S.scene.some(it => it.own);
     // the baked example render shows exactly option 1 with everything found kept
-    const isBaked = S.space.photo === "demo" && ex.every(e => e.keep) && S.options[0] && sig === sceneSig(S.options[0].items);
+    const isBaked = S.space.photo === "demo" && !!example().render && ex.every(e => e.keep) && S.options[0] && sig === sceneSig(S.options[0].items);
     if (manual && !isBaked && lastRender()) {
       // you edited the design: a saved image can't show that, so offer to turn AI on for this one change
       if (confirm("AI renders are off (demo mode), so the picture can't show this change.\n\nTurn AI renders on and update it now? (about $0.07 per render)")) {
@@ -421,8 +500,9 @@ async function renderScene(manual = false) {
     setTimeout(() => {
       // a saved demo image only fits the default plan; otherwise show your photo with the pieces you keep
       const sk = S.scene.some(it => it.sketched);   // sketched pieces: no saved image has them, so show the photo
-      const img = isBaked ? example().render : keepsMine || sk ? photoSrc() : S.space.photo === "demo" ? example().render : EXAMPLES[0].render;
+      const img = isBaked ? example().render : keepsMine || sk ? photoSrc() : S.space.photo === "demo" ? (example().render || photoSrc()) : EXAMPLES[0].render;
       rememberRender(sig, img, isBaked); S.rendering = false; render();
+      if (isBaked) prepareVariants();
       toast(isBaked ? "Demo render · AI renders are off (top right to turn on)"
             : sk ? "Demo mode: your sketched pieces show as pins. Turn on AI renders (top right) to see them in the picture"
             : keepsMine ? "Demo mode: showing your photo with the pieces you keep. Turn on AI renders to see the new ones in it"
@@ -430,33 +510,375 @@ async function renderScene(manual = false) {
     }, 700);
     return;
   }
-  if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
+  if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); prepareVariants(); return; }
   const reqObj = renderRequest();
-  if (reqObj.mode !== "edit" && !reqObj.items.length && !(reqObj.remove_existing || []).length) {
+  // sketched pieces don't go in the big render: each is added afterwards into a small crop around its sketch
+  const sketchedNames = new Set(reqObj.items.filter(x => x.sketched).map(x => x.name));
+  const toPlace = S.scene.filter(it => it.sketched && !it.own && byId[it.pid] && sketchedNames.has(view(it).name));
+  reqObj.items = reqObj.items.filter(x => !x.sketched);
+  const bigNeeded = reqObj.items.length + (reqObj.mode === "edit" ? reqObj.removed.length : (reqObj.remove_existing || []).length) > 0;
+  if (!bigNeeded && !toPlace.length) {
     S.before = true; render(); toast("You're keeping everything, so there's nothing new to render yet");   // don't pay for a copy
     return;
   }
   S.rendering = true; S.before = false; render();
   try {
-    // sketched pieces in this render? send the sketch itself as a layout guide (sketch.js)
-    if (reqObj.items.some(it => it.sketched) && typeof sketchGuide === "function") {
-      const guide = await sketchGuide();
-      if (guide) reqObj.layout_guide = guide;
-    }
-    const j = await apiPost("/api/render", reqObj);
+    // demo: the sample room's test set (option 1, colors as recommended) is the saved render all demo looks were made on
+    const isDemoBase = reqObj.mode !== "edit" && S.space.photo === "demo" && S.space.ex === 0
+      && sameItems(S.scene.filter(it => !it.sketched), testScene());
+    if (ONLY_SKETCH_NEW && !toPlace.length) reqObj.cache_only = true;   // only sketches make new renders
+    const j = bigNeeded && ONLY_SKETCH_NEW && isDemoBase ? await apiPost("/api/cached_render", { key: DEMO_BASE })
+      : bigNeeded ? await apiPost("/api/render", reqObj)
+      : { image: reqObj.mode === "edit" ? lastRender().image : photoSrc(), cached: true, ms: 0 };   // only sketches: add them to what's there
     if(sig!==sceneSig()){toast('The design changed, so this image doesn’t show it. Render again.');return;}
+    if (toPlace.length) {
+      toast(`Adding your ${toPlace.length} sketched piece${toPlace.length > 1 ? "s" : ""}…`);
+      j.image = await placeSketched(j.image, toPlace);
+      if (sig !== sceneSig()) { toast('The design changed, so this image doesn’t show it. Render again.'); return; }
+    }
     rememberRender(sig, j.image);if(typeof logTransition==='function')logTransition('Render updated with the current picks and colors.');
+    prepareVariants();   // in the background: color crops for instant color switching
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
   } catch (e) {
     S.renderError=e.message; if(typeof logTransition==='function')logTransition('Render failed. Your picks are saved, so you can retry.');toast(e.message.slice(0,120));
   } finally {
     S.rendering = false; render();
+    if (renderQueued) { renderQueued = false; renderScene(manual); }   // the change asked for meanwhile
   }
 }
 
+/* ---------------- color variants: switch a product's color (or a similar product) on the render instantly ----------------
+ * After a render: check each new product is really in it (add it with an edit render if not), crop it, and prepare
+ * in the background (one small Gemini edit each):
+ *   - its other colors (up to VARIANT_MAX colors in all), and
+ *   - its similar products (up to SIMILAR_MAX, in their default color only; their other colors are not prepared).
+ * Picking one with the existing buttons then lays that crop over the render right away (variants.js), instead of
+ * asking for a new render. #variantsmock=1 runs this without Gemini (fake tints) to test the flow. */
+let MOCK_VARIANTS = false;
+// DEMO: only sketches make new AI renders. Everything else (full renders, tracking, colors, similar products) comes from
+// what was rendered before (server cache). #newrenders=1 in the URL allows new renders for everything again.
+let ONLY_SKETCH_NEW = true;
+const DEMO_BASE = "ddfbf2dc833b2419";   // the test-set render (sample room, option 1) all demo colors / swaps were made on
+const cacheOnly = live => (path, body) => apiPost(path, ONLY_SKETCH_NEW && !live ? { ...body, cache_only: true } : body);
+const prepared = new Map();   // render image -> its V, so going back to a picture (e.g. another option) is instant
+const VARIANT_MAX = 4;   // colors per product, including the one it was rendered in (also the swatches shown)
+const SIMILAR_MAX = 4;   // similar products listed per piece (also prepared, default color only)
+// V = {base: render image the crops come from, scene: what that render shows, items: {slot index: {pid, from, fromName,
+//      crop, looks: {"c:<vid|base>" | "s:<pid>": {status, overlay}}}}}
+let V = null;
+let lastV = null;        // the previous V: its finished looks are reused when a piece looks the same in the new picture
+const vkey = vid => vid || "base";
+const apiSrc = img => img.startsWith("assets/") ? "app/" + img : img;   // a baked example render is a file under app/
+// which prepared look shows this item: another color of the rendered product, or a similar product in its default color
+const lookKey = (entry, it) => it.pid === entry.pid ? "c:" + vkey(it.vid) : it.vid ? null : "s:" + it.pid;
+
+function colorChoices(p) {
+  return [{ id: null, variant: p.variant, image: p.images.main_local || p.images.main },
+    ...p.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))].slice(0, VARIANT_MAX);
+}
+// the similar products listed for a piece (same list in the Edit card, the product preview and the background prep)
+function similarProducts(it) {
+  const t = lockedSlot(it);
+  if (t) return [t.pid, ...t.similar].filter(id => id !== it.pid && byId[id]).map(id => byId[id]).slice(0, SIMILAR_MAX);
+  // a sketched piece: 2 similar products in the demo (all of them with real AI renders on, #newrenders=1)
+  if (isDemoLamp(it) && it.pid === DEMO_LAMP.pid) return DEMO_LAMP.similar.filter(id => byId[id]).map(id => byId[id]);
+  if (it.sketched) return similarRanked(it).slice(0, ONLY_SKETCH_NEW ? 2 : SIMILAR_MAX);
+  return similarRanked(it).slice(0, SIMILAR_MAX);
+}
+function similarRanked(it) {
+  const p = view(it);
+  return P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it) && (typeof eligibleSwap !== "function" || eligibleSwap(q, it)))
+    .sort((a, b) => BriefEngine.assess(b, it.cat, B).score - BriefEngine.assess(a, it.cat, B).score
+      || Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount));
+}
+
+// how item i of the scene relates to what V was made from
+function lookState(it, i) {
+  const was = V?.scene[i];
+  if (!was || it.cat !== was.cat || it.own !== was.own) return { s: "none" };
+  if (it.own || (it.pid === was.pid && vkey(it.vid) === vkey(was.vid))) return { s: "same" };
+  const e = V.items[i], key = e && lookKey(e, it), look = key && e.looks[key];
+  if (!look) return { s: "none" };
+  return look.status === "done" ? { s: "ready", overlay: look.overlay } : { s: look.status, error: look.error };
+}
+// the scene is what V was made from, apart from looks that are prepared (or being prepared)
+const variantsCover = (scene = S.scene) => !!V && !!scene && scene.length === V.scene.length && scene.every((it, i) => lookState(it, i).s !== "none");
+const colorsReady = () => variantsCover() && S.scene.every((it, i) => ["same", "ready"].includes(lookState(it, i).s));
+
+const REPAIR_MAX = 2;   // extra edit renders to add products the render left out
+async function prepareVariants(depth = 0) {
+  const L = lastRender();
+  if (!L?.real || !(S.live || MOCK_VARIANTS) || V?.base === L.image || (L.fromVariants && V)) return;
+  // L.items = exactly what this render shows (the scene may have been edited since)
+  if (prepared.has(L.image) && prepared.get(L.image).tracked) {   // seen this picture before: labels + looks right away
+    V = lastV = prepared.get(L.image); S.verifying = false; render(); resumeJobs(V); return;
+  }
+  const prev = V || lastV;
+  const run = V = lastV = { base: L.image, scene: structuredClone(L.items), items: {} };
+  prepared.set(run.base, run);
+  if (prepared.size > 12) prepared.delete(prepared.keys().next().value);
+  // every new product is tracked (labels move onto it); then its colors and similar products are prepared
+  const todo = L.items.map((it, i) => ({ it, i })).filter(({ it }) => !it.own && byId[it.pid]);
+  if (!todo.length) return;
+  S.verifying = true; renderHotspots();   // no product labels until we've checked each one is really in the picture
+  if (!MOCK_VARIANTS) toast("Checking that every product is in the picture…");
+  try {
+    // where everything is already known (the other pieces from the last picture, a sketched piece where it was
+    // drawn), skip tracking: labels show right away and nothing is paid
+    let boxes = null;
+    if (prev?.tracked) {
+      const shapes = typeof savedShapes === "function" ? savedShapes() : [];
+      const known = todo.map(({ it }) => {
+        if (it.sketched) {
+          const sh = shapes[it.sk];
+          if (!sh || typeof skBox !== "function") return null;
+          const [x0, y0, x1, y1] = skBox(sh.strokes);
+          return [y0 * 10, x0 * 10, y1 * 10, x1 * 10].map(Math.round);
+        }
+        const e = Object.values(prev.items).find(e => e.pid === it.pid && vkey(e.from) === vkey(it.vid));
+        return e ? e.crop.box : null;
+      });
+      if (known.every(Boolean)) boxes = known;
+    }
+    if (!boxes) boxes = await Variants.track({ image: apiSrc(run.base), api: cacheOnly(todo.some(({ it }) => it.sketched)), mock: MOCK_VARIANTS,
+      items: todo.map(({ it }) => { const p = view(it); return { name: p.name, category: CAT_LABEL[it.cat],
+        image: p.images.main_local || p.images.main }; }) });   // no position hint: search the whole picture
+    if (V !== run) return;
+    // a product the render left out: add it with an edit render, then check again; never label what isn't there
+    const missing = todo.filter((x, k) => !boxes[k]).map(x => x.it);
+    if (missing.length && !MOCK_VARIANTS) {
+      const names = missing.map(it => view(it).family || view(it).name).join(", ");
+      if (depth < REPAIR_MAX && S.live) {
+        const sig = sceneSig(L.items);
+        if (sceneSig() !== sig) return;   // the design changed meanwhile; the next render starts over
+        toast(`${names} was missing from the picture · adding it`);
+        S.rendering = true; render();
+        try {
+          const j = await cacheOnly(missing.some(it => it.sketched))("/api/render", { ...renderBase(), mode: "edit", base_image: apiSrc(run.base), removed: [],
+            items: missing.map(it => { const x = itemPayload(it); return { ...x, description:
+              `This product is MISSING from IMAGE 1. Add it so it is clearly visible and fully recognizable. ${x.description || ""}`.trim() }; }) });
+          S.rendering = false;
+          if (V !== run || sceneSig() !== sig) return;
+          rememberRender(sig, j.image); V = null; render();
+          return prepareVariants(depth + 1);
+        } finally { S.rendering = false; }
+      }
+      run.missing = new Set(missing.map(it => it.pid));
+      toast(`${names} couldn't be placed in the picture, so it has no label. Click Update render to try again.`);
+    }
+    run.tracked = true;
+    S.verifying = false;   // checked: labels show now; colors / similar products keep preparing in the background
+    // labels: put each pin where the product really is in the render (template positions are only a guess)
+    todo.forEach(({ it }, k) => {
+      if (!boxes[k]) return;
+      const at = boxCenter(boxes[k]);
+      for (const list of [S.scene, S.options[S.opt]?.items, run.scene])
+        list?.filter(x => x.cat === it.cat && x.pid === it.pid && !x.own).forEach(x => { x.at = at.slice(); });   // label spot only (pos is part of sceneSig)
+    });
+    renderHotspots();
+    const jobs = [], fresh = new Set();
+    for (const [k, { it, i }] of todo.entries()) {
+      if (!boxes[k]) continue;
+      // same piece, same color, same spot and it looks the same in the new picture (e.g. only a sketch was added
+      // elsewhere): keep its finished colors / similar products instead of paying for them again
+      const old = await reusableEntry(prev, it, boxes[k], run.base);
+      if (V !== run) return;
+      if (old) {
+        run.items[i] = old;
+        for (const [key, look] of Object.entries(old.looks)) if (look.status === "queued" || look.status === "loading") {
+          look.status = "queued";
+          jobs.push(key.startsWith("c:") ? { i, entry: old, key, cat: it.cat, color: colorChoices(byId[it.pid]).find(c => "c:" + vkey(c.id) === key) }
+                                         : { i, entry: old, key, cat: it.cat, swap: byId[key.slice(2)] });
+        }
+        continue;
+      }
+      fresh.add(i);
+      const p = byId[it.pid], from = it.vid || null;
+      const entry = run.items[i] = { pid: it.pid, from, fromName: view(it).variant, crop: await Variants.cropForRecolor(run.base, boxes[k]),
+                                     looks: { ["c:" + vkey(from)]: { status: "done" } } };
+      for (const c of colorChoices(p).filter(c => c.id !== from)) {
+        entry.looks["c:" + vkey(c.id)] = { status: "queued" };
+        jobs.push({ i, entry, key: "c:" + vkey(c.id), color: c, cat: it.cat });
+      }
+      for (const q of similarProducts(it)) {
+        entry.looks["s:" + q.id] = { status: "queued" };
+        jobs.push({ i, entry, key: "s:" + q.id, swap: q, cat: it.cat, prefetch: it.sketched ? sketchPrefetch.get(`${it.sk}|${it.pid}|${q.id}`) : null });
+      }
+    }
+    // the piece you're looking at first, then pieces that are new in this picture (e.g. a sketch), colors before similar products
+    jobs.sort((a, b) => (b.i === S.sel) - (a.i === S.sel) || fresh.has(b.i) - fresh.has(a.i) || !!a.swap - !!b.swap);
+    await runJobs(run, jobs);
+  } catch (e) {
+    if (V === run) toast("Color previews unavailable: " + e.message.slice(0, 90));
+  } finally {
+    if (V === run || !V) { S.verifying = false; render(); }
+  }
+}
+
+// Make the queued looks of a V (colors / similar products), a few at a time. New AI work only for sketched pieces.
+async function runJobs(run, jobs) {
+  const worker = async () => {
+    for (let j; (j = jobs.shift());) {
+      if (V !== run) return;
+      const look = j.entry.looks[j.key];
+      const from = { name: byId[j.entry.pid].name, category: CAT_LABEL[j.cat], variant: j.entry.fromName };
+      const api = cacheOnly(!!run.scene[j.i]?.sketched);
+      look.status = "loading";
+      try {
+        if (j.prefetch) {   // made together with the sketch (placeSketched)
+          look.overlay = await j.prefetch; look.status = "done";
+          const it = S.scene?.[j.i];
+          if (V === run && it && lookState(it, j.i).s === "ready" && !currentRender()) showColors();
+          continue;
+        }
+        const img = j.swap
+          ? await Variants.swap({ crop: j.entry.crop, product: from, api, mock: MOCK_VARIANTS,
+              to: { name: j.swap.name, variant: j.swap.variant, image: j.swap.images.main_local || j.swap.images.main, dims_in: j.swap.dims_in } })
+          : await Variants.recolor({ crop: j.entry.crop, colorway: j.color, product: from, api, mock: MOCK_VARIANTS });
+        look.overlay = await Variants.makeOverlay(j.entry.crop, img);
+        look.status = "done";
+      } catch (e) { look.status = "error"; look.error = e.message; }
+      // the user already picked this one and was waiting for it
+      const it = S.scene?.[j.i];
+      if (V === run && it && lookState(it, j.i).s === "ready" && !currentRender()) showColors();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+}
+// a restored picture whose looks were still being made when we left it: carry on
+function resumeJobs(run) {
+  const jobs = [];
+  for (const [i, e] of Object.entries(run.items)) for (const [key, look] of Object.entries(e.looks)) {
+    if (look.status !== "queued" && look.status !== "loading") continue;
+    look.status = "queued";
+    const cat = run.scene[i].cat;
+    jobs.push(key.startsWith("c:") ? { i: +i, entry: e, key, cat, color: colorChoices(byId[e.pid]).find(c => "c:" + vkey(c.id) === key) }
+                                   : { i: +i, entry: e, key, cat, swap: byId[key.slice(2)] });
+  }
+  if (jobs.length) runJobs(run, jobs);
+}
+
+// A finished entry of the previous V for this piece, if the piece is unchanged in the new picture: same product and
+// color, about the same box, and its crop looks the same (mean pixel difference small). null = prepare it again.
+async function reusableEntry(prev, it, box, base) {
+  if (!prev) return null;
+  const iou = (a, b) => {
+    const w = Math.min(a[3], b[3]) - Math.max(a[1], b[1]), h = Math.min(a[2], b[2]) - Math.max(a[0], b[0]);
+    const i = Math.max(0, w) * Math.max(0, h), u = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - i;
+    return u ? i / u : 0;
+  };
+  const e = Object.values(prev.items).find(e => e.pid === it.pid && vkey(e.from) === vkey(it.vid) && iou(e.crop.box, box) > 0.8);
+  if (!e) return null;
+  const now = await Variants.cropForRecolor(base, e.crop.box);
+  if (now.rect.w !== e.crop.rect.w || now.rect.h !== e.crop.rect.h) return null;
+  const small = c => { const t = Object.assign(document.createElement("canvas"), { width: 64, height: 64 });
+    t.getContext("2d").drawImage(c, 0, 0, 64, 64); return t.getContext("2d").getImageData(0, 0, 64, 64).data; };
+  const a = small(now.full), b = small(e.crop.full);
+  let d = 0; for (let k = 0; k < a.length; k += 4) d += Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]);
+  return d / (64 * 64 * 3) < 6 ? e : null;
+}
+
+// same pieces, products and colors (order doesn't matter)
+const sameItems = (a, b) => a.length === b.length && b.every(x => a.some(y => y.cat === x.cat && y.pid === x.pid
+  && (y.vid || null) === (x.vid || null) && (y.own || null) === (x.own || null)));
+
+// Sketched pieces (sketch.js): each is added into a small crop around what the user drew, then laid over the picture.
+// They are then tracked like every other product, so they get labels, colors and similar products too.
+const sketchPrefetch = new Map();   // "<sketch>|<product>|<similar>" -> overlay promise (made together with the sketch)
+async function placeSketched(base, items) {
+  const shapes = typeof savedShapes === "function" ? savedShapes() : [];
+  const overlays = await Promise.all(items.map(async it => {
+    const sh = shapes[it.sk];
+    if (!sh || typeof skBox !== "function") return null;
+    let [x0, y0, x1, y1] = skBox(sh.strokes);   // % of the picture
+    const grow = (a, b, min) => { const c = (a + b) / 2, h = Math.max(b - a, min) / 2; return [Math.max(0, c - h), Math.min(100, c + h)]; };
+    [x0, x1] = grow(x0, x1, 18); [y0, y1] = grow(y0, y1, 18);   // a tiny sketch still gets a crop with some context
+    const crop = await Variants.cropForRecolor(base, [y0 * 10, x0 * 10, y1 * 10, x1 * 10], 0.5);
+    const p = view(it);
+    const placeOne = q => Variants.place({ crop, strokes: sh.strokes, api: apiPost, mock: MOCK_VARIANTS,
+        product: { name: q.name, variant: q.variant, category: CAT_LABEL[it.cat], image: q.images.main_local || q.images.main,
+                   dims_in: q.dims_in, description: q.description } });
+    const mainP = placeOne(p).catch(e => { console.warn("sketch placement failed, retrying once:", e.message); return placeOne(p); });
+    // its similar products are placed in the same crop at the same time, so switching to them is instant later
+    const limit = Variants.sketchBox(crop, sh.strokes);
+    for (const q of similarProducts(it)) {
+      const k = `${it.sk}|${it.pid}|${q.id}`;
+      if (sketchPrefetch.has(k)) continue;
+      const done = Promise.all([mainP, placeOne(q)]).then(([main, alt]) => Variants.makeOverlay(crop, alt, limit, main));
+      done.catch(() => sketchPrefetch.delete(k));
+      sketchPrefetch.set(k, done);
+    }
+    try {
+      const img = await mainP;
+      return await Variants.makeOverlay(crop, img, Variants.sketchBox(crop, sh.strokes));   // keep it where it was drawn
+    } catch (e) { toast(`Couldn't add ${p.family || p.name}: ${e.message.slice(0, 80)}`); return null; }
+  }));
+  const ok = overlays.filter(Boolean);
+  return ok.length ? Variants.flatten(base, ok) : base;
+}
+
+// Show the render with the chosen looks laid over it. false = can't (yet), so the old flow applies.
+async function showColors() {
+  if (!colorsReady()) return false;
+  const sig = sceneSig(), run = V;
+  const overlays = S.scene.map((it, i) => lookState(it, i)).filter(l => l.s === "ready").map(l => l.overlay);
+  const img = S.renders[sig] || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
+  if (V !== run || sceneSig() !== sig) return false;   // something else changed meanwhile
+  rememberRender(sig, img, true); S.last.fromVariants = true; prepared.set(img, run); S.before = false; render();
+  return true;
+}
+
+// called by the colorway / swap buttons after it.vid or it.pid changed
+function previewPicked(it) {
+  const p = view(it), name = `${p.family || p.name} · ${p.variant}`;
+  if (!S.live && !MOCK_VARIANTS) { toast(`${name} · turn on AI renders (top right) to preview it instantly`); return; }
+  if (!V && lastRender()?.real) {   // nothing prepared yet (e.g. AI renders were just turned on): start now
+    prepareVariants();
+    toast(`${name} · preparing previews, it shows in a moment`); return;
+  }
+  const st = V ? lookState(it, S.scene.indexOf(it)) : { s: "none" };
+  if (colorsReady()) { showColors(); toast(name); return; }
+  if (V && !V.tracked && variantsCover()) { toast(`${name} · preparing previews, it shows in a moment`); return; }
+  if (st.s === "queued" || st.s === "loading") { toast(`${name} · preparing the preview, it shows in a moment`); return; }
+  toast(`${name} · ${st.s === "error" ? "preview failed" : "no instant preview for this one"}, click Update render to see it`);
+}
+const colorPicked = previewPicked;
+
+// TEST ONLY (shown on localhost): swap the base room photo for any image, then jump straight to a rendered design
+// (option 1, no chat/brief), to try the color variants on different rooms. Not part of the product flow.
+function testBaseImage(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(im.width, im.height));
+      const c = Object.assign(document.createElement("canvas"), { width: Math.round(im.width * k), height: Math.round(im.height * k) });
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      EXAMPLES.push({ name: "Test " + (EXAMPLES.length - 1), src: c.toDataURL("image/jpeg", 0.9), room: S.needs.room, render: null, furniture: null });
+      S.space.ex = EXAMPLES.length - 1; S.space.photo = "demo"; S.space.data = null;
+      S.existing = null; S.last = null; S.renders = {}; V = null; S.before = false; S.sel = null; S.preview = null;
+      S.options = planOptions(); S.opt = 0; S.scene = structuredClone(S.options[0].items); S.dirty = false; S.step = EDIT;
+      if (typeof syncLayout === "function") syncLayout();
+      showImage(); render(); renderScene(true);
+      toast("Test base image loaded · rendering option 1");
+    };
+    im.src = r.result;
+  };
+  r.readAsDataURL(file);
+}
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  const input = Object.assign(document.createElement("input"), { type: "file", accept: "image/*", hidden: true });
+  const btn = Object.assign(document.createElement("button"), { className: "pill", textContent: "Test · change base image",
+    title: "Test only: use another room photo as the base image" });
+  Object.assign(btn.style, { position: "fixed", left: "16px", bottom: "16px", zIndex: 60, fontSize: "12px", border: "1px dashed currentColor" });
+  btn.addEventListener("click", e => { e.stopPropagation(); input.click(); });
+  input.addEventListener("change", () => { if (input.files[0]) testBaseImage(input.files[0]); input.value = ""; });
+  document.body.append(input, btn);
+}
+
 /* ---------------- existing furniture: detect -> crop -> white-background isometric shot ---------------- */
-const photoForApi = () => S.space.photo === "demo" ? "app/" + example().src : S.space.data;
+const photoForApi = () => S.space.photo === "demo" ? apiSrc(example().src) : S.space.data;
 let _photoImg = null;
 function photoImage() {
   const src = photoSrc();
@@ -498,7 +920,7 @@ async function scanFurniture() {
   try {
     const det = await apiPost("/api/detect", { photo: photoForApi() });
     if (!alive()) return;
-    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
+    run.items = det.items.map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
     run.status = run.items.length ? "isolating" : "done";
     S.dirty = true; render();
     if (!run.items.length) { toast("No furniture found in this photo"); return; }
@@ -575,10 +997,11 @@ function renderMeasure() {
 
 function renderHotspots() {
   const box = $("#hotspots");
-  if (S.step < DESIGN || !S.scene || S.generating || S.rendering || S.before) { box.innerHTML = ""; return; }
+  if (S.step < DESIGN || !S.scene || S.generating || S.rendering || S.before || S.verifying) { box.innerHTML = ""; return; }
   const placed = [];   // label rectangles already used, to keep labels from covering each other
   const hit = r => placed.some(q => r.l < q.r + 8 && r.r > q.l - 8 && r.t < q.b + 6 && r.b > q.t - 6);
-  const order = S.scene.map((it, i) => ({ it, i, xy: toScreen(it.pos) })).sort((a, b) => b.xy[1] - a.xy[1]);
+  // labels only for new products; pieces you keep ("yours") stay unlabeled (they're still in the shopping list)
+  const order = S.scene.map((it, i) => ({ it, i, xy: toScreen(it.at || it.pos) })).filter(x => !x.it.own && !(V?.missing?.has(x.it.pid) && variantsCover())).sort((a, b) => b.xy[1] - a.xy[1]);
   const html = [];
   for (const { it, i, xy: [x, y] } of order) {
     const p = view(it);
@@ -596,10 +1019,23 @@ function renderHotspots() {
       }
       if (!hit(rect)) { flip = tryFlip; break; }
     }
-    placed.push(rect);
-    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""}" data-idx="${i}" style="left:${x}px;top:${y}px;--lh:${lh}px">
+    // everything stays inside the white frame: no room left above? shorten the line instead of pushing the pill out
+    const small = innerWidth < 820, fx = small ? 16 : innerWidth * 0.05, fy = small ? 16 : innerHeight * 0.06;
+    const topLimit = innerHeight * 0.06 + 72;
+    if (rect.t < topLimit) { lh = Math.max(24, y - 62 - topLimit); rect = rectFor(lh, flip); }
+    const sx = rect.l < fx + 8 ? fx + 8 - rect.l : rect.r > innerWidth - fx - 8 ? innerWidth - fx - 8 - rect.r : 0;
+    placed.push({ ...rect, l: rect.l + sx, r: rect.r + sx });
+    // the dot sits on the piece's real spot (kept inside the frame); the pill stays where it was laid out,
+    // and the line stretches to connect them
+    const g = geom();
+    const [ax, ay] = it.at || it.pos;   // where the piece really is in the render (tracked), else its planned spot
+    const rx = Math.min(Math.max(g.ox + ax / 100 * g.dw, fx + 14), g.W - fx - 14);
+    const ry = Math.max(Math.min(g.oy + ay / 100 * g.dh, g.H - fy - 14), y - lh + 24);   // never above the pill
+    const dx = rx - x, lhReal = lh + (ry - y);
+    const pillPos = flip ? `right:${dx - 38 - sx}px` : `left:${-dx - 38 + sx}px`;
+    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""}" data-idx="${i}" style="left:${rx}px;top:${ry}px;--lh:${lhReal}px">
       <div class="hs-line"></div>
-      <button class="hs-pill" data-action="select" data-idx="${i}">
+      <button class="hs-pill" data-action="select" data-idx="${i}" style="${pillPos}">
         <img src="${esc(imgOf(p))}" alt="">
         <span><small>${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}${it.sketched ? " · ✎ sketched" : ""}</small><b>${esc(label)}</b></span>
       </button>
@@ -791,8 +1227,7 @@ function detailCard() {
   const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
   const colorways = base ? [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))] : [];
-  const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it) && eligibleSwap(q, it))
-    .sort((a, b) => BriefEngine.assess(b,it.cat,B).score-BriefEngine.assess(a,it.cat,B).score || Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
+  const alts = similarProducts(it);   // same 4 as the product preview; each one is pre-rendered
   return `<div class="card card-right">
     <button class="close" data-action="close" aria-label="Close">×</button>
     <img class="p-img" src="${esc(imgOf(p))}" alt="">
@@ -808,7 +1243,7 @@ function detailCard() {
     <div class="selection-reasons"><b>Why this is here</b><p>Within the current budget and width allowance. Width-only check; circulation and depth need verification.</p>${BriefEngine.assess(p,it.cat,B).reasons.map(id=>B.requirements.find(r=>r.id===id)).filter(Boolean).map(r=>`<p>✓ ${esc(r.text)}</p>`).join('')}${BriefEngine.active(B).filter(r=>r.effect==='design_note' && (r.category==='all'||r.category===it.cat)).map(r=>`<p>To verify: ${esc(r.text)}</p>`).join('')}</div>
     ${it.cat==='sofa'?sofaEvidence(p):''}
     ${colorways.length > 1 ? `<label class="field">Colorways · ${colorways.length}</label>
-      <div class="swatches">${colorways.slice(0, 10).map(c =>
+      <div class="swatches">${colorways.slice(0, colorLimit(it)).map(c =>
         `<button class="swatch ${(it.vid || null) === c.id ? "on" : ""}" data-action="colorway" data-vid="${c.id || ""}" title="${esc(c.variant)}"><img src="${esc(c.image)}" alt=""></button>`).join("")}</div>` : ""}
     <label class="field">${p.owned ? "Replace it with · real products that fit" : "Swap · alternatives that fit"}</label>
     <div class="alts">${alts.map(a =>
@@ -964,7 +1399,7 @@ function previewMarkup(it, i, stars) {
 
   // finishes: the base record plus its colorways; clicking one applies it to this piece in the design
   const finishes = base ? [{ id: null, variant: base.variant, image: imgOf(base), price: base.price.amount },
-    ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image, price: v.price }))] : [];
+    ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image, price: v.price }))].slice(0, colorLimit(shown)) : [];
   const curVid = alt ? null : it.vid || null;
   const finishBody = finishes.length > 1
     ? `<div class="pv-fins">${finishes.map(f => `<button class="pv-fin ${f.id === curVid ? "on" : ""}" ${alt ? "disabled" : `data-action="pv-finish" data-vid="${f.id || ""}"`}
@@ -974,9 +1409,7 @@ function previewMarkup(it, i, stars) {
 
   // similar items: same category, fits the slot, closest in price (least important, so last)
   const cur = view(it);
-  const similar = P.filter(q => q.category === it.cat && q.id !== (it.own ? null : it.pid) && fits(q, it))
-    .sort((a, b2) => Math.abs(a.price.amount - (cur.price.amount || a.price.amount)) - Math.abs(b2.price.amount - (cur.price.amount || b2.price.amount)))
-    .slice(0, 8);
+  const similar = similarProducts(it);
   const simBody = similar.length ? `<div class="pv-sim">${similar.map(q => `<button class="pv-simcard ${q.id === alt ? "on" : ""}" data-action="pv-alt" data-pid="${q.id}">
       <span class="pv-simimg"><img src="${esc(imgOf(q))}" alt=""></span><b>${esc(q.family || q.name)}</b><small>${money(q.price.amount)}</small></button>`).join("")}</div>`
     : "<small>No other pieces in this category fit.</small>";
@@ -1178,9 +1611,9 @@ document.addEventListener("click", e => {
   else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== EDIT) S.step = EDIT; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
-    try{changeSceneProduct(S.sel,a.dataset.pid,null);toast('Swapped. Click Update render to see it');}catch(e){toast(e.message);}
+    try{changeSceneProduct(S.sel,a.dataset.pid,null);}catch(e){toast(e.message);}
   } else if (act === "colorway") {
-    try{changeSceneProduct(S.sel,S.scene[S.sel].pid,a.dataset.vid||null);toast('Color changed. Click Update render');}catch(e){toast(e.message);}
+    try{changeSceneProduct(S.sel,S.scene[S.sel].pid,a.dataset.vid||null);}catch(e){toast(e.message);}
   } else if (act === "remove") {
     const [it] = S.scene.splice(S.sel, 1); recordEdit(`I removed ${view(it).name} from this design.`); S.removedCategories.push(it.cat); S.sel = null;
     if (it.own && exById(it.own)) exById(it.own).keep = false;
@@ -1203,13 +1636,13 @@ document.addEventListener("click", e => {
   else if (act === "cart-preview-close") { S.preview = null; S.previewAlt = null; renderCart(); }
   else if (act === "pv-finish") {
     const it = S.scene[S.preview]; it.vid = a.dataset.vid || null; render();
-    toast(`Finish · ${view(it).variant} · click Update render to see it`);
+    colorPicked(it);
   }
   else if (act === "pv-alt") { S.previewAlt = a.dataset.pid; renderCart(); $(".pv-scroll") && ($(".pv-scroll").scrollTop = 0); }
   else if (act === "pv-alt-back") { S.previewAlt = null; renderCart(); }
   else if (act === "pv-swap") {
-    const it = S.scene[+a.dataset.idx]; it.pid = S.previewAlt; it.vid = null; delete it.own; S.previewAlt = null; render();
-    toast(`Swapped to ${byId[it.pid].name} · click Update render to see it`);
+    const it = S.scene[+a.dataset.idx], wasOwn = it.own; it.pid = S.previewAlt; it.vid = null; delete it.own; S.previewAlt = null; render();
+    if (wasOwn) toast(`Swapped to ${byId[it.pid].name} · click Update render to see it`); else previewPicked(it);
   }
   else if (act === "cart-item") { S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; render(); }
   else if (act === "copy") {
@@ -1282,7 +1715,7 @@ document.addEventListener("pointerdown", e => {
 document.addEventListener("pointermove", e => {
   if (!drag) return;
   drag.el.style.left = e.clientX + "px"; drag.el.style.top = e.clientY + "px";
-  S.scene[drag.i].pos = toImage(e.clientX, e.clientY);
+  S.scene[drag.i].pos = toImage(e.clientX, e.clientY); delete S.scene[drag.i].at;
 });
 document.addEventListener("pointerup", () => { if (drag) { drag = null; renderHotspots(); } });
 
@@ -1307,6 +1740,8 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
     const h = new URLSearchParams(location.hash.slice(1));
     if (h.has("ex") && EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
     NO_BAKE = h.has("nobake");
+    MOCK_VARIANTS = h.has("variantsmock");
+    ONLY_SKETCH_NEW = !h.has("newrenders");   // demo: only sketches make new AI renders   // #variantsmock=1: color previews without Gemini
     return loadBakedFurniture().then(() => h);
   })
   .then(h => {

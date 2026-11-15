@@ -20,7 +20,7 @@ function restoreDesignerProject(){
 // The setup form only gates designs once you've talked to the designer about your own photo.
 // The demo room and the Needs chat (app.js) design straight away with its answers.
 function designerEngaged(){return BriefEngine.active(B).length>0||B.history.some(m=>m.role==='user'&&!m.hidden&&!m.manual);}
-function designGate(){return S.space.photo!=='upload'||!designerEngaged()||designReady();}
+function designGate(){return S.space.photo!=='upload'||!designerEngaged()||designReady()||!!(S.sketch&&S.sketch.photoKey===photoKey()&&S.sketch.items.length);}   // a sketch can always be designed + rendered
 function designReady(){return S.space.photo==='upload'&&S.space.confirmed===true&&B.setupApproved===true&&!!lastRequirement('budget')&&BriefEngine.active(B).some(r=>!['budget','room_width','room_depth','room_type'].includes(r.effect));}
 function derivedConditions(){return BriefEngine.active(B).map(r=>({id:r.id,text:r.text,impact:r.impact||'Check this in the design',kind:r.effect==='design_note'?'review':'selection',quote:r.quote}));}
 function workStatus(){

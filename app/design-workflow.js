@@ -10,18 +10,22 @@ function editableSelection(){
  const it=S.scene[i],p=view(it),base=byId[it.pid];
  return {index:i,productId:p.id,name:p.name,variant:p.variant,materials:p.materials,dims_in:p.dims_in,
   facts:p.sofa?.attributes||{},variants:base?[{id:'',label:base.variant},...base.variants.map(v=>({id:v.id,label:v.variant}))]:[],
-  alternatives:P.filter(q=>q.category===it.cat&&q.id!==it.pid&&fits(q,it)&&eligibleSwap(q,it)).sort((a,b)=>BriefEngine.assess(b,it.cat,B).score-BriefEngine.assess(a,it.cat,B).score).slice(0,8).map(q=>({id:q.id,name:q.name,variant:q.variant,price:q.price.amount}))};
+  alternatives:P.filter(q=>q.category===it.cat&&q.id!==it.pid&&fits(q,it)&&eligibleSwap(q,it)).sort((a,b)=>BriefEngine.assess(b,it.cat,B).score-BriefEngine.assess(a,it.cat,B).score).slice(0,4).map(q=>({id:q.id,name:q.name,variant:q.variant,price:q.price.amount}))};
 }
 function changeSceneProduct(index,pid,vid){
  if(S.rendering)throw Error('A render is in progress. Change the picks once it finishes.');
  const it=S.scene?.[index],p=byId[pid];if(!it||!p||it.cat!==p.category)throw Error('Select the piece you want to change first.');
  if(vid&&!p.variants.some(v=>v.id===vid))throw Error('That color isn’t in the catalog.');
  const next={...it,pid,vid:vid||null};delete next.own;const candidate=view(next);
- if(!fits(candidate,it)||!eligibleSwap(candidate,it))throw Error('That choice conflicts with the budget, size or a confirmed need.');
+ // only a color change of the piece already in the room: same product, same size -> never blocked
+ const colorOnly=!it.own&&it.pid===pid;
+ const locked=typeof lockedSlot==='function'&&lockedSlot(it)&&lockedSlot({...it,pid});   // demo: a locked similar product
+ if(!colorOnly&&!locked&&(!fits(candidate,it)||!eligibleSwap(candidate,it)))throw Error('That choice conflicts with the budget, size or a confirmed need.');
  const before=view(it),wasOwn=it.own;Object.assign(it,next);delete it.own;if(wasOwn&&exById(wasOwn))exById(wasOwn).keep=false;
  S.sel=index;selectedObject=null;objectNotice='';renderObjectSelection();
  recordEdit(before.name===candidate.name?`Changed ${candidate.name} to ${candidate.variant}.`:`Swapped ${before.name} for ${candidate.name}.`);
  render();
+ if(!wasOwn&&typeof previewPicked==='function')previewPicked(it);   // color variants: show the new color / similar product right away
 }
 async function executeDesignerActions(actions,target){
  let index=selectedSceneIndex(target),changed=false,renderRequested=false;
@@ -62,6 +66,6 @@ async function persistRenderedImage(sig,last){
 }
 async function restoreRenderedImage(){
  if(typeof indexedDB==='undefined')return;
- try{const db=await renderStore(),tx=db.transaction('images'),req=tx.objectStore('images').get('latest');req.onsuccess=()=>{const saved=req.result;if(saved&&S.scene&&saved.last.photoKey===photoKey()){S.last=saved.last;S.renders[saved.sig]=saved.last.image;render();}};tx.oncomplete=()=>db.close();}catch{}
+ try{const db=await renderStore(),tx=db.transaction('images'),req=tx.objectStore('images').get('latest');req.onsuccess=()=>{const saved=req.result;if(saved&&S.scene&&saved.last.photoKey===photoKey()&&!(typeof ONLY_SKETCH_NEW!=='undefined'&&ONLY_SKETCH_NEW)){S.last=saved.last;S.renders[saved.sig]=saved.last.image;render();if(typeof prepareVariants==='function')prepareVariants();}};tx.oncomplete=()=>db.close();}catch{}
 }
 restoreRenderedImage();

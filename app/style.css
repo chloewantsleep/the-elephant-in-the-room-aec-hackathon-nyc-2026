@@ -389,7 +389,7 @@ textarea:focus, input[type=number]:focus { border-color: rgba(20,20,20,.35); }
 .swatch { width: 46px; height: 46px; border-radius: 50%; background: #fff; padding: 3px; outline: 2px solid transparent; outline-offset: 2px; }
 .swatch img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
 .swatch.on { outline-color: var(--ink); }
-.alts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.alts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }   /* 4 similar products: 2 on top, 2 below */
 .alt { background: #fff; border-radius: 14px; padding: 6px 6px 8px; text-align: left; transition: transform .15s; }
 .alt:hover { transform: translateY(-2px); }
 .alt img { width: 100%; aspect-ratio: 1; object-fit: contain; }
@@ -580,9 +580,9 @@ body.cart-expanded #room { filter: brightness(.82) saturate(.95); transition: fi
 .pv-fin span { font-size: 11.5px; line-height: 1.3; }
 .pv-fin em { font-style: normal; font-size: 11px; opacity: .75; }
 .pv-row-sim summary { opacity: .85; }
-.pv-sim { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.pv-sim { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 4px; }   /* 2 x 2 */
 .pv-sim::-webkit-scrollbar { display: none; }
-.pv-simcard { flex: none; width: 112px; text-align: left; color: #fff; }
+.pv-simcard { min-width: 0; text-align: left; color: #fff; }
 .pv-simimg { display: block; aspect-ratio: 1; border-radius: 14px; background: linear-gradient(180deg, #f5f5f5, #e7e7e7); padding: 8px; transition: transform .25s; }
 .pv-simimg img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
 .pv-simcard:hover .pv-simimg { transform: translateY(-3px); }

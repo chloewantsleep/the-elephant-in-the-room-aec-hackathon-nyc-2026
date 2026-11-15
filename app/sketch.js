@@ -195,6 +195,7 @@ async function skGuess() {   // optional: "Guess with AI"
 
 async function skDone() {
   if (!SK.marks.length || SK.busy) return;
+  if (typeof demoSketch === "function") SK.marks.forEach(demoSketch);   // demo: a shape top-left is the fixed lamp
   if (SK.marks.some(m => !m.cat)) {   // nothing has to be named: unnamed shapes get a quick, free guess
     SK.busy = "done"; SK.error = null; skRenderBar();
     try { await skAsk(true); }
@@ -209,8 +210,10 @@ async function skDone() {
   S.dirty = true;   // the next design plans around these
   SK.on = false; SK.result = null; SK.marks = [];
   toast(`Adding your sketch to the design: ${items.map(it => skLabel(it.category)).join(", ")}`);
-  if (S.step === NEEDS) render();
-  else goto(DESIGN);   // from Design / Edit: re-plan now (goto sees S.dirty)
+  // from any step: re-plan now (goto sees S.dirty) and show it in the picture right away (AI renders on for this)
+  if (!S.live && typeof setLive === "function") { setLive(true); toast("AI renders on to show your sketch"); }
+  goto(DESIGN);
+  if (S.scene && !S.generating && typeof renderScene === "function") renderScene();
 }
 
 function skRemove() {

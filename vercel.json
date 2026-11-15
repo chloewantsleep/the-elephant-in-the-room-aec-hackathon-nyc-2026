@@ -30,6 +30,22 @@
     "api/chat.py": {
       "maxDuration": 60,
       "includeFiles": "{api/_core.py,api/_designer.py}"
+    },
+    "api/track.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,app/assets/**,data/images/**}"
+    },
+    "api/recolor.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py}"
+    },
+    "api/swap.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,data/images/**}"
+    },
+    "api/place.py": {
+      "maxDuration": 60,
+      "includeFiles": "{api/_core.py,data/images/**}"
     }
   }
 }
