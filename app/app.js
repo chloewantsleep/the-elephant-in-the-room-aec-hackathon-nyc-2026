@@ -534,17 +534,23 @@ function renderBoxes() {
   })).join("");
 }
 
-// the bottom of the screen: on Needs, the chat's input (no step pills; each step has its own next button)
+// the bottom of the screen, on every step: on Needs it answers the chat, after that it talks to the designer
+// (no step pills; each step has its own next button)
 function renderSteps() {
   const el = $("#steps");
-  if (S.step !== NEEDS) { el.innerHTML = ""; return; }
   const q = S.chat ? QUESTIONS[S.chat.q] : QUESTIONS[0];
-  const ph = q ? "Or just type: budget 2500, seats 4…" : "Add anything else…";
+  const ph = S.step !== NEEDS ? "What would you like to change?" : q ? "Or just type: budget 2500, seats 4…" : "Add anything else…";
+  // every step's "next" is the → beside send (none on the last step)
+  const next = ["Design my room", "Edit this design", "Shop the list"][S.step];
   const input = el.querySelector("input");
-  if (input) { input.placeholder = ph; return; }   // keep what's being typed across re-renders
-  el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
-    <input type="text" placeholder="${ph}" aria-label="Message">
-    <button class="send" aria-label="Send">↑</button></form>`;
+  if (!input) el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
+    <input type="text" aria-label="Message">
+    <button class="send" aria-label="Send">↑</button>
+    <button type="button" class="next-arrow" data-action="next">→</button></form>`;
+  el.querySelector("input").placeholder = ph;   // keep what's being typed across re-renders
+  const arrow = el.querySelector(".next-arrow");
+  arrow.hidden = !next; arrow.title = next || ""; arrow.setAttribute("aria-label", next || "Next");
+  arrow.classList.toggle("ready", S.step !== NEEDS || !(S.chat && QUESTIONS[S.chat.q]));   // Needs: lights up once the brief is done
 }
 function renderSides() {
   const b = $("#back"), n = $("#next");
@@ -738,8 +744,7 @@ function needsCard() {
       ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
       ${kept ? `<small>Designing around ${kept} piece${kept > 1 ? "s" : ""} you keep</small>` : ""}
       ${sk.length ? `<small>Sketched: ${esc(sk.map(s => CAT_LABEL[s.category]).join(", "))}</small>` : ""}
-    </div>
-    <button class="btn block" data-action="next">Design my room →</button>` : "";
+    </div>` : "";   // next: the → beside send at the bottom
   return `<div class="card needs-win">
     <div class="nw-head">
       <button class="photo-mini" data-action="upload" id="drop" title="Upload or drop a photo of your room"><img src="${esc(photoSrc())}" alt=""><i>↑</i></button>
@@ -785,12 +790,11 @@ function optionsView() {
       <b>Option ${i + 1} · ${o.name}</b>
       <small>${money(sceneTotal(o.items))} · ${o.items.length} pieces${nSk ? ` · ✎ ${nSk} sketched` : ""}</small>
     </button>`;
-  }).join("")}</div>
-  <button class="btn options-cta" data-action="next">Edit this design →</button>`;
+  }).join("")}</div>`;
 }
 
 /* edit */
-function editHint() { return `<button class="btn options-cta" data-action="next">Done · shop the list →</button>`; }
+function editHint() { return ""; }
 function detailCard() {
   const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
@@ -1269,7 +1273,9 @@ document.addEventListener("submit", e => {   // the Needs chat input at the bott
   e.preventDefault();
   const input = e.target.querySelector("input"), text = input.value.trim();
   if (!text) return;
-  input.value = ""; S.needsMin = false;
+  input.value = "";
+  if (S.step !== NEEDS && typeof sendDesigner === "function") { chatDraft = text; sendDesigner(); return; }   // designer.js
+  S.needsMin = false;
   chatFree(text); render();
   $(".bottom-chat input")?.focus();
 });
