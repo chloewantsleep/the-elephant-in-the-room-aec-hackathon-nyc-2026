@@ -870,9 +870,9 @@ const THEME =
   "@media (max-width:720px){.lcl-vs-map{height:62vh}.lcl-vs-dot,.lcl-vs-me{width:46%}.lcl-vs-dot b{font-size:17px}.lcl-vs-me b{font-size:22px}.lcl-vs-dot small,.lcl-vs-me small{font-size:12px}.lcl-vs-end{font-size:11px;padding:3px 6px}.lcl-vs-me .lcl-vs-mark{width:30px;padding:7px}}" +
   ".lcl-vs-me .lcl-vs-mark{width:56px;padding:12px;border-radius:50%;background:var(--ink);color:var(--paper);box-sizing:content-box}.lcl-vs-say{margin-top:22px!important}" +
   ".lcl-vs-say{margin:0;color:#fff;font-size:clamp(17px,1.5vw,22px);opacity:var(--vs-head,0);transform:translateY(calc((1 - var(--vs-head,0)) * 16px))}" +
-  ".lcl-steps{list-style:none;max-width:1040px;margin:0 auto;padding:0;counter-reset:st}" +
-  ".lcl-steps li{counter-increment:st;display:grid;grid-template-columns:12em minmax(0,1fr) auto;gap:20px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(0,0,0,.1)}.lcl-steps li:last-child{border-bottom:1px solid rgba(0,0,0,.1)}" +
-  ".lcl-steps b{font-weight:400;font-size:clamp(18px,1.5vw,22px);letter-spacing:-.02em}.lcl-steps b::before{content:counter(st, decimal-leading-zero) '  ';font:10px ui-monospace,monospace;color:var(--soft);white-space:pre}.lcl-steps span{color:var(--soft);font-size:14.5px}.lcl-steps em{font-style:normal;font-size:10.5px;text-align:right}" +
+  ".lcl-steps{list-style:none;max-width:1240px;margin:0 auto;padding:0;counter-reset:st}" +
+  ".lcl-steps li{counter-increment:st;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.2fr);gap:28px;align-items:baseline;padding:24px 0;border-top:1px solid rgba(0,0,0,.1)}.lcl-steps li:last-child{border-bottom:1px solid rgba(0,0,0,.1)}" +
+  ".lcl-steps b{font-weight:400;font-size:clamp(24px,2.2vw,34px);letter-spacing:-.025em}.lcl-steps b::before{content:counter(st, decimal-leading-zero) '  ';font:clamp(12px,1vw,15px) ui-monospace,monospace;color:var(--soft);white-space:pre}.lcl-steps span{color:var(--soft);font-size:clamp(17px,1.4vw,21px);line-height:1.35}.lcl-steps em{font-style:normal;font-size:clamp(14px,1.15vw,17px);text-align:right;line-height:1.35}" +
   // the elephant mark: draws itself on load in the hero, and draws again with the closing line
   ".lcl-mark{display:block;color:var(--ink)}.lcl-mark svg{display:block;width:100%;height:auto;overflow:visible}.lcl-mark path{stroke-dasharray:1}" +
   ".lcl-mark-hero{display:inline-block;vertical-align:-.12em;width:1.15em;margin-right:.28em}" +
