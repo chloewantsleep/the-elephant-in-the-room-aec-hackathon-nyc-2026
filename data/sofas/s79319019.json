@@ -1,0 +1,347 @@
+{
+  "sku": "ikea:s79319019",
+  "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+  "retrieved_at": "2026-11-14T20:35:30.800523+00:00",
+  "measurements": [
+    {
+      "measure": "33 1/2 \"",
+      "name": "Height including back cushions",
+      "type": "00414"
+    },
+    {
+      "measure": "28 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "67 3/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "38 5/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "2 3/8 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "5 7/8 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    },
+    {
+      "measure": "28 \"",
+      "name": "Armrest height",
+      "type": "00138"
+    },
+    {
+      "measure": "55 1/2 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "21 5/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "18 7/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "Plywood, Polyurethane foam 1.2 lb/cu.ft., Particleboard, Fiberboard, Solid wood",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Steel, Epoxy/polyester powder coating",
+                  "part": "Cross rail:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back fabric:"
+                }
+              ],
+              "productType": "Frame for loveseat section"
+            },
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining/ Smolder resistant lining:"
+                },
+                {
+                  "material": "High-resilience polyurethane foam (cold foam) 2.2 lb/cu.ft.",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                }
+              ],
+              "productType": "Seat inner cushion"
+            },
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "Plywood, Polyurethane foam 2.0 lb/cu.ft., Particleboard, Solid wood, Fiberboard",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Leg:"
+                }
+              ],
+              "productType": "Armrest frame"
+            },
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "30% cut polyurethane foam/ 70% polyester fibers",
+                  "part": "Back cushion:"
+                }
+              ],
+              "productType": "Back inner cushion"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100% polyester (min. 90% recycled)",
+                  "part": "Fabric:"
+                },
+                {
+                  "material": "100 % polyester",
+                  "part": "Cover, other surfaces:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back fabric:"
+                }
+              ],
+              "productType": "Cover for loveseat section"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100% polyester (min. 90% recycled)"
+                }
+              ],
+              "productType": "Cover for armrest"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Frame",
+              "productType": "Frame for loveseat section/armrest frame",
+              "texts": [
+                "Wipe clean using a damp cloth and a mild cleaner.",
+                "Wipe dry with a clean cloth."
+              ]
+            },
+            {
+              "header": "Lining",
+              "productType": "Frame for loveseat section/armrest frame",
+              "texts": [
+                "Clean with a dust cloth or vacuum lightly using the soft brush attachment."
+              ]
+            },
+            {
+              "header": "Removable cover",
+              "productType": "Cover for armrest/cover for loveseat section",
+              "texts": [
+                "Machine wash warm, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron medium temperature, max 300°F/150°C.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            },
+            {
+              "header": "Removable cover",
+              "productType": "Loveseat",
+              "texts": [
+                "Iron high."
+              ]
+            },
+            {
+              "header": "Cushion",
+              "productType": "Seat inner cushion/back inner cushion",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "204.550.18",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/daretorp-frame-for-loveseat-section__AA-2191802-1-2.pdf",
+                  "label": "DARETORP Frame for loveseat section"
+                },
+                {
+                  "id": "204.550.18",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/daretorp-frame-for-loveseat-section__AA-2197146-1-2.pdf",
+                  "label": "DARETORP Frame for loveseat section"
+                },
+                {
+                  "id": "904.549.92",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-armrest-frame__AA-2191808-1-2.pdf",
+                  "label": "FINNALA Armrest frame"
+                },
+                {
+                  "id": "904.549.92",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-armrest-frame__AA-2197146-1-2.pdf",
+                  "label": "FINNALA Armrest frame"
+                },
+                {
+                  "id": "404.548.38",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-cover-for-loveseat-section-gunnared-beige__AA-2191818-1-2.pdf",
+                  "label": "FINNALA Cover for loveseat section"
+                },
+                {
+                  "id": "404.548.38",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-cover-for-loveseat-section-gunnared-beige__AA-2197146-1-2.pdf",
+                  "label": "FINNALA Cover for loveseat section"
+                },
+                {
+                  "id": "304.548.48",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-cover-for-armrest-gunnared-beige__AA-2191827-1-2.pdf",
+                  "label": "FINNALA Cover for armrest"
+                },
+                {
+                  "id": "304.548.48",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-cover-for-armrest-gunnared-beige__AA-2197146-1-2.pdf",
+                  "label": "FINNALA Cover for armrest"
+                },
+                {
+                  "id": "304.548.48",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/finnala-cover-for-armrest-gunnared-beige__AA-2197443-2-2.pdf",
+                  "label": "FINNALA Cover for armrest"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "204.550.18",
+                  "url": "https://www.ikea.com/us/en/manuals/daretorp-frame-for-loveseat-section__AA-2666808-2-100.pdf",
+                  "label": "DARETORP Frame for loveseat section"
+                },
+                {
+                  "id": "204.550.18",
+                  "url": "https://www.ikea.com/us/en/manuals/daretorp-frame-for-loveseat-section__AA-751614-4-2.pdf",
+                  "label": "DARETORP Frame for loveseat section"
+                },
+                {
+                  "id": "104.550.28",
+                  "url": "https://www.ikea.com/us/en/manuals/stackmora-seat-inner-cushion__AA-2666808-2-100.pdf",
+                  "label": "STACKMORA Seat inner cushion"
+                },
+                {
+                  "id": "904.549.92",
+                  "url": "https://www.ikea.com/us/en/manuals/finnala-armrest-frame__AA-2666808-2-100.pdf",
+                  "label": "FINNALA Armrest frame"
+                },
+                {
+                  "id": "404.550.36",
+                  "url": "https://www.ikea.com/us/en/manuals/saleboda-back-inner-cushion__AA-2314490-1-100.pdf",
+                  "label": "SALEBODA Back inner cushion"
+                },
+                {
+                  "id": "404.550.36",
+                  "url": "https://www.ikea.com/us/en/manuals/saleboda-back-inner-cushion__AA-2666808-2-100.pdf",
+                  "label": "SALEBODA Back inner cushion"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "This comfortable sofa has pocket spring seat cushions with high resilience foam and a top layer of wadding. It provides a nice comfort and support for your body while maintaining the shape of the seat cushions.",
+        "The sofa's sections can be combined in different ways to get a size and shape that suits you. If you need a larger sofa, you can add a section or two.",
+        "This cover is made of dope-dyed Gunnared fabric in polyester. It is a durable fabric with a wool-like feel, a warm look and a two-toned mélange effect.",
+        "The cover is easy to keep clean since it is removable and machine washable.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "Ehlén Johansson",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "79319019",
+    "title": "Product details"
+  }
+}

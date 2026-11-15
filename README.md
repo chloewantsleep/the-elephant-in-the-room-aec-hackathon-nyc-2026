@@ -193,3 +193,9 @@ Everything else is stretch.
 | Wayfair, RH, AllModern | via paid third-party scrapers | partial | No public catalog API |
 
 These are unofficial sources and fine for a hackathon demo. **Snapshot the data ahead of time; don't scrape live during the demo.** Check each retailer's terms before turning this into a product.
+
+## Conversational living brief (local branch)
+
+The Needs step now starts with photo/context-led conversation. The designer is also available during Design/Edit/Shop. Confirmed requirements drive catalogue filtering, ranking and swap eligibility; see [implementation and validation notes](docs/living-brief.md).
+
+`GEMINI_API_KEY` is required for real chat/photo analysis; `GEMINI_CHAT_MODEL` optionally selects the text/vision model. With no key the interface reports the missing connection; there is no sample fallback. Changes here are local until deployed.

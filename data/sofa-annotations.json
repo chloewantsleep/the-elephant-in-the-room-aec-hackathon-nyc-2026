@@ -1,0 +1,4645 @@
+{
+  "version": 1,
+  "products": {
+    "ikea:40595942": {
+      "sku": "ikea:40595942",
+      "name": "GLOSTAD Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+      "attributes": {
+        "seat_height": {
+          "value": 16.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+            "artifact": "data/sofas/40595942.json",
+            "quote": "Seat height: 16 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 70.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+            "artifact": "data/sofas/40595942.json",
+            "quote": "Width: 70 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 30.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+            "artifact": "data/sofas/40595942.json",
+            "quote": "Depth: 30 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+            "artifact": "data/sofas/40595942.json",
+            "quote": "GLOSTAD sofa has a simple design which is also comfortable with its thick seat, padded armrests and soft back cushions that sit firmly in place.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+            "artifact": "data/sofas/40595942.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "seat_depth": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "washable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:80618531": {
+      "sku": "ikea:80618531",
+      "name": "SALTMYRAN Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/saltmyran-loveseat-oereryd-gray-beige-80618531/",
+      "attributes": {},
+      "eligible": false,
+      "issue": "Product information block missing"
+    },
+    "ikea:00575451": {
+      "sku": "ikea:00575451",
+      "name": "FRIDHULT Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+      "attributes": {
+        "seat_depth": {
+          "value": 20.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Seat depth: 20 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 14.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Seat height: 14 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 46.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Bed width: 46 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 79.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Bed length: 79 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 49.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Width: 49 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 29.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Depth: 29 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 24.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Height: 24 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "FRIDHULT Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/fridhult-sleeper-sofa-skiftebo-yellow-00575451/",
+            "artifact": "data/sofas/00575451.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s99508863": {
+      "sku": "ikea:s99508863",
+      "name": "ROCKSJÖN Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+      "attributes": {
+        "seat_depth": {
+          "value": 19.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "Seat depth: 19 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "Seat height: 18 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 55.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "Width: 55 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 30.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "Depth: 30 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 31.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "Height: 31 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "The cover is easy to keep clean since it is removable and machine washable.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+            "artifact": "data/sofas/s99508863.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s09010617": {
+      "sku": "ikea:s09010617",
+      "name": "KLIPPAN Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+      "attributes": {
+        "seat_depth": {
+          "value": 21.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "Seat depth: 21 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 16.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "Seat height: 16 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 70.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "Width: 70 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 34.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "Depth: 34 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 26.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "Height: 26 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "The cover is easy to keep clean since it is removable and machine washable.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+            "artifact": "data/sofas/s09010617.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:40618509": {
+      "sku": "ikea:40618509",
+      "name": "GULLVALLA Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+      "attributes": {
+        "seat_depth": {
+          "value": 18.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Seat depth: 18 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 47.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Seat width: 47 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 16.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Seat height: 16 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 16.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Armrest height: 16 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": null,
+          "status": "conflicting",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Armrest width: 31 1/8 \"",
+            "method": "manufacturer"
+          },
+          "reported_value": 31.125
+        },
+        "width": {
+          "value": 55.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Width: 55 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 32.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Depth: 32 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "conflicting",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/gullvalla-loveseat-silkeryd-gray-green-40618509/",
+            "artifact": "data/sofas/40618509.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          },
+          "reported_value": -0.375
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:50307936": {
+      "sku": "ikea:50307936",
+      "name": "BALKARP Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+      "attributes": {
+        "seat_depth": {
+          "value": 19.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Seat depth: 19 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 15.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Seat height: 15 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 39.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Bed width: 39 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 74.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Bed length: 74 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 33.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Width: 33 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 31.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Height: 31 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 19.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Min. depth: 19 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "BALKARP Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/balkarp-sleeper-sofa-vissle-gray-50307936/",
+            "artifact": "data/sofas/50307936.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": false,
+      "issue": "Outer dimensions missing or conflict with seat dimensions; not automatically recommended"
+    },
+    "ikea:60530643": {
+      "sku": "ikea:60530643",
+      "name": "ÄLVDALEN Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+      "attributes": {
+        "seat_depth": {
+          "value": 19.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Seat depth: 19 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 76.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Seat width: 76 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 16.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Seat height: 16 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 53.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Bed width: 53 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 76.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Bed length: 76 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 76.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Width: 76 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 32.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Depth: 32 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 31.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Height: 31 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "ÄLVDALEN Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Perfect for smaller spaces with its neat design and the practical and easily accessible storage space under the seat.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/aelvdalen-sleeper-sofa-knisa-dark-gray-60530643/",
+            "artifact": "data/sofas/60530643.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s29318319": {
+      "sku": "ikea:s29318319",
+      "name": "MORABO Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+      "attributes": {
+        "seat_depth": {
+          "value": 24.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Seat depth: 24 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 55.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Seat width: 55 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Seat height: 18 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 5.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Armrest width: 5 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 65.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Width: 65 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 36.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Depth: 36 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 31.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Height: 31 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/morabo-loveseat-gunnared-dark-gray-wood-s29318319/",
+            "artifact": "data/sofas/s29318319.json",
+            "quote": "Armrest frame: Plywood, Solid pine, Polyurethane foam 1.5 lb/cu.ft., Particleboard, Fiberboard",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "washable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:50582543": {
+      "sku": "ikea:50582543",
+      "name": "SKÖNABÄCK Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+      "attributes": {
+        "seat_depth": {
+          "value": 20.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Seat depth: 20 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 50.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Seat width: 50 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 15.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Seat height: 15 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 26.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Armrest height: 26 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 5.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Armrest width: 5 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 28.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Bed width: 28 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 74.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Bed length: 74 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 62.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Width: 62 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 29.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Depth: 29 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "SKÖNABÄCK Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "A cozy and embracing sofa bed where the functions are well concealed – both a bed and a storage space are hidden here.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 10.625,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/skoenabaeck-sleeper-sofa-knisa-dark-gray-50582543/",
+            "artifact": "data/sofas/50582543.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s39306373": {
+      "sku": "ikea:s39306373",
+      "name": "NYHAMN Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+      "attributes": {
+        "seat_depth": {
+          "value": 28.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Seat depth: 28 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 12.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Seat height: 12 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 55.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Bed width: 55 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 78.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Bed length: 78 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 78.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Width: 78 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 38.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Depth: 38 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 35.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Height: 35 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "The cover is easy to keep clean since it is removable and can be machine washed.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "The cover doesn’t need to be removed when you change function from sofa to bed, and back.",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "Frame for sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/nyhamn-sleeper-sofa-with-foam-mattress-knisa-gray-beige-s39306373/",
+            "artifact": "data/sofas/s39306373.json",
+            "quote": "The space under the sofa is designed to fit storage boxes where you can store bed linen, etc.",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s69561710": {
+      "sku": "ikea:s69561710",
+      "name": "LYCKSELE LÖVÅS Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+      "attributes": {
+        "seat_depth": {
+          "value": 23.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Seat depth: 23 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 15.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Seat height: 15 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 55.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Bed width: 55 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 74.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Bed length: 74 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 55.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Width: 55 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 39.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Depth: 39 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 34.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Height: 34 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "The cover is easy to keep clean since it is removable and machine washable.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+            "artifact": "data/sofas/s69561710.json",
+            "quote": "Sleeper sofa frame",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:60629272": {
+      "sku": "ikea:60629272",
+      "name": "LINDÅKRA Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+      "attributes": {
+        "seat_depth": {
+          "value": 23.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Seat depth: 23 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 53.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Seat width: 53 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 16.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Seat height: 16 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 26.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Armrest height: 26 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 2.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Armrest width: 2 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 31.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Bed width: 31 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 78.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Bed length: 78 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 81.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Width: 81 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 34.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Depth: 34 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "LINDÅKRA Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "The sofa bed offers practical storage spaces both under the seat section and in the pouffe.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 9.5,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lindakra-sleeper-sofa-vissle-light-gray-green-60629272/",
+            "artifact": "data/sofas/60629272.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:60594395": {
+      "sku": "ikea:60594395",
+      "name": "SLATORP Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+      "attributes": {
+        "seat_depth": {
+          "value": 21.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Seat depth: 21 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 55.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Seat width: 55 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 15.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Seat height: 15 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 24.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Armrest height: 24 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 7.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Armrest width: 7 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 69.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Width: 69 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 37.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Depth: 37 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 29.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Height: 29 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Armrest frame: 100% polyester (min. 70% recycled), Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 1.5 lb/cu.ft.",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 9.0,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+            "artifact": "data/sofas/60594395.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s19384116": {
+      "sku": "ikea:s19384116",
+      "name": "UPPLAND Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+      "attributes": {
+        "seat_depth": {
+          "value": 22.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Seat depth: 22 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 68.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Seat width: 68 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Seat height: 18 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 26.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Armrest height: 26 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 9.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Armrest width: 9 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 88.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Width: 88 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 36.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Depth: 36 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "The cover is easy to keep clean since it is removable and can be machine washed.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Armrest frame: Particleboard, Solid wood, Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 1.5 lb/cu.ft., Laminated veneer lumber, Fiberboard",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 8.25,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+            "artifact": "data/sofas/s19384116.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:90341151": {
+      "sku": "ikea:90341151",
+      "name": "FRIHETEN Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+      "attributes": {
+        "seat_depth": {
+          "value": 24.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Seat depth: 24 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Seat height: 18 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 56.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Bed width: 56 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 78.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Bed length: 78 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 88.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Width: 88 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 41.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Depth: 41 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 32.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Height: 32 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "FRIHETEN Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Large practical storage space under the seat.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+            "artifact": "data/sofas/90341151.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:40619085": {
+      "sku": "ikea:40619085",
+      "name": "LILLESÄTER Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+      "attributes": {
+        "seat_depth": {
+          "value": 25.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Seat depth: 25 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 65.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Seat width: 65 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 17.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Seat height: 17 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 20.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Armrest height: 20 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 6.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Armrest width: 6 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 79.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Width: 79 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 35.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Depth: 35 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 27.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Height: 27 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "washable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 2.75,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/lillesaeter-sofa-axvall-off-white-40619085/",
+            "artifact": "data/sofas/40619085.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:70585079": {
+      "sku": "ikea:70585079",
+      "name": "GRUNNARP Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+      "attributes": {
+        "seat_depth": {
+          "value": 34.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Seat depth: 34 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 78.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Seat width: 78 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Seat height: 18 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 24.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Armrest height: 24 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 55.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Bed width: 55 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 78.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Bed length: 78 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 91.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Width: 91 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 35.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Depth: 35 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 31.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Height: 31 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "GRUNNARP Sleeper sofa",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "The large storage space under the seat has plenty of room for things like bedding.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Armrest: 100% polyester (min. 90% recycled), Polyurethane foam 1.2 lb/cu.ft.",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 6.25,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/grunnarp-sleeper-sofa-gunnared-beige-70585079/",
+            "artifact": "data/sofas/70585079.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s19619186": {
+      "sku": "ikea:s19619186",
+      "name": "MANNARP Sectional 4-seat with chaise",
+      "source_url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+      "attributes": {
+        "seat_depth": {
+          "value": 19.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Seat depth: 19 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 110.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Seat width: 110 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Seat height: 18 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 26.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Armrest height: 26 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 3.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Armrest width: 3 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 118.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Width: 118 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 37.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Depth: 37 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "This sofa combines soft, cosy comfort with a modern design and neat armrests that evoke a sense of elegant lightness.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "The cover is easy to keep clean since it can be machine washed and is easy to take off and put on again.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "The cover is easy to keep clean since it can be machine washed and is easy to take off and put on again.",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 7.875,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/mannarp-sectional-4-seat-with-chaise-gunnared-beige-s19619186/",
+            "artifact": "data/sofas/s19619186.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s79319019": {
+      "sku": "ikea:s79319019",
+      "name": "FINNALA Loveseat",
+      "source_url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+      "attributes": {
+        "seat_depth": {
+          "value": 21.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Seat depth: 21 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 55.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Seat width: 55 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Seat height: 18 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 28.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Armrest height: 28 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 5.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Armrest width: 5 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 67.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Width: 67 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 38.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Depth: 38 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "The cover is easy to keep clean since it is removable and machine washable.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 9.125,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/finnala-loveseat-gunnared-beige-s79319019/",
+            "artifact": "data/sofas/s79319019.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s29580739": {
+      "sku": "ikea:s29580739",
+      "name": "FRIHETEN / KLAGSHAMN Sleeper sectional,3 seat w/storage",
+      "source_url": "https://www.ikea.com/us/en/p/friheten-klagshamn-sleeper-sectional-3-seat-w-storage-skiftebo-dark-gray-s29580739/",
+      "attributes": {},
+      "eligible": false,
+      "issue": "Product information block missing"
+    },
+    "ikea:s49563102": {
+      "sku": "ikea:s49563102",
+      "name": "EKHOLMA Corner sofa, 4-seat with open end",
+      "source_url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+      "attributes": {
+        "seat_depth": {
+          "value": 21.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+            "artifact": "data/sofas/s49563102.json",
+            "quote": "Seat depth: 21 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 19.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+            "artifact": "data/sofas/s49563102.json",
+            "quote": "Seat height: 19 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 3.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+            "artifact": "data/sofas/s49563102.json",
+            "quote": "Armrest width: 3 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 92.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+            "artifact": "data/sofas/s49563102.json",
+            "quote": "Width: 92 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 76.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+            "artifact": "data/sofas/s49563102.json",
+            "quote": "Depth: 76 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+            "artifact": "data/sofas/s49563102.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "washable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:50541581": {
+      "sku": "ikea:50541581",
+      "name": "BÅRSLÖV 3-seat sleeper sofa with chaise",
+      "source_url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+      "attributes": {
+        "seat_depth": {
+          "value": 20.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Seat depth: 20 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Seat height: 18 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 55.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Bed width: 55 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 78.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Bed length: 78 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 92.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Width: 92 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 60.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Depth: 60 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 35.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Height: 35 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Frame, non-removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "BÅRSLÖV 3-seat sleeper sofa with chaise",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Storage space under the chaise. The lid stays open so you can safely and easily take things in and out.",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+            "artifact": "data/sofas/50541581.json",
+            "quote": "Armrest: Polyurethane foam 1.5 lb/cu.ft.",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:80519531": {
+      "sku": "ikea:80519531",
+      "name": "KIVIK Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+      "attributes": {
+        "seat_depth": {
+          "value": 23.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "Seat depth: 23 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 70.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "Seat width: 70 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 17.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "Seat height: 17 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 89.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "Width: 89 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 37.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "Depth: 37 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 32.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "Height: 32 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "The seat- and back cushions and inside, outside, top and front of the armrests are covered with GRANN – a soft, smooth and strong grain leather with natural variations. Other surfaces have the coated fabric BOMSTAD.",
+            "method": "manufacturer"
+          }
+        },
+        "wide_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+            "artifact": "data/sofas/80519531.json",
+            "quote": "The size and depth of the sofa make it perfect for a nice nap or when the whole family is gathered. There is room for everyone and even extra seating on the wide armrests.",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "washable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "removable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s59580059": {
+      "sku": "ikea:s59580059",
+      "name": "SÖDERHAMN Sleeper sofa",
+      "source_url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+      "attributes": {
+        "seat_depth": {
+          "value": 36.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Seat depth: 36 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 84.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Seat width: 84 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 15.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Seat height: 15 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 27.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Armrest height: 27 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": 61.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Bed width: 61 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "bed_length": {
+          "value": 76.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Bed length: 76 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 89.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Width: 89 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 39.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Depth: 39 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 32.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Height: 32 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "The cover is easy to keep clean since it can be machine washed and is easy to take off and put on again.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "The cover is easy to keep clean since it can be machine washed and is easy to take off and put on again.",
+            "method": "manufacturer"
+          }
+        },
+        "sleeper": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Frame, 3-seat sofa-bed section",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 11.375,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/soederhamn-sleeper-sofa-fridtuna-light-beige-s59580059/",
+            "artifact": "data/sofas/s59580059.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s39634845": {
+      "sku": "ikea:s39634845",
+      "name": "VIMLE Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+      "attributes": {
+        "seat_depth": {
+          "value": 21.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Seat depth: 21 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 87.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Seat width: 87 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Seat height: 18 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 26.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Armrest height: 26 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 5.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Armrest width: 5 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 99.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Width: 99 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 38.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Depth: 38 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "The cover is easy to keep clean since it is removable and machine washable.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "The cover is easy to keep clean since it is removable and machine washable.",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "The chaise has storage under the seat. The lid automatically stops in the open position so that you can easily pick out and put back the things that you are storing.",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Armrest frame: Plywood, Polyurethane foam 2.0 lb/cu.ft., Fiberboard, Particleboard, Solid wood",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 7.875,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/vimle-sofa-with-chaise-mosshed-dark-brown-s39634845/",
+            "artifact": "data/sofas/s39634845.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:00586096": {
+      "sku": "ikea:00586096",
+      "name": "STOCKHOLM 2025 Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+      "attributes": {
+        "seat_depth": {
+          "value": 27.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Seat depth: 27 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 84.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Seat width: 84 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 16.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Seat height: 16 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 26.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Armrest height: 26 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 3.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Armrest width: 3 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 91.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Width: 91 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 40.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Depth: 40 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": false,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Do not wash.",
+            "method": "manufacturer"
+          }
+        },
+        "padded_arms": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Back cushion/ Armrest cushion: 100 % polyester - hollow fiber (100% recycled), Latex foam",
+            "method": "manufacturer"
+          }
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 10.25,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+            "artifact": "data/sofas/00586096.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s09514830": {
+      "sku": "ikea:s09514830",
+      "name": "HYLTARP Sectional, 4-seat corner",
+      "source_url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+      "attributes": {
+        "seat_depth": {
+          "value": 23.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Seat depth: 23 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Seat height: 18 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 24.75,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Armrest height: 24 3/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 4.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Armrest width: 4 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 36.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Depth: 36 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "The cover is easy to keep clean since it is removable and can be machine washed.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 5.875,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/hyltarp-sectional-4-seat-corner-gransel-natural-s09514830/",
+            "artifact": "data/sofas/s09514830.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": false,
+      "issue": "Outer dimensions missing or conflict with seat dimensions; not automatically recommended"
+    },
+    "ikea:20245049": {
+      "sku": "ikea:20245049",
+      "name": "STOCKHOLM Sofa",
+      "source_url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+      "attributes": {
+        "seat_depth": {
+          "value": 23.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Seat depth: 23 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": 62.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Seat width: 62 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 16.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Seat height: 16 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_height": {
+          "value": 28.375,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Armrest height: 28 3/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 83.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Width: 83 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 34.625,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Depth: 34 5/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 31.5,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Height: 31 1/2 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "washable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "removable_cover": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "storage": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": 11.5,
+          "status": "derived",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+            "artifact": "data/sofas/20245049.json",
+            "quote": "Armrest height minus seat height",
+            "method": "arithmetic"
+          }
+        }
+      },
+      "eligible": true,
+      "issue": null
+    },
+    "ikea:s39469497": {
+      "sku": "ikea:s39469497",
+      "name": "JÄTTEBO 3.5-seat mod sofa w chaise",
+      "source_url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+      "attributes": {
+        "seat_depth": {
+          "value": 27.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Seat depth: 27 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "seat_height": {
+          "value": 18.125,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Seat height: 18 1/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "arm_width": {
+          "value": 9.875,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Armrest width: 9 7/8 \"",
+            "method": "manufacturer"
+          }
+        },
+        "width": {
+          "value": 112.25,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Width: 112 1/4 \"",
+            "method": "manufacturer"
+          }
+        },
+        "depth": {
+          "value": 63.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Depth: 63 \"",
+            "method": "manufacturer"
+          }
+        },
+        "height": {
+          "value": 28.0,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Height: 28 \"",
+            "method": "manufacturer"
+          }
+        },
+        "washable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "The cover is easy to keep clean since it can be machine washed and is easy to take off and put on again.",
+            "method": "manufacturer"
+          }
+        },
+        "removable_cover": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "Removable cover",
+            "method": "manufacturer"
+          }
+        },
+        "storage": {
+          "value": true,
+          "status": "documented",
+          "evidence": {
+            "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+            "artifact": "data/sofas/s39469497.json",
+            "quote": "JÄTTEBO modular sofa has a simple shape with clean lines and is soft, comfortable – and practical with storage under the seat.",
+            "method": "manufacturer"
+          }
+        },
+        "seat_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_width": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "bed_length": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "padded_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "wide_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "low_arms": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "sleeper": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "firmness": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "back_angle": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "seat_compression": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        },
+        "arm_height_above_seat": {
+          "value": null,
+          "status": "unknown",
+          "evidence": null
+        }
+      },
+      "eligible": true,
+      "issue": null
+    }
+  }
+}

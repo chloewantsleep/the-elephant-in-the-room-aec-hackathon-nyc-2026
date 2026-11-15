@@ -1,0 +1,8 @@
+const test=require('node:test'),assert=require('node:assert/strict'),L=require('../app/layout-engine.js');
+const room={confirmed:true,wallIn:180,depthIn:160,corridor:'left',clearanceIn:32,obstacles:[{x:150,y:0,w:30,d:30,label:'Existing cabinet'}]};
+const items=[{cat:'sofa',p:{dims_in:{width:85,depth:36},name:'Sofa'}},{cat:'coffee_table',p:{dims_in:{width:32,depth:26},name:'Table'}},{cat:'armchair',p:{dims_in:{width:30,depth:30},name:'Chair'}}];
+test('layout stays inside measured boundaries and out of fixed areas and corridor',()=>{const out=L.plan(items,room,it=>it.p);assert.equal(out.placed.length,3);for(const a of out.placed){assert.ok(a.x>=0&&a.y>=0&&a.x+a.w<=180&&a.y+a.d<=160);assert.ok(out.reserved.every(r=>!L.overlap(a,r)));for(const b of out.placed)if(a!==b)assert.equal(L.overlap(a,b),false);}});
+test('unknown room or unknown footprints never become a fit claim',()=>{assert.equal(L.plan(items,{...room,confirmed:false},it=>it.p).ready,false);assert.equal(L.plan([{cat:'sofa',p:{dims_in:{width:50},name:'Unknown'}}],room,it=>it.p).placed.length,0);});
+test('unplaceable furniture is reported without relaxing the corridor',()=>{const out=L.plan([{cat:'sofa',p:{dims_in:{width:180,depth:170},name:'Too big'}}],room,it=>it.p);assert.equal(out.placed.length,0);assert.equal(out.unplaced.length,1);});
+test('a fixed obstacle blocking the corridor invalidates the layout',()=>{assert.equal(L.plan(items,{...room,obstacles:[{x:0,y:0,w:20,d:20}]},it=>it.p).ready,false);});
+test('changing the reserved corridor changes legal positions',()=>{const a=L.plan(items,{...room,obstacles:[]},it=>it.p),b=L.plan(items,{...room,corridor:'right',obstacles:[]},it=>it.p);assert.ok(a.placed.every(r=>r.x>=32));assert.ok(b.placed.every(r=>r.x+r.w<=148));});
