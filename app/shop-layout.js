@@ -85,29 +85,33 @@ function shopSample(ref, item) {
  * left/right offset widens with distance. The result is spread over the floor so front/back and
  * left/right relationships match the picture. Pure geometry, no AI call. */
 const SHOP_HORIZON = .42, SHOP_FAR = .1;
+// -> Map: slotId -> [u, v] (first copy) and "slotId:i" -> [u, v] for every copy with its own spot in the photo
 function shopPhotoAnchors(items) {
   const photo = document.getElementById("room");
   const aspect = photo?.naturalWidth && photo?.naturalHeight ? photo.naturalWidth / photo.naturalHeight : 4 / 3;
-  const ground = items.map(item => {
-    if (!Array.isArray(item.pos)) return null;
-    const u = item.pos[0] / 100, v = item.pos[1] / 100;
-    const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
-    const z = 1 / near;                                                          // distance from the camera
-    return [(u - .5) * aspect * z / 1.2, near];                                 // ~ 26 mm lens; near orders front/back
+  const spots = [];   // [key, x, near]
+  items.forEach((item, k) => {
+    const id = item.slotId ?? k;
+    // a piece found in the photo has a box per copy; anything else has one spot
+    const boxes = item.own && typeof exById === "function" ? exById(item.own)?.boxes : null;
+    const pts = boxes?.length ? boxes.map(boxCenter) : Array.isArray(item.pos) ? [item.pos] : [];
+    pts.forEach((pos, i) => {
+      const u = pos[0] / 100, v = pos[1] / 100;
+      const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
+      spots.push([`${id}:${i}`, (u - .5) * aspect / near / 1.2, near]);            // ~ 26 mm lens; left/right widens with distance
+    });
   });
-  const xs = ground.filter(Boolean).map(g => g[0]), ns = ground.filter(Boolean).map(g => g[1]);
-  if (!xs.length) return new Map();
+  const out = new Map();
+  if (!spots.length) return out;
+  const xs = spots.map(s => s[1]), ns = spots.map(s => s[2]);
   const span = (lo, hi) => Math.max(hi - lo, 1e-6);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), n0 = Math.min(...ns), n1 = Math.max(...ns);
-  const out = new Map();
-  items.forEach((item, k) => {
-    const g = ground[k];
-    if (!g) return;
-    // spread over the floor: left wall .1 .. right wall .9, back wall .15 .. front .9
-    const u = xs.length > 1 ? .1 + .8 * (g[0] - x0) / span(x0, x1) : .5;
-    const v = ns.length > 1 ? .15 + .75 * (g[1] - n0) / span(n0, n1) : .5;   // evenly by how low it sits in the picture
-    out.set(item.slotId ?? k, [u, v]);
-  });
+  for (const [key, x, n] of spots) {
+    // spread over the floor: left wall .1 .. right wall .9, back wall .15 .. front .9 (evenly by how low it sits)
+    const uv = [spots.length > 1 ? .1 + .8 * (x - x0) / span(x0, x1) : .5, spots.length > 1 ? .15 + .75 * (n - n0) / span(n0, n1) : .5];
+    out.set(key, uv);
+    if (key.endsWith(":0")) out.set(+key.slice(0, -2), uv);
+  }
   return out;
 }
 
@@ -200,6 +204,9 @@ function shopSceneLayout(items, space, room, ref) {
         } else if (parent || support) {
           x = parent ? parent.x + parent.rw * .25 : support.x;
           y = parent ? parent.y - parent.rd * .18 : support.y;
+        } else if (i > 0 && fromPhoto.has(`${item.slotId}:${i}`)) {   // this copy has its own spot in the photo
+          const [cu, cv] = fromPhoto.get(`${item.slotId}:${i}`);
+          x = cu * width; y = cv * depth;
         } else if (qty > 1) {
           x += (i % 3 - Math.min(2, qty - 1) / 2) * (w + 6);
           y += Math.floor(i / 3) * (d + 6);
