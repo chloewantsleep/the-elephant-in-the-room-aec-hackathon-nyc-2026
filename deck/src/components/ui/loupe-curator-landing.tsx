@@ -213,9 +213,7 @@ const SWAPS: Swap[] = [
   { img: "curator-0", tile: "armchair", name: "Lounge chairs", meta: "Yours, as it is" },
   { img: "hl-1", tile: "hyltarp", name: "HYLTARP Sectional", meta: "IKEA · $2,149" },
   { img: "hl-5", tile: "stockholm", name: "STOCKHOLM Sofa, leather", meta: "IKEA · $2,499" },
-  { img: "hl-6", tile: "vimle", name: "VIMLE Sofa with chaise", meta: "IKEA · $1,899" },
   { img: "hl-7", tile: "soderhamn", name: "SÖDERHAMN Sofa", meta: "IKEA · $1,375" },
-  { img: "hl-8", tile: "stockholm25", name: "STOCKHOLM 2025 Sofa", meta: "IKEA · $1,999" },
 ]
 const ROOM_IMGS = ["curator-0", "hl-1", "hl-2", "hl-3", "hl-4", "hl-5", "hl-6", "hl-7", "hl-8"]
 /** Where the sofa sits in these frames (fractions of the image), and its rough extent for the highlight. */
@@ -376,9 +374,7 @@ const GRID_AFTER = [...AFTER, ...GRID.filter((g) => !GONE.has(g.k))]
 const COLLECTIONS = [
   { name: "Moving in", img: "life-1", thumbs: ["d-stockholm-sb"] },              // render-02
   { name: "Partner moves in", img: "life-2", thumbs: ["d-lanesund"] },          // LANESUND Sideboard, ikea 90466546: storage for two
-  { name: "A cat arrives", img: "life-3", thumbs: ["d-markblamme"] },           // MARKBLÅMME low-pile rug, ikea 90625705
   { name: "Friends over", img: "life-4", thumbs: ["d-tarsele"] },               // TARSELE Extendable table, ikea 70581359
-  { name: "New colors", img: "life-5", thumbs: ["d-lommarp"] },                 // LOMMARP Cabinet, dark blue-green, ikea 90483027
   { name: "Next chapter", img: "life-6", thumbs: ["d-sputnik"] },               // Gold Sputnik pendant, homedepot 331469608
 ]
 
@@ -690,7 +686,7 @@ const THEME =
   ".lcl-lb{position:relative;height:calc(var(--h) * 3.2)}" +
   ".lcl-lb-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;max-width:1240px;margin:0 auto}" +
   ".lcl-lb-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}" +
-  ".lcl-lbc{position:relative;width:clamp(112px,10.5vw,150px);perspective:900px;transition:none}" +
+  ".lcl-lbc{position:relative;width:clamp(150px,15vw,210px);perspective:900px;transition:none}" +
   ".lcl-lbc-face{position:relative;display:flex;flex-direction:column;gap:4px;padding:8px;border-radius:16px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.05);backface-visibility:hidden;-webkit-backface-visibility:hidden}" +
   ".lcl-lbc-pic{position:relative;display:block;aspect-ratio:1;border-radius:11px;overflow:hidden;background:var(--card)}" +
   ".lcl-lbc-face b{font-weight:400;font-size:11.5px;line-height:1.2;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lcl-lbc-face em{font-style:normal;font-size:9px;color:var(--soft)}" +
@@ -709,7 +705,7 @@ const THEME =
   ".lcl-lb-bud{display:flex;flex-direction:column;align-items:center;gap:8px;width:min(560px,100%)}.lcl-lb-bud b{font-weight:500;color:var(--ink)}" +
   ".lcl-lb-bar{position:relative;display:block;width:100%;height:8px;border-radius:4px;background:rgba(0,0,0,.08)}.lcl-lb-bar i{position:absolute;left:0;top:0;bottom:0;width:calc(var(--lb-fill,.885) * 100%);border-radius:4px;background:#2fae5b}.lcl-lb-bar::after{content:'';position:absolute;right:0;top:-4px;bottom:-4px;width:2px;background:var(--ink)}" +
   ".lcl-lb-in>.lcl-note{text-align:center}" +
-  "@media (max-width:720px){.lcl-lbc:not([data-role]){display:none}.lcl-lbc{width:40vw}.lcl-lb-caps{height:4.6em}.lcl-lb-cap{font-size:14px;flex-direction:column;gap:4px}}" +
+  "@media (max-width:720px){.lcl-lbc{width:40vw}.lcl-lb-caps{height:4.6em}.lcl-lb-cap{font-size:14px;flex-direction:column;gap:4px}}" +
   ".lcl-life>.lcl-note{max-width:1040px;margin:0 auto}" +
   ".lcl-ghead .lcl-note{margin-top:4px}" +
   ".lcl-tm-sub{margin:0;max-width:30em;text-align:center;font-size:clamp(16px,1.5vw,24px);line-height:1.3;color:var(--soft);opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 12px))}" +
@@ -1919,7 +1915,7 @@ export default function LoupeCuratorLanding({
         <div className="lcl-lb" ref={reg("lb")}>
           <div className="lcl-lb-in">
             <div className="lcl-lb-grid">
-              {GRID.map((it) => {
+              {GRID.filter((it) => MOVES.some((mv) => mv.op !== "Add" && (mv.it.k === it.k || mv.was?.k === it.k))).map((it) => {
                 const m = MOVES.findIndex((mv) => mv.op !== "Add" && (mv.it.k === it.k || mv.was?.k === it.k))
                 const mv = MOVES[m]
                 if (mv?.op === "Upgrade" && mv.was)
@@ -1959,6 +1955,7 @@ export default function LoupeCuratorLanding({
                 </div>
               </div>
             </div>
+            <span className="lcl-mono lcl-cmeta lcl-lb-rest">+ {GRID.length - 3} other pieces, unchanged</span>
             <div className="lcl-lb-caps">
               {MOVES.map((mv, k) => (
                 <p key={k} className="lcl-lb-cap" data-role={LB_PHASE[k]}>
