@@ -168,6 +168,11 @@ body.rendering #room { filter: brightness(.75) blur(3px); transition: filter .4s
 .hs.sel .hs-pill { background: #fff; color: var(--ink); }
 .hs.sel .hs-pill small { color: var(--ink-soft); opacity: 1; }
 body.no-labels .hs-pill, body.no-labels .hs-line { display: none; }
+/* the same button also shrinks the three option cards (and their next button) out of the way, to see the room */
+#panel .options, #panel .options-cta { transition: opacity .35s var(--push, ease), transform .35s var(--push, ease); }
+body.no-labels #panel .options, body.no-labels #panel .options-cta { opacity: 0; pointer-events: none; }
+body.no-labels #panel .options { transform: translateX(-50%) translateY(40px) scale(.85); }
+body.no-labels #panel .options-cta { transform: translateY(40px) scale(.85); }
 .hs.fade { opacity: 0; transform: translateY(6px); }
 .hs { transition: opacity .35s ease, transform .35s ease; }
 
