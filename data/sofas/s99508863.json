@@ -1,0 +1,204 @@
+{
+  "sku": "ikea:s99508863",
+  "url": "https://www.ikea.com/us/en/p/rocksjoen-loveseat-kilanda-light-beige-s99508863/",
+  "retrieved_at": "2026-11-14T20:35:30.632061+00:00",
+  "measurements": [
+    {
+      "measure": "30 3/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "7 7/8 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "31 1/2 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "19 5/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "18 1/2 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "55 7/8 \"",
+      "name": "Width",
+      "type": "00047"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Polypropylene",
+                  "part": "Clip:"
+                },
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining/ Smolder resistant lining:"
+                },
+                {
+                  "material": "Particleboard, Plywood, Laminated veneer lumber, Solid wood, Particleboard, Fiberboard, Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 2.0 lb/cu.ft.",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                },
+                {
+                  "material": "Solid beech, Stain, Clear acrylic lacquer",
+                  "part": "Leg:"
+                },
+                {
+                  "material": "Polyurethane foam 1.2 lb/cu.ft., High-resilience polyurethane foam (cold foam) 2.2 lb/cu.ft.",
+                  "part": "Seat cushion:"
+                }
+              ],
+              "productType": "Loveseat frame"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100% polyester (min. 90% recycled)",
+                  "part": "Fabric:"
+                },
+                {
+                  "material": "100 % polyester",
+                  "part": "Cord:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back fabric:"
+                }
+              ],
+              "productType": "Cover for loveseat"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Removable cover",
+              "texts": [
+                "Machine wash warm, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron medium temperature, max 300°F/150°C.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 6 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This cover’s ability to resist abrasion has been tested to handle 55,000 cycles. 15,000 cycles or more is suitable for furniture used every day at home. Over 30,000 cycles means a good ability to resist abrasion."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "205.572.29",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/rocksjoen-loveseat-frame__AA-2412124-2-100.pdf",
+                  "label": "ROCKSJÖN Loveseat frame"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "205.572.29",
+                  "url": "https://www.ikea.com/us/en/manuals/rocksjoen-loveseat-frame__AA-2666808-2-100.pdf",
+                  "label": "ROCKSJÖN Loveseat frame"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "Design details like decorative piping and beautiful pleats create a traditional expression.",
+        "Thanks to its neat size, ROCKSJÖN makes it easy to furnish even the narrowest of spaces.",
+        "The supportive seat cushion and the angle of the backrest offer a pleasant and relaxed comfort.",
+        "This cover is made from the soft-to-the-touch Kilanda fabric with a mélange effect and texture that gives the fabric a vibrant expression.",
+        "The cover is easy to keep clean since it is removable and machine washable.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "99508863",
+    "title": "Product details"
+  }
+}

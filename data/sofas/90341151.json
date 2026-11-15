@@ -1,0 +1,202 @@
+{
+  "sku": "ikea:90341151",
+  "url": "https://www.ikea.com/us/en/p/friheten-sleeper-sofa-skiftebo-dark-gray-90341151/",
+  "retrieved_at": "2026-11-14T20:35:30.758431+00:00",
+  "measurements": [
+    {
+      "measure": "88 5/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "41 3/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "32 5/8 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "24 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "18 1/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "56 3/4 \"",
+      "name": "Bed width",
+      "type": "00030"
+    },
+    {
+      "measure": "78 3/8 \"",
+      "name": "Bed length",
+      "type": "00029"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "goodToKnow": {
+        "id": "product-details-good-to-know",
+        "title": "Good to know",
+        "contentProps": {
+          "goodToKnow": [
+            {
+              "name": "Included",
+              "text": "3 back cushions are included."
+            },
+            {
+              "name": "Purchase-/Other information",
+              "text": "Stationary cover."
+            }
+          ]
+        }
+      },
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Fabric/ Back cushion:"
+                },
+                {
+                  "material": "100% polyester (min. 70% recycled), Particleboard, Plywood, Polyurethane foam 2.0 lb/cu.ft., Solid wood",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Plywood, Particleboard, Paint",
+                  "part": "Bed box:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Clip:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Cushion cover",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean."
+              ]
+            },
+            {
+              "header": "Frame, non-removable cover",
+              "texts": [
+                "Vacuum clean.",
+                "Wipe clean with a damp cloth."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "This cover’s ability to resist abrasion has been tested to handle 35,000 cycles. 15,000 cycles or more is suitable for furniture used every day at home. Over 30,000 cycles means a good ability to resist abrasion."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 5 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "903.411.51",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/friheten-sleeper-sofa-skiftebo-dark-gray__AA-2536744-1-100.pdf",
+                  "label": "FRIHETEN Sleeper sofa"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "903.411.51",
+                  "url": "https://www.ikea.com/us/en/manuals/friheten-sleeper-sofa-skiftebo-dark-gray__AA-2666808-2-100.pdf",
+                  "label": "FRIHETEN Sleeper sofa"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "Easily converts into a bed.",
+        "Large practical storage space under the seat.",
+        "10 year Limited warranty. Read about the terms in the warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "IKEA of Sweden",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "90341151",
+    "title": "Product details"
+  }
+}

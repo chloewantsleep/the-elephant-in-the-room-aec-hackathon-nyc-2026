@@ -1,0 +1,230 @@
+{
+  "sku": "ikea:s49563102",
+  "url": "https://www.ikea.com/us/en/p/ekholma-corner-sofa-4-seat-with-open-end-hakebo-dark-gray-s49563102/",
+  "retrieved_at": "2026-11-14T20:35:30.822242+00:00",
+  "measurements": [
+    {
+      "measure": "92 7/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "76 3/4 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "37 \"",
+      "name": "Height including back cushions",
+      "type": "00414"
+    },
+    {
+      "measure": "19 1/4 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "21 5/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "3 1/2 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    },
+    {
+      "measure": "5 7/8 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "27 1/2 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Solid wood, Particleboard, Plywood, Polyurethane foam 2.0 lb/cu.ft., Particleboard, Fiberboard",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                },
+                {
+                  "material": "Solid wood, Stain, Clear acrylic lacquer",
+                  "part": "Leg:"
+                },
+                {
+                  "material": "Polyurethane foam 2.0 lb/cu.ft.",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back cushion/ Back fabric:"
+                },
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining/ Smolder resistant lining:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Clip:"
+                }
+              ],
+              "productType": "Corner sofa, 4-seat with open end"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Fabric/ Back fabric:"
+                },
+                {
+                  "material": "100 % polyester",
+                  "part": "Cord:"
+                }
+              ],
+              "productType": "Cvr f crnr sofa, 4-seat w open end"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Lining",
+              "productType": "Corner sofa, 4-seat with open end",
+              "texts": [
+                "Clean with a dust cloth or vacuum lightly using the soft brush attachment."
+              ]
+            },
+            {
+              "header": "Frame",
+              "productType": "Corner sofa, 4-seat with open end",
+              "texts": [
+                "Wipe clean using a damp cloth and a mild cleaner.",
+                "Wipe dry with a clean cloth."
+              ]
+            },
+            {
+              "header": "Removable cover",
+              "productType": "Cvr f crnr sofa, 4-seat w open end",
+              "texts": [
+                "Machine wash warm, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 5 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "The cover’s ability to resist abrasion has been tested to handle 50,000 cycles. 15,000 cycles or more is suitable for furniture used every day at home. Over 30,000 cycles means a good ability to resist abrasion."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "405.721.44",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/ekholma-corner-sofa-4-seat-with-open-end__AA-2419319-3-100.pdf",
+                  "label": "EKHOLMA Corner sofa, 4-seat with open end"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "405.721.44",
+                  "url": "https://www.ikea.com/us/en/manuals/ekholma-corner-sofa-4-seat-with-open-end__AA-2666808-2-100.pdf",
+                  "label": "EKHOLMA Corner sofa, 4-seat with open end"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "The pocket spring core of the seat cushions provides even comfort over the entire seating surface and gives your body good support.",
+        "Pocket springs are a durable solution that makes the sofa retain both its shape and comfort for many years.",
+        "The combination of seat height, seat depth and back height gives a good support for a more upright sitting position.",
+        "Hakebo cover feels soft and smooth and has a nice texture that makes the sofa comfortable and inviting.",
+        "Easy to keep fresh since the cover is removable and can be washed.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "49563102",
+    "title": "Product details"
+  }
+}

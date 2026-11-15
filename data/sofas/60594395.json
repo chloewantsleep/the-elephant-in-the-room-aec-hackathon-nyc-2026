@@ -1,0 +1,208 @@
+{
+  "sku": "ikea:60594395",
+  "url": "https://www.ikea.com/us/en/p/slatorp-loveseat-hakebo-yellow-brown-60594395/",
+  "retrieved_at": "2026-11-14T20:35:30.736853+00:00",
+  "measurements": [
+    {
+      "measure": "37 3/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "29 1/2 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "24 3/4 \"",
+      "name": "Armrest height",
+      "type": "00138"
+    },
+    {
+      "measure": "7 1/8 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    },
+    {
+      "measure": "21 1/4 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "15 3/4 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "4 3/4 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "55 1/8 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "15 3/4 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "69 1/4 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "23 5/8 \"",
+      "name": "Height including back cushions",
+      "type": "00414"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "100 % polypropylene, 100% polyester (min. 70% recycled), Particleboard, Solid wood, Polyurethane foam 1.2 lb/cu.ft., Plywood, Laminated veneer lumber, Paperboard (100% recycled), Fiberboard",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "100% polyester (min. 70% recycled), 100 % polypropylene, High-resilience polyurethane foam (cold foam) 1.8 lb/cu.ft.",
+                  "part": "Lumbar cushion/ Seat cushion:"
+                },
+                {
+                  "material": "100% polyester (min. 70% recycled), 100 % polypropylene, Polyurethane foam 1.4 lb/cu.ft.",
+                  "part": "Back cushion:"
+                },
+                {
+                  "material": "100 % polyester - hollow fiber (100% recycled), 100 % polypropylene",
+                  "part": "Loose cushion:"
+                },
+                {
+                  "material": "100% polyester (min. 70% recycled), Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 1.5 lb/cu.ft.",
+                  "part": "Armrest frame:"
+                },
+                {
+                  "material": "100 % nylon",
+                  "part": "Hook and loop fastener:"
+                },
+                {
+                  "material": "100 %polyester",
+                  "part": "Thread:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Plastic parts:"
+                },
+                {
+                  "material": "Steel, Epoxy/polyester powder coating",
+                  "part": "Metal part:"
+                },
+                {
+                  "material": "Solid wood, Clear lacquer",
+                  "part": "Leg:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Fabric:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Frame, non-removable cover",
+              "texts": [
+                "Vacuum clean.",
+                "Wipe clean with a damp cloth."
+              ]
+            },
+            {
+              "header": "Cushion cover",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "605.943.95",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/slatorp-loveseat-hakebo-yellow-brown__AA-2488293-2-100.pdf",
+                  "label": "SLATORP Loveseat"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": []
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "With a simple grip, you can extend any of the back cushions and enjoy a sofa with a high backrest that provides good support for the head.",
+        "You can really loosen up and relax in comfort because the high back on this sofa provides extra support for your neck.",
+        "High-resilience foam filling combined with polyester fibre wadding provides nice support so you sit very comfortably.",
+        "This sofa is comfortable regardless if you want to sit, lean back or lie down. The loose back cushions make it easy to adjust the seat depth and the back support.",
+        "10 year Limited warranty. Read about the terms in the warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "60594395",
+    "title": "Product details"
+  }
+}

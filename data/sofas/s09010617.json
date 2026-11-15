@@ -1,0 +1,202 @@
+{
+  "sku": "ikea:s09010617",
+  "url": "https://www.ikea.com/us/en/p/klippan-loveseat-vissle-gray-s09010617/",
+  "retrieved_at": "2026-11-14T20:35:30.642662+00:00",
+  "measurements": [
+    {
+      "measure": "70 7/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "34 5/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "26 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "4 3/8 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "21 1/4 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "16 7/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining/ Smolder resistant lining:"
+                },
+                {
+                  "material": "Plywood, Particleboard, Laminated veneer lumber, Fiberboard",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Polyurethane foam 2.0 lb/cu.ft.",
+                  "part": "Uppholstery material:"
+                },
+                {
+                  "material": "Steel, Epoxy/polyester powder coating, Polypropylene",
+                  "part": "Leg:"
+                }
+              ],
+              "productType": "Loveseat, frame"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100% polyester (min. 90% recycled)"
+                }
+              ],
+              "productType": "Cover for loveseat"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Frame",
+              "productType": "Loveseat",
+              "texts": [
+                "Wipe clean with a dry cloth."
+              ]
+            },
+            {
+              "header": "Removable cover",
+              "productType": "Cover for loveseat",
+              "texts": [
+                "Machine wash warm, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron medium temperature, max 300°F/150°C.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "Complies with California TB117-2013 flammability requirements."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "The cover’s ability to resist abrasion has been tested to handle 50,000 cycles. 15,000 cycles or more is suitable for furniture used every day at home. Over 30,000 cycles means a good ability to resist abrasion."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 6 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "300.731.94",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/klippan-loveseat-frame-lining-cloth__AA-133006-3-2.pdf",
+                  "label": "KLIPPAN Loveseat, frame"
+                },
+                {
+                  "id": "502.788.54",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/klippan-cover-for-loveseat-vissle-gray__AA-2036961-2-2.pdf",
+                  "label": "KLIPPAN Cover for loveseat"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "300.731.94",
+                  "url": "https://www.ikea.com/us/en/manuals/klippan-loveseat-frame-lining-cloth__AA-2666808-2-100.pdf",
+                  "label": "KLIPPAN Loveseat, frame"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "Durable metal springs in the seat give the sofa a springy comfort, allowing you to sit, relax and enjoy it for many years.",
+        "This cover is made from Vissle fabric in polyester, which is dope-dyed. It’s a durable material with a smooth weave and a nice two-tone effect.",
+        "The cover is easy to keep clean since it is removable and machine washable.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "IKEA of Sweden",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "09010617",
+    "title": "Product details"
+  }
+}

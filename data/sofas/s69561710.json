@@ -1,0 +1,262 @@
+{
+  "sku": "ikea:s69561710",
+  "url": "https://www.ikea.com/us/en/p/lycksele-loevas-sleeper-sofa-grindtorp-multicolor-s69561710/",
+  "retrieved_at": "2026-11-14T20:35:30.716425+00:00",
+  "measurements": [
+    {
+      "measure": "55 7/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "39 3/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "34 1/4 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "23 5/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "15 3/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "55 1/8 \"",
+      "name": "Bed width",
+      "type": "00030"
+    },
+    {
+      "measure": "74 \"",
+      "name": "Bed length",
+      "type": "00029"
+    },
+    {
+      "measure": "3 7/8 \"",
+      "name": "Mattress thickness",
+      "type": "00168"
+    },
+    {
+      "measure": "74 \"",
+      "name": "Mattress length",
+      "type": "00105"
+    },
+    {
+      "measure": "55 1/8 \"",
+      "name": "Mattress width",
+      "type": "00104"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Steel, Steel, Epoxy/polyester powder coating",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Layer-glued wood veneer, Adhesive resin as coating",
+                  "part": "Bed slat:"
+                }
+              ],
+              "productType": "Sleeper sofa frame"
+            },
+            {
+              "materials": [
+                {
+                  "material": "Polyurethane foam 1.7 lb/cu.ft.",
+                  "part": "Mattress base:"
+                },
+                {
+                  "material": "76 % cotton, 24 %polyester",
+                  "part": "Mattress cover:"
+                },
+                {
+                  "material": "70 % viscose, 30 % polyester",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "100 % polypropylene",
+                  "part": "Inner fabric:"
+                },
+                {
+                  "material": "76 % cotton, 24 % polyester (100% recycled)",
+                  "part": "Ticking:"
+                }
+              ],
+              "productType": "Mattress"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100% polyester (min. 70% recycled)",
+                  "part": "Wadding:"
+                },
+                {
+                  "material": "100 % polypropylene",
+                  "part": "Lining, underside:"
+                },
+                {
+                  "material": "100 % cotton",
+                  "part": "Fabric:"
+                }
+              ],
+              "productType": "Cover for sleeper sofa"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Mattress cover",
+              "productType": "Mattress",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean.",
+                "Vacuum clean."
+              ]
+            },
+            {
+              "header": "Frame",
+              "productType": "Sleeper sofa frame",
+              "texts": [
+                "Wipe clean using a damp cloth and a mild cleaner.",
+                "Wipe dry with a clean cloth."
+              ]
+            },
+            {
+              "header": "Removable cover",
+              "productType": "Cover for sleeper sofa",
+              "texts": [
+                "Machine wash warm, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron high.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "900.326.81",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/lycksele-sleeper-sofa-frame-black__AA-55872-17-100.pdf",
+                  "label": "LYCKSELE Sleeper sofa frame"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "900.326.81",
+                  "url": "https://www.ikea.com/us/en/manuals/lycksele-sleeper-sofa-frame-black__AA-209687-1-1.pdf",
+                  "label": "LYCKSELE Sleeper sofa frame"
+                },
+                {
+                  "id": "900.326.81",
+                  "url": "https://www.ikea.com/us/en/manuals/lycksele-sleeper-sofa-frame-black__AA-2180177-2-2.pdf",
+                  "label": "LYCKSELE Sleeper sofa frame"
+                },
+                {
+                  "id": "900.326.81",
+                  "url": "https://www.ikea.com/us/en/manuals/lycksele-sleeper-sofa-frame-black__AA-2666808-2-100.pdf",
+                  "label": "LYCKSELE Sleeper sofa frame"
+                },
+                {
+                  "id": "201.020.74",
+                  "url": "https://www.ikea.com/us/en/manuals/lycksele-loevas-mattress__AA-2669970-2-100.pdf",
+                  "label": "LYCKSELE LÖVÅS Mattress"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "A simple, firm foam mattress for use every night.",
+        "Extra covers to alternate, which means it's easy to give both your sofa and room a new look.",
+        "Easily converts into a bed big enough for two.",
+        "The mattress cover is easy to keep clean as it is removable and can be dry cleaned.",
+        "You can choose from a variety of covers to create a combination that suits you.",
+        "The cover is easy to keep clean since it is removable and machine washable.",
+        "10 year Limited warranty. Read about the terms in the warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "69561710",
+    "title": "Product details"
+  }
+}

@@ -1,0 +1,220 @@
+{
+  "sku": "ikea:20245049",
+  "url": "https://www.ikea.com/us/en/p/stockholm-sofa-seglora-natural-20245049/",
+  "retrieved_at": "2026-11-14T20:35:30.895816+00:00",
+  "measurements": [
+    {
+      "measure": "83 1/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "34 5/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "31 1/2 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "5 1/2 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "28 3/8 \"",
+      "name": "Armrest height",
+      "type": "00138"
+    },
+    {
+      "measure": "62 1/4 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "23 1/4 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "16 7/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "3 pack",
+      "name": "Number of seats",
+      "type": "00119"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "goodToKnow": {
+        "id": "product-details-good-to-know",
+        "title": "Good to know",
+        "contentProps": {
+          "goodToKnow": [
+            {
+              "name": "Purchase-/Other information",
+              "text": "The leather on this sofa will become softer and acquire a darker tone with time. This is natural for full-grain leather, which is treated with only a light surface coating for protection."
+            },
+            {
+              "name": "Purchase-/Other information",
+              "text": "Due to its unaltered surface, aniline leather can have natural marks like wrinkles and scars, color variations and be more sensitive to sunlight, dirt, liquids and scratches than leather with full coatings."
+            },
+            {
+              "name": "Purchase-/Other information",
+              "text": "Proper care keeps the aniline leather in top condition. Use the soft brush attachment on your vacuum and, if needed, wipe the surface with a slightly damp cloth."
+            }
+          ]
+        }
+      },
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "Dyed through full grain leather from cattle.",
+                  "part": "Leather:"
+                },
+                {
+                  "material": "100% polyester (min. 70% recycled), Polyurethane foam., Particleboard, Fiberboard, Plywood",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "High resilient polyurethane foam (cold foam).",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "High resilient polyurethane foam (cold foam)., Polyester fiber balls",
+                  "part": "Back cushion:"
+                },
+                {
+                  "material": "100 % polypropylene",
+                  "part": "Dust cover fabric:"
+                },
+                {
+                  "material": "Polyester fiber balls",
+                  "part": "Armrest cushion:"
+                },
+                {
+                  "material": "Aluminum",
+                  "part": "Leg:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "texts": [
+                "Clean with a dust cloth or vacuum lightly using the soft brush attachment.",
+                "Wipe clean with a damp cloth.",
+                "Protect from direct sunlight to prevent drying out."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "202.450.49",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/stockholm-sofa-seglora-natural__AA-730622-2-2.pdf",
+                  "label": "STOCKHOLM Sofa"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "202.450.49",
+                  "url": "https://www.ikea.com/us/en/manuals/stockholm-sofa-seglora-natural__AA-2666808-2-100.pdf",
+                  "label": "STOCKHOLM Sofa"
+                },
+                {
+                  "id": "202.450.49",
+                  "url": "https://www.ikea.com/us/en/manuals/stockholm-sofa-seglora-natural__AA-913345-1-2.pdf",
+                  "label": "STOCKHOLM Sofa"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "SEGLORA cover is made of aniline leather which is the finest type of leather of the highest quality. As it ages, it becomes softer and gets a darker tone and fine patina.",
+        "Aniline leather has an unaltered surface that is treated with just a thin, protective coating. This gives it great breathability while retaining its natural look with marks that make each cover unique.",
+        "The seat and back cushions provide comfortable support for your body and easily regain their shape because they’re filled with high resilience foam and polyester fibers.",
+        "25-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "Niels Gammelgaard",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "20245049",
+    "title": "Product details"
+  }
+}

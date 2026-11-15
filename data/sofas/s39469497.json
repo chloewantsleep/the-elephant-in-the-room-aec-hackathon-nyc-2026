@@ -1,0 +1,255 @@
+{
+  "sku": "ikea:s39469497",
+  "url": "https://www.ikea.com/us/en/p/jaettebo-3-5-seat-mod-sofa-w-chaise-armrests-samsala-dark-yellow-green-s39469497/",
+  "retrieved_at": "2026-11-14T20:35:30.906632+00:00",
+  "measurements": [
+    {
+      "measure": "112 1/4 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "63 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "28 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "27 1/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "18 1/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "9 7/8 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining/ Smolder resistant lining:"
+                },
+                {
+                  "material": "Laminated veneer lumber, Particleboard, Fiberboard, Plywood, Solid wood, Polyurethane foam 1.2 lb/cu.ft., Acrylic paint, Melamine foil",
+                  "part": "Seat frame:"
+                },
+                {
+                  "material": "Solid wood, Particleboard, Fiberboard, Plywood, Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 1.5 lb/cu.ft.",
+                  "part": "Back frame:"
+                },
+                {
+                  "material": "High-resilience polyurethane foam (cold foam) 2.2 lb/cu.ft., Felt liner",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Leg/ Sleeve:"
+                },
+                {
+                  "material": "Steel, Polypropylene, Epoxy/polyester powder coating",
+                  "part": "Mechanism:"
+                }
+              ],
+              "productType": "Chaise module, left/ chaise module, right/ 1.5-seat module with storage"
+            },
+            {
+              "materials": [
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "Particleboard, Fiberboard, Plywood, Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 1.5 lb/cu.ft., Solid wood",
+                  "part": "Frame:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Leg:"
+                }
+              ],
+              "productType": "Armrest"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100 % polyester (100% recycled)"
+                }
+              ],
+              "productType": "Cover chaise module, left/ cover 1.5-seat module with storage/ cover chaise module, right/ cover for armrest"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Removable cover",
+              "productType": "Cover chaise module, left/cover 1.5-seat module with storage/cover chaise module, right/cover for armrest",
+              "texts": [
+                "Machine wash warm, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron low.",
+                "Iron on reverse side.",
+                "Steam iron is recommended.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 5 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This cover's ability to resist abrasion has been tested to handle 25,000 cycles. A cover that withstands 15,000 cycles or more is suitable for furniture that should withstand everyday use in the home."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "905.289.26",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/jaettebo-chaise-module-left-with-storage__AA-2335402-1-100.pdf",
+                  "label": "JÄTTEBO Chaise module, left"
+                },
+                {
+                  "id": "405.289.38",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/jaettebo-chaise-module-right-with-storage__AA-2335402-1-100.pdf",
+                  "label": "JÄTTEBO Chaise module, right"
+                },
+                {
+                  "id": "005.289.16",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/jaettebo-1-5-seat-module-with-storage__AA-2335397-1-100.pdf",
+                  "label": "JÄTTEBO 1.5-seat module with storage"
+                },
+                {
+                  "id": "005.289.21",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/jaettebo-armrest__AA-2335400-1-100.pdf",
+                  "label": "JÄTTEBO Armrest"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "905.289.26",
+                  "url": "https://www.ikea.com/us/en/manuals/jaettebo-chaise-module-left-with-storage__AA-2666808-2-100.pdf",
+                  "label": "JÄTTEBO Chaise module, left"
+                },
+                {
+                  "id": "405.289.38",
+                  "url": "https://www.ikea.com/us/en/manuals/jaettebo-chaise-module-right-with-storage__AA-2666808-2-100.pdf",
+                  "label": "JÄTTEBO Chaise module, right"
+                },
+                {
+                  "id": "005.289.16",
+                  "url": "https://www.ikea.com/us/en/manuals/jaettebo-1-5-seat-module-with-storage__AA-2666808-2-100.pdf",
+                  "label": "JÄTTEBO 1.5-seat module with storage"
+                },
+                {
+                  "id": "005.289.21",
+                  "url": "https://www.ikea.com/us/en/manuals/jaettebo-armrest__AA-2666808-2-100.pdf",
+                  "label": "JÄTTEBO Armrest"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "JÄTTEBO modular sofa has a simple shape with clean lines and is soft, comfortable – and practical with storage under the seat.",
+        "The modules can be combined as you like, create a large or small sofa that suits you perfectly - and add more parts when your needs change.",
+        "Feel free to combine the sofa with more seat and chaise lounge modules, armrests and headrests. Use the planning tool to put the modules together in different ways until the combination feels right.",
+        "The modules have a soft comfort with high-resilience foam and pocket springs that follow your body and provide support – whether you are sitting, lying down or hanging out on the sofa.",
+        "The deep and even seats make JÄTTEBO very comfortable to lie on when reading a good book or enjoying a nap.",
+        "In the generous storage space under the seat in the chaise lounge and seat modules, you can store things like throws, games and boxes with small items.",
+        "Gas spring dampers ensure that the seat opens and closes softly and smoothly. It also automatically stays in the open position so you can easily pick out and put back what you store.",
+        "You can quickly and easily move your modules without tools. Just open the storage to remove the mounting brackets, rearrange the modules and then fix the brackets back in place.",
+        "The modules look equally nice from all sides so you can place your sofa along the wall or in the middle of the room.",
+        "This cover is made from Samsala, an extra-wide-wale and strong corduroy fabric with soft comfort and an expression that adds character to the room.",
+        "The cover is easy to keep clean since it can be machine washed and is easy to take off and put on again.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "39469497",
+    "title": "Product details"
+  }
+}

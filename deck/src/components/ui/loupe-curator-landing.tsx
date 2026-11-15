@@ -22,20 +22,27 @@ export const progressFrom = (top: number, height: number, stage: number) => {
 }
 
 /** Track lengths, in stage heights. */
-export const TRACK = { intro: 6, words: 3.4, zoom: 7, pile: 3.6 } as const
+export const TRACK = { intro: 9, words: 3.4, zoom: 7, pile: 3.6 } as const
 /** The panel after a pinned stage slides over its last stage-height of travel; the story is over by then. */
 export const coverAt = (len: number) => 1 - 1 / (len - 1)
 
 export const INTRO = {
-  fly: [0, 0.3],
-  lineOut: [0.05, 0.15],
-  open: [0.12, 0.22],
-  flip: [0.12, 0.25],
-  grow: [0.24, 0.46],
-  caption: [0.36, 0.48],
-  captionOut: [0.52, 0.57],
-  callouts: [0.56, 0.68],
-  strip: [0.6, 0.78],
+  fly: [0, 0.184],
+  lineOut: [0.035, 0.096],
+  open: [0.079, 0.14],
+  flip: [0.079, 0.158],
+  grow: [0.149, 0.289],  // the gap grows into the team
+  teamIn: [0.254, 0.315], // names fade in
+  shrink: [0.385, 0.43],  // the team shrinks back into the small window…
+  close: [0.43, 0.455],   // …and closes
+  para: [0.46, 0.555],    // the manifesto inks in on the paper
+  paraOut: [0.555, 0.575],
+  reopen: [0.565, 0.59],  // a window opens again…
+  regrow: [0.59, 0.645],  // …and zooms out as the room photo
+  caption: [0.64, 0.7],
+  captionOut: [0.72, 0.75],
+  callouts: [0.75, 0.82],
+  strip: [0.78, 0.9],
 } as const
 export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.8] } as const
 export const PILE = { ink: [0, 0.26], drop: [0.06, 0.5], swap: [0.56, 0.68], type: [0.64, 0.8] } as const
@@ -148,7 +155,7 @@ export const goldenAfter = (taps: number) => Math.floor(taps / GOLDEN_TAPS) % 2 
 
 /** Reduced motion: the scroll snaps between still poses instead of playing the motion. */
 export const REDUCED = {
-  intro: [[0, 0], [0.3, 0.79]],
+  intro: [[0, 0], [0.25, 0.4], [0.6, 0.84]],
   pile: [[0, 0.3], [0.5, 1]],
 } as const
 export function poseFor(p: number, poses: readonly (readonly [number, number])[]) {
@@ -191,7 +198,7 @@ const CURATORS: Curator[] = [
   {
     name: "01 · Needs",
     bio: "Snap your room and chat. We find what you already own and turn each piece into a product shot. Keep it or ditch it.",
-    tags: ["Room photo", "Chat", "Keep / Ditch"],
+    tags: ["Take a photo", "Chat your needs", "What to keep"],
     deck: ["armchair", "coffee", "floorlamp", "rug", "pendant"],
   },
   {
@@ -239,6 +246,15 @@ const GRID: [string, string, string][] = [
   ["mirror", "NISSEDAL Mirror", "IKEA \u00b7 $99.99"],
   ["stool", "TJUSIG Bench with shoe storage", "IKEA \u00b7 $69.99"],
   ["dchair", "TEODORES Chair", "IKEA \u00b7 $55"]
+]
+// Meet the team: each member's cut-out (from the tape collage) on a glass card; hover shows their photo
+const TEAM: { name: string; url: string; key: string }[] = [
+  { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", key: "yimeng" },
+  { name: "Yu Chen", url: "https://www.linkedin.com/in/yu-chen-2a586b249/", key: "yu" },
+  { name: "Chloe", url: "https://www.linkedin.com/in/jiayueni/", key: "chloe" },
+  { name: "Jiahao Li", url: "https://www.linkedin.com/in/jiahao-li-no-on/", key: "jiahao" },
+  { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
+  { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },
 ]
 const GRID_TOTAL = "$2,492"
 const COL_SPEED = [0, 0.2, 0.07, 0.28]
@@ -461,20 +477,43 @@ const CSS =
 
 /* ----------------------------------------------------------------- fonts */
 // Inter Tight (400, 700) and JetBrains Mono (500), both SIL OFL 1.1, subset and renamed per the licence.
-// Elephant look: black / white / gray with frosted glass, products as cut-outs (matches the app)
+// Elephant look: black / white / gray with frosted glass and a lime accent, products as cut-outs (matches the app)
 const THEME =
-  ".lcl-root{--paper:#ececec;--ink:#141414;--soft:#8a8a8a;--card:rgba(255,255,255,.6);--lime:#141414;--onlime:#fff;--band:#d2d2d2;--rule:rgba(20,20,20,.12)}" +
-  ".dark .lcl-root{--paper:#111;--ink:#ececec;--soft:#8a8a8a;--card:rgba(34,34,34,.6);--lime:#ececec;--onlime:#111;--band:#2a2a2a;--rule:rgba(255,255,255,.12)}" +
-  ".lcl-root[data-golden]{--lime:#8a8a8a}" +
+  ".lcl-root{--paper:#ececec;--ink:#141414;--soft:#8a8a8a;--card:rgba(255,255,255,.6);--lime:#d9f26b;--onlime:#141414;--band:var(--lime);--rule:rgba(20,20,20,.12)}" +
+  ".dark .lcl-root{--paper:#111;--ink:#ececec;--soft:#8a8a8a;--card:rgba(34,34,34,.6);--lime:#d9f26b;--onlime:#141414;--band:color-mix(in srgb,var(--lime) 30%,#111);--rule:rgba(255,255,255,.12)}" +
+  ".lcl-root[data-golden]{--lime:#f6b444}" +
   ".lcl-img.lcl-prod{background:transparent;padding:6%;filter:drop-shadow(0 16px 18px rgba(0,0,0,.16))}" +
   ".lcl-th>img,.lcl-ft>img,.lcl-sc,.lcl-tile,.lcl-fly{box-shadow:none}" +
+  ".lcl-th{pointer-events:none}" +
+  ".lcl-para-in{position:absolute;left:50%;top:50%;z-index:150;transform:translate(-50%,-50%);width:min(21em,calc(100% - 40px));max-width:none;text-align:left;pointer-events:none}" +
+  // the manifesto moved into the intro, so the three picks sit as a centered row
+  ".lcl-mani{grid-template-columns:1fr}.lcl-mani .lcl-col{display:grid;grid-template-columns:repeat(3,1fr);align-items:start;gap:clamp(12px,1.6vw,24px);width:100%;max-width:1040px;margin:0 auto;padding-top:16vh}" +
+  "@media (max-width:720px){.lcl-mani .lcl-col{grid-template-columns:1fr 1fr;padding-top:8vh}}" +   // the hero's flying products are decoration; never block clicks/hover underneath
   ".lcl-pic{border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}" +
   ".lcl-nav,.lcl-chip,.lcl-fcard,.lcl-plus,.lcl-grid{backdrop-filter:blur(26px) saturate(1.1);-webkit-backdrop-filter:blur(26px) saturate(1.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 12px 34px rgba(0,0,0,.08)}" +
   ".lcl-nav{border-radius:999px;padding-left:20px}.lcl-btn{border-radius:999px}.lcl-chip{border-radius:999px}.lcl-plus{border-radius:50%}" +
   ".lcl-grid{border-radius:28px 28px 0 0}.lcl-fcard{border-radius:28px}" +
-  ".lcl-bit:nth-child(3n){background:#9a9a9a}.lcl-bit:nth-child(4n){background:#141414}" +
+  ".lcl-bit:nth-child(3n){background:#9a9a9a}.lcl-bit:nth-child(4n){background:var(--lime)}" +
   ".lcl-clab{border-radius:999px}" +
-  ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--ink);color:var(--paper)}"
+  // meet the team: a layer inside the growing gap photo, then it fades into the room photo
+  ".lcl-track{position:relative}.lcl-anchor{position:absolute;left:0;width:1px;height:1px}" +
+  ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(8px,1.6vh,16px);padding:0 clamp(16px,5vw,80px);background:var(--paper);color:var(--ink);opacity:var(--tm,1);pointer-events:none}" +
+  ".lcl-tm-label{color:var(--soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase}" +
+  ".lcl-tm-title{margin:0 0 clamp(10px,2.4vh,26px);font-weight:400;font-size:clamp(28px,3.6vw,58px);letter-spacing:-.04em;line-height:1}" +
+  ".lcl-tm-row{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(10px,1.4vw,22px);width:100%;max-width:1400px;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 16px))}" +
+  ".lcl-tm-card{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--ink);text-decoration:none}" +
+  ".lcl-tm-fig{position:relative;display:block;width:100%;aspect-ratio:3/4;max-height:52vh;border-radius:22px;overflow:hidden;" +
+  "background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 34px rgba(0,0,0,.06);" +
+  "transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}" +
+  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-card:hover .lcl-tm-fig,.lcl-tm-card:focus-visible .lcl-tm-fig{transform:translateY(-8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 30px 60px rgba(0,0,0,.16)}" +
+  ".lcl-tm-card:hover .lcl-tm-photo,.lcl-tm-card:focus-visible .lcl-tm-photo{opacity:1;transform:none}" +
+  ".lcl-tm-card:hover .lcl-tm-cut,.lcl-tm-card:focus-visible .lcl-tm-cut{opacity:0;transform:scale(.96)}" +
+  ".lcl-tm-card b{font-weight:400;font-size:clamp(13px,1.15vw,18px);letter-spacing:-.01em;border-bottom:1px solid transparent;transition:border-color .2s}" +
+  ".lcl-tm-card:hover b{border-color:currentColor}" +
+  "@media (max-width:720px){.lcl-tm-row{grid-template-columns:repeat(3,1fr)}.lcl-tm-fig{max-height:24vh}}" +
+  ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--lime);color:#141414}"
 
 const FONTS =
   "@font-face{font-family:LclSans;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,d09GMgABAAAAACawAA8AAAAAY4gAACZSAAMBBgAAAAAAAAAAAAAAAAAAAAAAAAAAGjQbs1gcuQIGYD9TVEFUSACCAhEICspcvA8BNgIkA4RwC4I6AAQgBYEkByAb/Fk17JgvAs4DgLq/5pOjKKOkwSKKqRn9/9+SG2PgD1LbQ5XtouF2I0JiFizK8o67t7EDUWDBJCi0Yew3CO9uNHk0ayEUTNWvjC5cvU2m2FV8YUyNvsEYNk6ldhX6Rh8ai1KoPimt+38Ka8H4f8rzhja/z/2LIV35dHFgNYv7nlMfFYHuNo7MuXKExj7JJSjWyh7Y3bsLEAsXxWBUWEUCyhf6y8dIFCoVoRMjns7IabN7Z4w7QqQRN/lxSUOINFIaLu/wuJ1bI534CbnHmEeGIN7BnTTceQshUjqKSGukddJJJ6U5pb7TLB4+/u9h3Tsz750AA4owDjQIE4giX5E1X1/+P/Db/D/mChNX0SoiikiVioqC0gZSKiAGFqhgYV6dc2/Isxcyn1Pf5qKd634/04fm/HozmaZJWv4pcJoSotrdcwvEQh2RcGccyVN2hd0tm5Vks2Sa9QFFTNkTVd5gWCDoHi2mdnp1lT9zxjhjP0H8FPl75gAC/RISNCg8Dtv+5DdpXZMK5VC6Tt0S0M6vCyTALE8SLu2SCWwOA57OsMF5r+EhZ7ARO4y1pQbxFw8KOp60qJJRkLuQUedx00oWN3cnMo9hx1zoB8qALC40e/PdmyQmz/VqC+oBDvqyK1WrFK3hyJzHOZ5xPPfGaYPsjTHpJ2GjARBsDrEEhTWAIP0S4htRXEetg3ROIJfryHfW73rxnbHRh87kNkhc9EF44dVFH+59lt1f+j6NPs2fCBs2/WUzXyntSHCOoEDhXC1nKUKVKhXKdolRCNOUQ0iP0NgQU8vp62Maq9QjMsMK1fbvhv37TJndUcH3LxckSCZBgogEKd11L8vZ3KllhdJgMn/d665xBLAZgMSA8CBJJkImmwyh0RAtLaRLFwQBCzxC+Ma7NA/CX3+qlRCOBGwEAvHqS6UEJhBAIGFMWPBQAGJHAvdjslItUvPN52llKhE6bAL3UtJjfwITnaluJWng7Fos4CQiS20aYkSxpfW7syG7cnr0m3bfrbzKk9DVdfbr4YKfTx89A69DwbmAjtHCF/uuQcIZV1P3vxMwAw8rHjgMTyCS6OgZGJmYWchs7BycXNz8glRhUXEJWTkFJWVVdQ1tHV09AxgRcKLhxYhFREZBx5BKQChNOhEJKZlMWZRU1DS09ExKWNRw8EaxF7FlYV94Bg7OOc6oMAucC5xlxmgq01iunLDKn/OQeu715E5AbTxTKJC0k+mQGd1VaFfJFIjEHVmFNSC6Ejni4M1kC37nfBt8Z+PHPjxzeZYWOiCggqMXbFJoFUBiddljEXtcjNqoAEJnFI9zzv0jvkNO254BzwOeVBWBqtrUhI4wHFEP5zGziNTCM2skajwWK4NTFJjtzEpv6ZzxIRWkEg/EKT8gAAqokIbsu5fP1fvR6ku7DZ0aXV6yJ67fv0F9VMsn5bbClGeU+07shs+j7vS2YRfV66V9KOisck8+/H53Bg0NwQ6+mvbLlAgSE5DE0sJcOWTPOcfQla6Gd7aWtdM9MTu4gg/mscCsvgVrDfw6lSNR4irlRg7GMMtbUm3nhbrk1fZcS1yHG41n4KiCZRn34loaBCawsBxRthb9UNhE1H+SvpECZCCXK4Wqc+uZRoWWchvcIe4K9GFQX5VtY3w1wXV+YRVnFLWxumKz6kn/Ote1/MwXOEiYPZtNPM/MZW5Kr4/thh2xuitScrksUOUt16/WdZ34JsEtsuPEBKsza5SNeY0OgSmExCHsDLBrse6O9SxvJXe15Lri7Dx5LpuVr0b4muHrCjcUmd//zHQJMVj/VbOSlIjUGabdtTSxX1nsWPTIXhgEVL0nHWRKG06Y60jx0eNdWAgZyuLho9lOdjbk7dwjF4o+XmqglXq66hfio7zgjpV73iSiSzK1PpBW7CODFw5nUq4lkvjqEcbalnzE+p97OUv26H0+7LZVlfepdRx72dKtxCOXQFkNerN952ix8KKA31L/N19iDr6yM+BhDWpuew3Gz3UG9YiX+UK6RpkekXBGaGsHT6xuSaB9zSPcu6a0kqwov7l/mq+UEP9apm6PfBPW0B3h7ATS4FwwvU+WzVz7h6zAEO5ml+3WzZqjwDf2SlnJJh7mTLqy1u/lqBvk1077ASGGrp8s+jJJpZAnbh1WC/hmW9e0PIdfLt6joeyUOtD6ZKjkrgRe2+XxIu+ccZn6kHRB8ozseGrqK5ZdbPwF9g0wtJwMt1Zn/s6bKNx52R4mkPaOVLqL9ldCeyheF/Y2e9F+Tq+pHGp2kDstH69rfgJDEpe72ZtaXeupI3jQ+GrNnWs/CpJDsXjmgaalQqN3oVEbS926p+tVqGxw0d3OOG2Q7dziina33FlddK71Dg9vdv+RMNboCHoB0aE756DHeMoeU+DLeSvPlJejTot8Q+jeBFC24Zn5yMfrQld7aWLzDrltOA+/rLV4xHROBPdCtx1Bz3faD6+OxMOxxu1e3Vdi1v5E/UeP8iDCgKiosLi2iJ6BI0ZwjluKEY6IKAIFBRYDQyQ2HpwkSYj4+EhSiZBJyTBlyMSWLRuXilocLa0EuXLx6OklMjFJUqJEsjJl+CwsUtSokcrOTsDBQcgD8ZtZrC4QGlkyAODZ2AEAEUY4mEXwnIyi9Fw4FAVQghwLjgSQAAEAV/7zaaEIUumITDJEIQlAUVweABTEJQB+fjExfgDAuAGAFgAwSKs8fI9ZL5yQkuZkTfGVOe1gkE3n3QDdDKTt7W1vBPEHHwSHnbQqjID1qMza3p6FgY+OlRZBD44gIvTdK1St4fEofLwubiKBSYjAQxWTlBAFqODBCQ7Xqaz5AhBncXZl7GqVzPaYBew0IXIcqIA1BMDG9hhGkmw6zx9lBBOnfSK0sFaq7Mc6C67PXUN3n4b9Bo2gcS5Zb61grRd/u6+7/31fymM6xmX+SMGm2DkT2vF2HA+2ErOh9dbn68WjR6QvhyaOr9mWCfgTGknyUhF5VNGnQSZeHavsrIvTyOzL8VzMrfjSl6/5vxvKJNgKGtkEJ5dX+OekNLNFnVtFNabU2CalXd1u82rvJlRxACNMTUQVdregj10eoSHOes37vvCj/443DofVqlrWedf1cPbYtyjHu1x8jMWNGtpY7ldSe4dnJUKJlCuXGqGSU6kiCiVHTivnuhEhN4Vq5exi+thR9nA774aHXvnMgL6IJVeefEWKlVqgzCrVGmz64dzfsMEdHvCkl/X6xLf2B/ACcxKdhPAzIdOTRhEzTG+UInMpaBi1aGezicshp3nc9cx73/VEoWiwsY50nNNNl7LMhdLWanKl3Trc5h7dntWjV5+v/EjV/hjW5Otfh6hIypxRkRSdUZGUOqMiKTijIilxRkUj1z91KYtpaGU39SEexLnfT1Wq0rz2VqW1ttilk+9Z10MM1SIJhCOFR0mSJAEAAFqcfdRvpLhODxljCC324/+Lw4B44cSheHBiMzLjMj3poVKWhaFTG1NWpjuObMueuHM+N/Iwr/I5/60vwSq3vPIrqrjSFlTWqqpraFMt7e2G7uiBnuzlevukb9s/IBckZ9FLmnBTl7bslWz+lNOubuZ1zr4t27UjO7tru78X+7h/H+9drTFqnFKVVlV94UUXT+nKUp5KVK0mdalXFzUpRa5yjbrlN5O32uuo8256bKLZ5ltqlY0ud63b/JMHPeopGw5de/UfrNVr7VGSTDndzENNfITJiC5FsaYxnXHlfMYjBSRNnzMDZQjmuhtutvUOSyizSRVXWX1La2tLu9tfd69Uq9+yc9/BEOX5F19x7U1HHnepk08z0ypXP2TODW9s12ctXrt9PyElo+REJU2VPnjo8EgnCx0myrHRRCdOBnEziYRFSMnIyc/HOklnffern/ziN3/4+Kc+9/kv/qzXvenL3/aN3/Zd51ixTTTKdkZFUuaMiqTojIqk1BkVScEZFUmJMypaqRuzmZmZmZmZmZmZmZmZmZmZmZmRJEmSJEmSJEmSJEmSpKqqqqqqqqqqqqqqqqqqqqqqKgAAAAAAAAAAAAAAAACIiIiIiIiIiIiIiIiIiIiIiIjHikRf9VaSk8pKRNzx5eTk5OSkUqlUKpWVlZWVlZVIJBKJREZGRkZGJIo7xIRrKqMgzHW05vzx11iGAbRw0fhmIoBUlj7QfCSQ6wrjhrizp6YbENgOJ0mwEYBItSLBZT5CuI7URKQ6Rls/fxmMIdQKR88pme+KMMA0mMBCpkgz2xIVBAhVRIZDrgWhmpoJphaIhSvOyAgGQbBoRareomYEcuv5sPytGzXBGhGYWIZqLyl9Al24Cq6vmS2BwGQpX6I2GzRYqbNddgOnPQ7paJRHUl/WUVJX1vGGdEM6oSu16bXTCTqrpdoqS53USR3o9rUSZmaBWccPy5UaiSZr5GploGdXTwiLsNAEtqxWQ2fZLxZfEzKAy0xs9rnmqxsUKXWutZq16fK0932rP8HhpS6rY48r7njyvSgiusKmt6TKmtrbPT1fX78vePylrGyaWdZ/Qk/eqTp1p/vsOOfPkzNwF93RV3xLLn2bruMeuDcggMCBmcghYIQgqQhIbekxkUwvcqTsxscJSqYNcT94JBeCFatEwDh4kNGAsTNjrYgbpcqqxBWN+Dhj8lgeAjULQCEjyaT6dYLKT40HBOcet89Oln0TDH4Xd0Yjyxt1XIeU28YhkCN7iKKANt0CHqrY5iBluhtiKOrLsdbpJgVsik2m0EDptJFMc0HQl6OqBkajBKQsZ6gsUV2qP08kRZAmm+sZm2EuIYGneCCxe10Cx1RHii3YUWKMtw4umqW/S+lm4/mTQgIaLYmW1ghYwI9coIO7+uZtevyrfZI8/B/WHg9aKCu1ATHIewUxSznDuK4ARLCH6WApx4VABEFGc9nnW3m4AgiOJgoZ2HH+nEAhtNyL49LW7aMHAAFMrNCrxZN9MAuIOtkrGljegjlDarhBId/dBRE4weJbsMlNgRWCsPqKSbk5MEGCwHc0LbcECgJggS+nILduSIFrJj8puS2YDiG1juZFkNuDJEjCWutgPLTcEbAIAEEtfvYVMjur1Q8DFtTyEVtJ7pq+C5FnyaeOlLuDk5DsxQUfBS33BNsIAGI4Vp+8gtwbWGCAYDhGn8kluS/QEAgLhjPfJ7r4/PbDQmynZ8naV75CiSrMM9KIusBSENYNxjGzmmI5N/UEgAlyJhxQEX+oEaX53e+c9+cZWBt/w5C4AjRZpNwy2iG/ZiYKA2McDje5MFpsggMhEebOFobBwqIOCmi1TekHh3qgIA6FFc5PS19BDTgswmmdpRPwmFsNOCIDQt4T4NHdGGvAUSGdI5dtE8UBcnAMW+4nP4WyCcjBcdTznkG8Tl++8waKTkKAGJiuzS67HBjmPNKBgdkwx7BOX2+IwFxCb2AuG11EQQEp5O6TU0Y3eToKQgeXeEuNMzpuEHq9bchVlm1kYcipVPEdvc7FJyiq8qwPeW5aNwAgh07Z17xGQr4GokS6wpqKiZgL4jE5sipOGFtpeebRRZMk40uhMFukpbvA9Xz6d9/Cqkq1Gk1s7GrV8SSqdB2YbOjhgMbTXr9pH7eJzXOPHMojKv4+MgrxWYX5Kp6cQyu8EpoLEB7CW8wV84SfQA+FWEPbad/Wdt//ChsHV5x4CTeWRO1ZQN+XLN7pHVbzAU1j/wP8ngoUz2GO7cB/3T4CDqAAAADHuTlhHLHlh/P4uhWEP60ABAC209MACj3SNgLkZy18kXvi5lMSCPyfJHMldEb+bAEUDd8C+gJwCBo8AAACACiAA64iSWe+fP1UCobKaejjEtPRu+AJXishikvxKdHgdzd7X4Eir2kgjkQu597RilPx1gX4Oi7wCzq7/6Na3nu7zff89vrL9suFqIAuYA5wVeTh7P9H6QgyaEiIsHHEyBSBAiMWVqQc2ZSiicUjSqBG12ApLx+/gCBVSFjUJVJxVDyQk20A4k8AkA7gLyA+AKYPkAFAFgAAiuIQFAEiu3GgqFe0jZvJfFyJY5h7a+EhukBcg3sigSkDzEgmliS/RxyOaBWtkGpoq9uRNt2lpsIGncPy4or5diHf6bvdE5gsSVE700txPbMbeLPebHYKUmUlwa5svKxaHObgx+7jzBIxOZhByxiLnitmRw/kBDsKwlcKckuaBKUs8RHVrDjDbUs906t6K4t1i0WWWasIwumi60rY5oisxGD9o4ToWCrXUyroGfBKGeKMWMh+wwX7sdcl8PNlKTEJewppsgwllnLbieEjiB6D+L090nCx7eGe26ECJnqFVJ1rlb+mMPqPw0Gs6dJoiRb4GT4GMQN33XKkyhXab6XwgxcvfoGP/t+hJ2EJoJQoi5Yy8UCqE9EZfLiAZYEC18VSQZo9pSsp8SRDrYkHN0Jk2HUms/Kc2wXRrMobvFrCdZU4hb4Mn1RIUJ4chZRbVH5DzeW8cFtN12juaLBciq5Z4Aij/JTwK6zvr5N5QPGvV57mqbnWfWQ4Vt+EPWMEFUfyBGZzpkWYJh/Wn4Rld4JVKHgS4QwX/p7HZQez73YfRbGz4SgshhbbtUXJyRTP8OQUTdMkzUx/l9ZvxaUozSgVrIILwJfFvRDii/cdDiS6ctVYMyjzgRHSiyAyQgK8DXb/ZKQZWTB1noB8rl6gJidYbDvs6W+8kpNsu9zHp6bWVs6kKMbOcYyfcaRnAc7mMaCCgWq10cLuDV02EiihzzsyPqXuIDkAYenLkbHPMSlEL5HNtlCF2fPQ/W2B/kzKNIulAYzSe/cSnOeccC4exonQhnkThid4lSbTbXzarmWnESlBx5K+Od2drTEUZprD5jCk/dHeoU9VFwaHK4rDw0rN0Pk+bWfauRruanrkqNpg98MdDoyZqNfnNFmudf6S/6zJjnuJWhcoYfPduJhCY/pJugRKmnOEtKIZNJgLqaln2+FIHCVm6/QcG5uYVMZH837qb7oH7KnYs5bKc9H+Q2MULGEADsrgGft5q/iJTJ5/jTSII4wzXSOVpKtlx/NWo1CGR88KpMORVdRdpqDjO2yiMJCDAEaTmGePsXB12bvMQAClGr8njahI4dRD/QA/wR+ht47tFAtWjHXn0tO3SFLatOfb1UCdJWa6aGVEit43atL7Y3q2S5rRMQATCUJDm+dshuxqYzWhytY4qPA1HgrA/PHMNAfNyLAdanBtRA8OqeF6WdiFtqoc6SeOZChkvwElFOiRtxBiABUc2It+sxz5L895v2jqhPVuFOCZXw3HgTnjagAf4OKe+GnoAKAFa8FX3Om15Rt8NVyU7jq8jgwbsJbMKEDR8WeSWjSA91oU6roUgTxDHVkIi14GuPes9U/4VhlFes+TVzPgsY/Ti+8RvpRXpnYdSttS/h0o/gNFZ/S7r5j01IlzxX7nO5Pncb+n9U7ky4PhMsjjXVM9e1vlg3L+V+VgfUOP7sD22I6Z2Madcbs2J+zNB6b/QpYzyxiAhNY7I3pgLLp60uHKPty/jL59pAKLB+HAEjQ7Xld3Hf2Nc+szz3AMIopc8y1qUT8qlx2d4SlqcE2MWIZdd7G9sYZl79Kw/c4UxEfaeFx1QM58NEF+1GysqfFc1Uz0YHXcrkluQq+u27G87bUq9IwVWKiwGgnCsWp81LpdcygqXKalZgTi1bVx401Y0eNTIRyTInZsgbA0YAZgIAfvZsuO8gSsJw2uS/N5QtZWe28a+x8SX4bl2tSxScj9+y38IaM+/COhnrqjPLyuPn5G5bT/G/k3FIHPtbnNN8T8IVkSJk8W9Sf/sVcZK75DlSEYfJ4+IGgXDtSW8QkEgyU2OaOFTCkMJSiJfHNZLRNeoMc2j5xl/vjtLEs/tLGMqbD2PPEwOnM4IJaYk0E2b8KbX5Qa505OGOeoZ8Zb9NDHGQaCLPFQEMOfJiALEe7Iny3qWeeHc7y/V/apENOzfQOnCF++nSYeG1p5bhp8rg2LqeN0EXL/z8gewXOk+lnVIzdnlyAl5fAOPbVlpJv547du1vqRy6pb2PYC8UCIxL0wmqCUUIu3UoqeKvHeFcx5VVpunJDJrpfljiOHkIvN/sG1fc0MNy5pHCZbNC1pAnSx1I/1Blo3xpaezl4zuObkCZ5sL44oDT2kj98yvMWaNvWLkPdtfgxu/fBd0b7Ra89zn6GRB+/BPuAjPI/A7NTppyu7ZoKF31ByQOq/nC7tXPZXnZE6gYoVNGtwT5ct0CZuXu9e71r/WnjpU3AOOJOXN46cZf324yxTk2NnzM9LjXMmJjckz2wmVWAUwpT4+5Z/9r3OlzwqKhQ/ea3vTUf4mhpKmJXDDau0kbUnwEcIHQ+mTj9z/CN6quNZw7hDhq6S3L32W6+zeus7q4/DhhlPDy+uif4e6E5rvS1rhbjFyDdh0cXZWvcsGl/m2M9J68Ikaql4WlzJYeL8c3t7d990N+SXuD+nWavfCAv7vRT9KNlFbSnffpKiiCIlJ5XsV9RtbrfuL4pjWEWa/Mk/ZIFX/B6Eh8wUcu2HCFjB9PBzh/X3XmV9fd5lVb93PB++LUs8O5SUlzeQpHNlgIqfXtr1OVi80TW3D8m9BjsNjsWC6fPoojF/9Mex2+grY4Ho1LGLi4sv45CiThTWB79T0wYJKo+eefjt4ZcZQyLqQ5558+XNNwDs9N3WC8HNF+6v/lUqHBYC1bQnon8b4l1003r/awvnFot/JgscsqQYlT6icXXsHAFK79ex2VeiVKl1FeLRU4e3CmyZru30AxWLiojMtuK3rsbZXhRqyRGcQ1hBwumxba6oEF4AZ25n+OzsDZEx4ZwiLkgWSgqisPHbQ1xd4HPNucF/G4ZrwMksjyo1nv0Dau9Hlg6HpCorakKtwv1iVchElvSoUb0+etwqhd0LW97X6rzO9OR7v7c3qEaZmla/dNckhiM/QEitS6ONGgoo4/UigaAqfQHX5cfPanXHQ9DCykcWtfdAv8bzUaVFrsdhuNv8NzjB51qXK2Q7Nt4YxXCkW6TR43o9btSaLpJWKXC/qNRRE1VZELaw43tVvmePK9fnrb2B1XO4soD2qAXPq/UgHszA/lyekpZmS43tSOAbWH2t3HSMbAOJGH1652KaTn8uEtZ/5Nm4tnkRvH8mcQ1VJ0mh5JBNu+1Xbm9gEJi0u7Bz5NJT816WOVGOI+YeFpj7CyrfBy6PYBsj5OZHhry/9Lo0/39itsiMuAjutuDBLn21cfg5vULQ3PXArcVdsKaLZNVy3EimMmqwJhUWtiNO8LnmXBe4gdkiLMrq4Sa6q6dc7pKyGh2jEEcwg5zn5IHvM56zH4SR9RaKdA2yioTjAh38urwervvyp5nAgMCU2F6MdKAlQxu16vntEFQ8DXw1QM7r6g9cw2lOkcltKZs4qK1Mp1Bdf9l99TfXb3lmUXyO0Sp52v//RK2Sj8nGReZT3VoR16diA6M9zZB5No7nrppyugvLatXUAhzeDLsXNnyo0nu5+vTe6jU0SpPBu89l8BoXcSjtObhxRSZuwq5SZhGql6mw6L3uIOsAX+gaDMmbUmViPUP+xONrE6hxILmT6B/zLtKkeIOEDHaBL3xZmwxk/tWdE7WCighT0RlvewuerKUYMFE5hEk4hOE7NrPFwkyhmYcLjY/hLzy9sXatrU6ZJGv4lWXqeV233NKxcQHHxBGrrUKc6vTGka2OdVUN2YnimhFqzplRG6xfx7OF287McW5i4cjEIAxtrUMTMXet+ad2I+x5d73eyXOOoTbSu9R6EHVw4y9VTTlHteU1YggtCuWWwMmPvMVXeP2Sc6Mxeah3AcTzI3jDAWvZKP8P7Iv+p5ioscIc9uo/BaRwA+GB/8oXbM6NeTem0nambZ+aNzBnYCp5e/JOeNHRj/F7vLXOi4FWHtqqWclafCW110+le/lpWMlMyMw9AETTxlO7UEIkvHxD4SZUHgIkdNeXIS39L38OmV+GT50Cqvfnv9jdfR7qalU4rOSAy+NIOKoU3UMnV10eak1WWP+h+O9bP/hw5or+dDH7HyA2/VjKSJBXHMiNIOGzDMcpTD02Qs9wFWqu3pebCm/Is9xK6pGm6suG0lgBahiBZHTNm+TCfm/leR8cM63yIDOpNpyuItIo+S2RmRpEwy4+GZNNJIQpNMdpseaDjDTP6F4vZWHfY35B+VW56JzIYOrLWIOqWNA6btWaLr+XA2537aaPKOln/IoP/qgsRL2bF7nDBT7X4CjaeDs1d8A7o3dOSmdhdryFQalLSqY77OxErHXL/bNozitfRL73wuyZsh2EskcFurc1VsObVwYgoeMuhNe3xQXdncLvrpy+JtXnT6bk9gdl9S9KsRaqfp7aFoSyKNjmHbHGh3rD6+py3fs3JfXt8TVcRhMvgVpv5cTH1yYwGzkcWlN1AjRuPr0BBcioc3PxJsCg6z+IDZe0PDxiklD8Z4uX6kdUWdmDt4WFBbeEysEslWEkbelskr9JQkB4WuOlD+LadoEtlKQi0xkF9mheUm00vYBOJqnsoYIJcu5JXFYsAavIPU6l5x2PUBBiI7PyTsLaq5/j4DymoZUbcOda9B4bjsvPv7KbgaCcwYXCqiKV6ymGYFRl0XYmHun1r6EKStvo1+b6jjgbl9Z4Drmhih03isd2cFi0xpqX+OevEggHztcJzjfw658nHyb9x70/mbGX51YcqBUwI7eErmfmsXBhaRmHsEdlu/DpPozz3jpl33h8TsGoIK0/Uyvu4R35OzFqjYg7l34LZzdlFfNO+vVgtUvt3cPmDmhU5VLkDmgXg8YAwXR1AHZ6b0Hbwir2R3B0og0m0NcP07mwhjm/BjZOLVrh+0+b3AdevSn1+XEHqUQg1PMuAggYn/+GGQEQyEA6ETjL6whLURLwud2xrRm0Y/ga074A+U7WULf+iWkCdi5gDcl37gsw1RzDK2jE1u6Y3GxCWErHS9OE/gkklnB1ianq76nrbazE6h2Saj3wVMZ1h5fHEcNta5d/aJNU72Dx1ttTv6oTBVrgqmzriJjl8YfWGHlqA22019ULrSUq21pi+PK4w+uMPJUeqrsskrjelvpdnZSqXY/5p9UQDYxrDt1wEZd3r+JqIEmg/pq63s7iPfj+r7ATeqC3B2BgAcxKKbF9BN/YjzaIXlDiEnc+zCIQx+4i1u4VHoWpMQHzqpGQ3e4QfOsfKyh9w9B8/a5mvHykJX35EaObvr2v6O67tCX1IvSTsGGzTLlHtzIh2jJ7NiZKuj22aLCQ89ZSLJ4e0ar5+kjTXGqT7TgmPhxPFCx72M3fNyo63al/jqvo8RNdus5feWFErvbGry4TXiI3rVCta9hYPFC17tSi9jC+hnigTaM7Vqo6wKbmMI9bGAm7OxUCCELbZsRZl7QJFEuljh32pP02gUs4zBdTDjEP7WLt3HdYwpH/e8uv4ff3nonlGZpialkCTkMHXZrZwWBa6GJxMxez+VVKNLZiRWSUphDPobdHGc2EcU13LeYSQ+Qo/6SLIr8gwgLzIMyx2GCOBTZUPM9XKO7cCs4DQNZ4/7wg6PcAEJ7xsWZYPQKz0lTyF3a0/VfzXVktGO8c323pGu+C40nKvZh9MsVb04G9oXKZ7AVPc2HgTpux7ZBH77Z7iDChjnS8dt/jcJbFJR4dY2idp+TCKAdxyzjpC+EG9YiHhmorCo8GPOhCSdjY0HXk+9EcD2abh5pqLwrDN78r6zccjaECDxYLqPvw+7Kfbc2+sn3orm//CPzyDziwehGRGm4uoCQkGiihZiqRGmY2UHi8Aoru3t5OjDgpjgUCnBBHvPQ5JiIRwkQHOyeJVIzZ+AUwbgoUIpDDS+d3pdTe1kdMhBgIE/tc+X+oz3S3XASorlt3MhWWoOAw7YIVCtnztBNx3rplq2UVcPKRVjMngMZD+Lmg6kuRqKWHhDa1dPnSpYtFEoz/RygA7e04Dy6S8a0K2aEw9ZYvL9RpQtRZyYlndDz7yuuillZTYC0KSgvkxHmrABG8ox7SDYSzgM3vgKZ01W51hDSZjICYCjJr7looFFTB/69GjIDzMUQzfkw4gwwfVpunwiM/C4akkVPJRUcpCaE3X4W4ZIFAXCFZBIZ339/geDuAsN//2gXHpwPVt9127Z1xlhhg0u07W4iPRp2jTGKwDuQ8t2jD93MgedQkGdSFmaBZh0irVTs3lXxg1OgKYGQ+LmcMGrl/uJtXri/8AQ6RIyiRqxcpF8WiRJSKMq18VCewEJjioAEjFslFYnG0OPLQVNVI/CVUolqoRY3QCKOoE8t1kwq9HogG0aSaYdUy1FuBWPLVVgJYArad+O3ADwYRqx+INl6RrDOABMSlC/+/p8KpF+DJuk0lHvTGV1X7rc4WNqh6ZvhJ1xYDqoqHnZ69/xCnuX8tJ2XJz9tcBuiowcDL6C0baaFuC4IRvSxLsIslBDZwlUTDET1b0mWP/0wPwQE7vljCde3tO1YsFja1BBzUnbKhuCJ2wiqw4Xf6Kkh/TawZ3SDwgPHbGYpVxRsd5t/Rh4qSpm4PS0vkyC0jV4A1MQS4F8AR7L7Bj9De8rNzjXyXeB66AUL//NPHIiCggvHgz3f9yoip/5leTAD8fRkhBvh/aHaj97A5ukA3YIQBAvxtH8Ce3dPhLtM2fXh3lxvg6cAEsm9gGlRIBhmmlgtTFixay3Acaqp+eO31tdjKeGrGm2TNPiS9i/ARjD5ASh9HOKwkzHhKg7DNzP4M2fbIRXmI2oCyowlKJqWSdXM2js1lKKMBCQwde/YM/dNP6Djl2FnpbHIXYmiGPmlFWZeZmk2wOg3THAaPsZiqzySVp+ormXLfjfQiaC1VvQ95Hye9VdFTzEh6RthNSEYHDR8Q/6ATQzYZGYWzAT6Ukzhor2VH3Nuez9E9/nN++HOVFFkDmAF16blcj/MrW5ATpB8ZSwhcPUngqVJCj44MP446haO/Y4pG2EcQ5XRu7ZHBSsoDkc/DF1gADnBJ2xtKUzLixlj07dVJLIeW4yGBdVFCVKeRNcLxNrfYzfa2rC3Z5kQTkuLyUfj+32vCpPMeIGBZmQDZFZmPqurjMwtLl+ggQMLBHLAMB0LCsaQsMNwAYhEqErgyqf9wgo0jRauWaw6lzqUssEgNRbpOlUILLG6WU5tN7bGC5s1DWWoJjjLxjy030wwAAA==) format(\"woff2\")}" +
@@ -580,6 +619,7 @@ export default function LoupeCuratorLanding({
     pileOn: false,
     pileTop: 0,
     sw: 0,
+    l2dx: 0, // half the width difference of the two halves of hero line 2
     user: false,
     spawn: 0,
     z: 100,
@@ -615,6 +655,15 @@ export default function LoupeCuratorLanding({
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast((t) => ({ ...t, on: false })), 2600)
   }
+
+  // decode the team photos up front so hovering a card swaps instantly
+  useEffect(() => {
+    TEAM.forEach((m) => {
+      const im = new Image()
+      im.src = "/img/team-" + m.key + ".jpg"
+      im.decode?.().catch(() => {})
+    })
+  }, [])
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return
@@ -662,7 +711,7 @@ export default function LoupeCuratorLanding({
         st.clock += dt / 1000
         again = true
       }
-      const fade = 1 - span(p, [0.16, 0.28])
+      const fade = 1 - span(p, [0.1, 0.175])
       const cam = span(p, INTRO.fly) * FIELD.travel + st.clock * FIELD.idle
       const tw = st.tw
       st.thumbs.forEach((el, j) => {
@@ -683,12 +732,27 @@ export default function LoupeCuratorLanding({
       put(I, "--l1", l1.toFixed(3))
       put(e.l1, "filter", l1 > 0 && l1 < 1 ? "blur(" + (l1 * 10).toFixed(1) + "px)" : "none")
       const w0 = Math.min(W * 0.14, 190)
-      const b = zoomBox(span(p, INTRO.open), span(p, INTRO.grow), W, H, w0, w0 * 0.62)
+      // grow -> (team) -> shrink back to the small window -> regrow (room photo)
+      const g1 = span(p, INTRO.grow)
+      const op = clamp01(span(p, INTRO.open) - span(p, INTRO.close) + span(p, INTRO.reopen))
+      const b = zoomBox(op, clamp01(g1 - span(p, INTRO.shrink) + span(p, INTRO.regrow)), W, H, w0, w0 * 0.62)
+      const bWords = zoomBox(span(p, INTRO.open), g1, W, H, w0, w0 * 0.62)   // the headline stays pushed out
       put(e.portrait, "clipPath", insetOf(b, W, H))
       put(e.portrait, "visibility", b.w < 1 ? "hidden" : "visible")
       put(e.portrait, "transform", "translate3d(0," + (-span(p, [coverAt(TRACK.intro), 1]) * H * 0.32).toFixed(1) + "px,0)")
       put(e.portraitIn, "transform", "scale(" + coverScale(b, W, H).toFixed(4) + ")")
-      put(I, "--g", b.w.toFixed(1) + "px")
+      put(I, "--g", bWords.w.toFixed(1) + "px")
+      // keep the headline centered while the gap is closed; drift back to the true center as it opens
+      put(e.l2, "transform", "translate(" + (st.l2dx * (1 - smooth(span(p, INTRO.open)))).toFixed(1) + "px,-50%)")
+      // swap team -> room while the window is at its smallest
+      const tm = p < INTRO.close[1] ? 1 : 0   // the window is closed in between, so just swap
+      put(I, "--tm", tm.toFixed(3))
+      put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
+      put(e.team, "visibility", tm > 0.001 ? "visible" : "hidden")
+      const pa = span(p, INTRO.para), po = 1 - span(p, INTRO.paraOut)
+      put(e.para, "--t", pa.toFixed(3))
+      put(e.para, "opacity", (Math.min(span(p, [INTRO.close[1], INTRO.para[0] + 0.01]), po)).toFixed(3))
+      put(e.team, "pointerEvents", tm > 0.5 && span(p, INTRO.teamIn) > 0.5 ? "auto" : "none")
       put(I, "--cap", span(p, INTRO.caption).toFixed(3))
       put(I, "--capo", (1 - span(p, INTRO.captionOut)).toFixed(3))
       const c = span(p, INTRO.callouts)
@@ -724,7 +788,7 @@ export default function LoupeCuratorLanding({
     }
 
     // 3 · giant words over the lime sweep
-    if (seen("words")) {
+    if (st.words.length && seen("words")) {   // section removed from the deck; kept guarded
       const q = clamp01((H - at("words")) / H)
       const p = st.still ? 0.4 : pin("words")
       const n = st.words.length
@@ -848,9 +912,11 @@ export default function LoupeCuratorLanding({
       st.H = stage ? stage.clientHeight : window.innerHeight
       for (const k of ["intro", "mani", "grid", "words", "zoom", "pile", "foot"]) {
         const el = els.current[k] as HTMLElement | null
-        st.off[k] = el ? el.offsetTop : 0
+        st.off[k] = el ? el.offsetTop : 0   // (measured per section)
         st.len[k] = el ? el.offsetHeight : 0
       }
+      const wl = els.current.wl as HTMLElement | null, wr = els.current.wr as HTMLElement | null
+      st.l2dx = wl && wr ? (wl.offsetWidth - wr.offsetWidth) / 2 : 0
       st.thumbs = Array.from(root.querySelectorAll("[data-th]")) as El[]
       st.tw = st.thumbs[0] ? (st.thumbs[0] as HTMLElement).offsetWidth : 120
       st.words = Array.from(root.querySelectorAll("[data-word]")) as El[]
@@ -927,11 +993,13 @@ export default function LoupeCuratorLanding({
     const st = s.current
     const base = absTop()
     const stops = [
-      base + st.off.intro + 0.4 * travel("intro"),
-      base + st.off.intro + 0.72 * travel("intro"),
+      base + st.off.intro + 0.34 * travel("intro"),
+      base + st.off.intro + 0.54 * travel("intro"),
+      base + st.off.intro + 0.7 * travel("intro"),
+      base + st.off.intro + 0.84 * travel("intro"),
       base + st.off.mani + st.H,
       base + st.off.grid + st.H * 0.3,
-      base + st.off.words + 0.45 * travel("words"),
+      ...(st.len.words ? [base + st.off.words + 0.45 * travel("words")] : []),
       base + st.off.zoom + 0.06 * travel("zoom"),
       base + st.off.zoom + drumHold(0, COLLECTIONS.length) * travel("zoom"),
       base + st.off.pile + 0.3 * travel("pile"),
@@ -1089,6 +1157,7 @@ export default function LoupeCuratorLanding({
 
       {/* 1 · intro: the photo field, the gap, the curator */}
       <section className="lcl-track" ref={reg("intro")} style={{ "--len": TRACK.intro } as CSSProperties}>
+        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.34).toFixed(2) + ")" } as CSSProperties} />
         <div className="lcl-stage" ref={reg("introStage")}>
           {FIELD_KINDS.map((k, j) => (
             <div key={j} className="lcl-th" data-th="">
@@ -1096,12 +1165,33 @@ export default function LoupeCuratorLanding({
             </div>
           ))}
           <h1 className="lcl-h1 lcl-l1">
-            <span ref={reg("l1")}>{words("Real furniture", 0.1, 0.16)}</span>
+            <span ref={reg("l1")}>{words("Dream about the space", 0.1, 0.16)}</span>
           </h1>
-          <p className="lcl-h1 lcl-l2">
-            <span className="lcl-wl">{words("for your actual", 0.85, 0.16)}</span>
-            <span className="lcl-wr">{words("room", 1.2, 0)}</span>
+          <p className="lcl-h1 lcl-l2" ref={reg("l2")}>
+            <span className="lcl-wl" ref={reg("wl")}>{words("and Elephant makes it", 0.85, 0.16)}</span>
+            <span className="lcl-wr" ref={reg("wr")}>{words("come true", 1.45, 0.16)}</span>
           </p>
+          {/* the manifesto, between the team and the room photo */}
+            <p className="lcl-para lcl-para-in" ref={reg("para")} style={{ "--n": inkN, opacity: 0 } as CSSProperties}>
+              {paraWords.map((w, i) => (
+                <span key={"a" + i} className="lcl-ink" style={{ "--i": i } as CSSProperties}>
+                  {w}{" "}
+                </span>
+              ))}
+              <span className="lcl-box" style={{ "--i": paraWords.length + boxWords.length - 1 } as CSSProperties}>
+                {boxWords.map((w, i) => (
+                  <span key={"b" + i} className="lcl-ink" style={{ "--i": paraWords.length + i } as CSSProperties}>
+                    {w}
+                    {i < boxWords.length - 1 ? " " : ""}
+                  </span>
+                ))}
+              </span>{" "}
+              {tailWords.map((w, i) => (
+                <span key={"c" + i} className="lcl-ink" style={{ "--i": paraWords.length + boxWords.length + i } as CSSProperties}>
+                  {w}{" "}
+                </span>
+              ))}
+            </p>
           <div className="lcl-full" ref={reg("portrait")} data-v="v0" style={{ clipPath: "inset(50%)" }}>
             <div className="lcl-zin" ref={reg("portraitIn")}>
               {CURATORS.map((cu, k) => (
@@ -1110,9 +1200,24 @@ export default function LoupeCuratorLanding({
                 </div>
               ))}
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
+              <div className="lcl-tm" ref={reg("team")}>
+                <span className="lcl-mono lcl-tm-label">Meet the team</span>
+                <h2 className="lcl-tm-title">The people behind {brand}</h2>
+                <div className="lcl-tm-row">
+                  {TEAM.map((m, k) => (
+                    <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
+                      <span className="lcl-tm-fig">
+                        <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
+                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
+                      </span>
+                      <b>{m.name}</b>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
-            <p className="lcl-cap" style={{ "--n": 42 } as CSSProperties} aria-label="316 real products. Real sizes, real prices">
-              {letters("316 real products. Real sizes, real prices", "cap")}
+            <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="316 real products plus your own. Real sizes and real prices.">
+              {letters("316 real products plus your own. Real sizes and real prices.", "cap")}
             </p>
             <div className="lcl-co" ref={reg("callouts")}>
               <svg className="lcl-vx" aria-hidden="true">
@@ -1152,28 +1257,8 @@ export default function LoupeCuratorLanding({
         </div>
       </section>
 
-      {/* 2 · manifesto, slides over the pinned curator */}
+      {/* 2 · the picks column, slides over the pinned intro (the manifesto moved into the intro) */}
       <section className="lcl-mani" ref={reg("mani")}>
-        <p className="lcl-para" style={{ "--n": inkN } as CSSProperties}>
-          {paraWords.map((w, i) => (
-            <span key={"a" + i} className="lcl-ink" style={{ "--i": i } as CSSProperties}>
-              {w}{" "}
-            </span>
-          ))}
-          <span className="lcl-box" style={{ "--i": paraWords.length + boxWords.length - 1 } as CSSProperties}>
-            {boxWords.map((w, i) => (
-              <span key={"b" + i} className="lcl-ink" style={{ "--i": paraWords.length + i } as CSSProperties}>
-                {w}
-                {i < boxWords.length - 1 ? " " : ""}
-              </span>
-            ))}
-          </span>{" "}
-          {tailWords.map((w, i) => (
-            <span key={"c" + i} className="lcl-ink" style={{ "--i": paraWords.length + boxWords.length + i } as CSSProperties}>
-              {w}{" "}
-            </span>
-          ))}
-        </p>
         <div className="lcl-col">{PICKS.map((it, k) => card(it, "pick" + k, k === PICKS.length - 1 ? "flySrc" : undefined))}</div>
       </section>
 
@@ -1197,29 +1282,6 @@ export default function LoupeCuratorLanding({
               {GRID.map((it, i) => (i % 4 === cIdx ? card(it, "grid" + i, i === 0 ? "flyDst" : undefined) : null))}
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* 3 · keep good company */}
-      <section className="lcl-track lcl-words" ref={reg("words")} style={{ "--len": TRACK.words } as CSSProperties}>
-        <div className="lcl-stage">
-          <div className="lcl-sweep" ref={reg("sweep")} />
-          <div className="lcl-wclip">
-            <div className="lcl-wcol" ref={reg("wcol")}>
-              {BIG_WORDS.map(([w, x], k) => (
-                <h2 key={w} className="lcl-big" data-word="" style={{ top: "calc(var(--h) * " + k * WORDS.gap + ")", "--x": x } as CSSProperties}>
-                  <span>
-                    {letters(w, "w" + k)}
-                    {k === BIG_WORDS.length - 1 && (
-                      <svg className="lcl-doodle" viewBox="0 0 40 40" aria-hidden="true">
-                        <path pathLength={1} d="M8 30C4 22 10 10 20 9C30 8 35 18 29 24C24 29 15 25 17 19C19 13 27 15 26 20M30 6L34 2M36 12L39 10" />
-                      </svg>
-                    )}
-                  </span>
-                </h2>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -1320,7 +1382,7 @@ export default function LoupeCuratorLanding({
             <span className="lcl-flinks">
               <a href="https://github.com/chloewantsleep/the-elephant-in-the-room-aec-hackathon-nyc-2026#the-pipeline" data-cursor="Open">Pipeline</a>
               <a href="https://github.com/chloewantsleep/the-elephant-in-the-room-aec-hackathon-nyc-2026/tree/main/data" data-cursor="Open">Dataset</a>
-              <a href="https://github.com/chloewantsleep/the-elephant-in-the-room-aec-hackathon-nyc-2026#work-plan" data-cursor="Open">Team</a>
+              <a href="#team" data-cursor="Open">Team</a>
             </span>
             <span className="lcl-flinks">
               <ActionEl a={signInAction} label="Sign in" className="lcl-btn lcl-mono" cursor="Sign in" />
