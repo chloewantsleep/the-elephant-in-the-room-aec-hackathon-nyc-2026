@@ -40,6 +40,32 @@ After a render, each new product is found in the picture (`/api/track`), cropped
 
 ## Pitch deck
 
+### Local render model testing
+
+The root `.env` groups all rendering settings together:
+
+```dotenv
+AI_RENDER_ENABLED=true
+AI_RENDER_DEMO_CACHE_ONLY=true
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
+GEMINI_RECOLOR_MODEL=gemini-3.1-flash-image
+GEMINI_SWAP_MODEL=gemini-3.1-flash-image
+GEMINI_PLACE_MODEL=gemini-3.1-flash-image
+```
+
+`AI_RENDER_ENABLED` sets the initial state of the existing top-right AI renders toggle.
+Set `AI_RENDER_DEMO_CACHE_ONLY=false` to allow fresh renders of the sample lounge.
+The four model settings independently control the full room, color previews, similar-product previews,
+and sketch placement. For example, set only `GEMINI_RECOLOR_MODEL=gemini-3.1-flash-lite-image`
+to compare cheaper color previews. Changing a model uses a separate cache key; unchanged requests
+still reuse saved results. The sample lounge's baked base image can still be reused.
+
+Run `python server.py` and open `http://localhost:8000/app/`; refresh after editing `.env`
+(the local server reloads it automatically). `http://localhost:8000/api/render` shows the active
+models and defaults without exposing credentials. `#live=0` / `#live=1` overrides the initial toggle;
+`#newrenders=1` overrides demo cache-only mode. For Vercel, set the same environment variables
+in the project and redeploy; local `.env` changes apply locally.
+
 **https://elephant-pitch.vercel.app**. A scroll-driven pitch built from `deck/` (its own Vercel project, root directory `deck/`). See [`deck/README.md`](deck/README.md).
 
 ## Live site (Vercel)

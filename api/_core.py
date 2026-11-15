@@ -44,6 +44,18 @@ def load_env():
 load_env()
 KEY = os.environ.get("GEMINI_API_KEY", "")
 MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
+RECOLOR_MODEL = os.environ.get("GEMINI_RECOLOR_MODEL", MODEL)
+SWAP_MODEL = os.environ.get("GEMINI_SWAP_MODEL", MODEL)
+PLACE_MODEL = os.environ.get("GEMINI_PLACE_MODEL", MODEL)
+
+
+def render_config():
+    """Public render settings only; never expose API keys or other environment values."""
+    return {
+        "aiEnabled": os.environ.get("AI_RENDER_ENABLED", "true").lower() in ("true", "1", "yes"),
+        "demoCacheOnly": os.environ.get("AI_RENDER_DEMO_CACHE_ONLY", "true").lower() in ("true", "1", "yes"),
+        "models": {"render": MODEL, "recolor": RECOLOR_MODEL, "swap": SWAP_MODEL, "place": PLACE_MODEL},
+    }
 
 
 def gemini(path, body=None, timeout=180):
@@ -272,13 +284,17 @@ CATEGORY_LIST = ("sofa, armchair, bed, dining_table, coffee_table, side_table, d
 
 
 # prompt versions of saved results from before later prompt edits (demo uses them in cache-only mode)
-LEGACY_CODE = {"recolor": ("2ff1df8299",), "swap": ("811b4881e9",)}
+LEGACY_CODE = {"recolor": ("2ff1df8299", "483cfef99a"), "swap": ("811b4881e9",)}   # 483cfef99a: before the size/shape rule
+# source versions with the same prompts as now (only the model setting moved to GEMINI_SWAP_MODEL / GEMINI_PLACE_MODEL)
+SAME_PROMPT = {"swap": ("75b10780f0",), "place": ("b41099e24f",)}
+# the model every saved demo result was made with, before GEMINI_RECOLOR_MODEL etc. could differ
+LEGACY_MODELS = ("gemini-3.1-flash-image",)
 DEMO_CACHE = os.path.join(ROOT, "demo-cache")   # saved results shipped with the repo for the demo (read-only)
 
 
 def saved(name):
-    """A saved result: this machine's cache first, then the demo results in the repo. None if neither has it."""
-    for folder in (os.path.join(RENDERS, "cache"), DEMO_CACHE):
+    """A saved result: the demo results in the repo first (they may be fixed by hand), then this machine's cache."""
+    for folder in (DEMO_CACHE, os.path.join(RENDERS, "cache")):
         path = os.path.join(folder, name)
         if os.path.exists(path):
             return path
@@ -288,27 +304,101 @@ def saved(name):
 NOT_CACHED = "Not rendered before (demo: only sketches make new renders; add #newrenders=1 to the page URL to allow all)"
 
 
+def jpeg_size(data_url):
+    """(width, height) of a JPEG data URL, read from its header. None if it isn't one."""
+    try:
+        b = base64.b64decode(data_url.split(",", 1)[1][:8000] + "==")
+    except Exception:
+        return None
+    i = 2
+    while i + 9 < len(b):
+        if b[i] != 0xFF:
+            return None
+        marker, length = b[i + 1], int.from_bytes(b[i + 2:i + 4], "big")
+        if marker in (0xC0, 0xC1, 0xC2):
+            return int.from_bytes(b[i + 7:i + 9], "big"), int.from_bytes(b[i + 5:i + 7], "big")
+        i += 2 + length
+    return None
+
+
+# Demo index: the same crop re-encoded by another browser (or Chrome version) has other bytes, so its hash misses.
+# Recolor / swap results are also listed by what they show (product, colors, the crop's pixel size); the demo
+# (cache_only) finds them by that. demo-cache/demo-index.json ships with the repo, renders/cache/ adds new ones.
+INDEXED = ("recolor", "swap")
+
+
+def index_key(kind, payload):
+    size = jpeg_size(payload.get("crop") or "")
+    if kind not in INDEXED or not size:
+        return None
+    return "|".join(str(x) for x in (kind, payload.get("name"), payload.get("from_variant"), payload.get("to_name") or "",
+                                      payload.get("to_variant"), "%dx%d" % size))
+
+
+def demo_index(folder):
+    try:
+        with open(os.path.join(folder, "demo-index.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def from_index(ikey):
+    for folder in (DEMO_CACHE, os.path.join(RENDERS, "cache")):
+        name = demo_index(folder).get(ikey)
+        path = name and saved(name)
+        if path:
+            with open(path) as f:
+                return {**json.load(f), "cached": True}
+    return None
+
+
+def add_to_index(ikey, name):
+    folder = os.path.join(RENDERS, "cache")
+    idx = demo_index(folder)
+    if ikey and idx.get(ikey) != name:
+        idx[ikey] = name
+        os.makedirs(folder, exist_ok=True)
+        with open(os.path.join(folder, "demo-index.json"), "w", encoding="utf-8") as f:
+            json.dump(idx, f, indent=1, sort_keys=True, ensure_ascii=False)
+
+
 def cached(kind, payload, fn, cache_only=False):
     """Same input -> same answer, without paying again. cache_only: never call the model, only return a saved answer."""
     key = hashlib.sha1((kind + json.dumps(payload, sort_keys=True)).encode()).hexdigest()[:16]
     path = os.path.join(RENDERS, "cache", f"{kind}-{key}.json")
     hit = saved(f"{kind}-{key}.json")
+    ikey = index_key(kind, payload)
     if hit and not payload.get("fresh"):
         with open(hit) as f:
             return {**json.load(f), "cached": True}
+    def older(codes, models):
+        for code in codes:
+            for m in models:
+                old = hashlib.sha1((kind + json.dumps({**payload, "code": code, "m": m}, sort_keys=True)).encode()).hexdigest()[:16]
+                old_path = saved(f"{kind}-{old}.json")
+                if old_path:
+                    with open(old_path) as f:
+                        return {**json.load(f), "cached": True}
+    if not payload.get("fresh") and "code" in payload:
+        # the same prompt saved under the source before the per-step model settings: always the same answer
+        hit = older(SAME_PROMPT.get(kind, ()), (payload.get("m"),))
+        if hit:
+            return hit
     if cache_only:
-        # demo: results made before a prompt edit are saved under the older prompt version; use them too
-        for code in LEGACY_CODE.get(kind, ()):
-            old = hashlib.sha1((kind + json.dumps({**payload, "code": code}, sort_keys=True)).encode()).hexdigest()[:16]
-            old_path = saved(f"{kind}-{old}.json")
-            if old_path:
-                with open(old_path) as f:
-                    return {**json.load(f), "cached": True}
+        # demo: results made before a prompt edit (or with the earlier model) are saved under those; use them too
+        hit = older((payload.get("code"), *SAME_PROMPT.get(kind, ()), *LEGACY_CODE.get(kind, ())), (payload.get("m"), *LEGACY_MODELS))
+        if hit:
+            return hit
+        hit = ikey and from_index(ikey)
+        if hit:
+            return hit
         raise RuntimeError(NOT_CACHED)
     out = fn()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(out, f)
+    add_to_index(ikey, os.path.basename(path))
     return out
 
 
@@ -530,7 +620,8 @@ def make_handler(fn):
             self.wfile.write(body)
 
         def do_GET(self):
-            self._json(200, {"key": bool(KEY), "model": MODEL, "passcode": bool(os.environ.get("DEMO_PASSCODE"))})
+            self._json(200, {"key": bool(KEY), "model": MODEL, "passcode": bool(os.environ.get("DEMO_PASSCODE")),
+                             "renderConfig": render_config()})
 
         def do_POST(self):
             if not passcode_ok(self.headers):
@@ -643,8 +734,6 @@ def track(req):
     return cached("track", {"image": req["image"], "items": req["items"], "m": TEXT_MODEL, "code": code_version(locate)}, run, req.get("cache_only"))
 
 
-RECOLOR_MODEL = os.environ.get("GEMINI_RECOLOR_MODEL", MODEL)
-
 
 def recolor(req):
     """req = {crop (data URL), aspect ('4:3'…), name, category, from_variant, to_variant, to_image}
@@ -668,6 +757,9 @@ def recolor(req):
             " same camera, same overall brightness, contrast and color temperature as IMAGE 1.\n"
             "- The product keeps its exact outline, shape, geometry and position; every edge where it meets the"
             " background stays in exactly the same place.\n"
+            "- SIZE AND SHAPE DO NOT CHANGE AT ALL: the same width, height, depth and proportions, the same parts"
+            " and details in the same places (nothing added, removed or rearranged). Take ONLY the color / material"
+            " from IMAGE 2, never its shape, size, pose or configuration, even where IMAGE 2's product looks different.\n"
             "- The new color is lit by the same room light as in IMAGE 1: keep the product's existing highlights,"
             " shading, folds and texture, only change its hue/material, so it blends seamlessly into the photo.\n"
             "- Output the whole crop at the same size and aspect ratio as IMAGE 1, no border, no text.")
@@ -710,11 +802,11 @@ def swap(req):
             "- Output the whole crop at the same size and aspect ratio as IMAGE 1, no border, no text.")
         parts = [{"text": prompt}, {"text": "IMAGE 1 (crop):"}, image_part(req["crop"]),
                  {"text": "IMAGE 2 (new product):"}, image_part(req["to_image"])]
-        return {"image": _image_call(RECOLOR_MODEL, parts, req.get("aspect")), "model": RECOLOR_MODEL,
+        return {"image": _image_call(SWAP_MODEL, parts, req.get("aspect")), "model": SWAP_MODEL,
                 "ms": int((time.time() - t0) * 1000)}
 
     key = {k: req.get(k) for k in ("crop", "aspect", "name", "category", "from_variant", "to_name", "to_variant", "to_image", "to_dims")}
-    return cached("swap", {**key, "m": RECOLOR_MODEL, "code": code_version(swap, _image_call, orientation_rule), "fresh": req.get("fresh")}, run, req.get("cache_only"))
+    return cached("swap", {**key, "m": SWAP_MODEL, "code": code_version(swap, _image_call, orientation_rule), "fresh": req.get("fresh")}, run, req.get("cache_only"))
 
 
 def place(req):
@@ -753,11 +845,11 @@ def place(req):
         parts = [{"text": prompt}, {"text": "IMAGE 1 (crop):"}, image_part(req["crop"]),
                  {"text": "IMAGE 2 (where to put it):"}, image_part(req["guide"]),
                  {"text": "IMAGE 3 (the product):"}, image_part(req["image"])]
-        return {"image": _image_call(RECOLOR_MODEL, parts, req.get("aspect")), "model": RECOLOR_MODEL,
+        return {"image": _image_call(PLACE_MODEL, parts, req.get("aspect")), "model": PLACE_MODEL,
                 "ms": int((time.time() - t0) * 1000)}
 
     key = {k: req.get(k) for k in ("crop", "guide", "aspect", "name", "variant", "category", "image", "dims_in", "target")}
-    return cached("place", {**key, "m": RECOLOR_MODEL, "code": code_version(place, _image_call, orientation_rule), "fresh": req.get("fresh")}, run)
+    return cached("place", {**key, "m": PLACE_MODEL, "code": code_version(place, _image_call, orientation_rule), "fresh": req.get("fresh")}, run)
 
 
 def cached_render(req):

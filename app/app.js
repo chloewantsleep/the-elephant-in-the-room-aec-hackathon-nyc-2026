@@ -279,8 +279,12 @@ function demoOption(k) {
 function testScene() {
   const cats = new Set(TEST_SET.map(t => t.cat));
   return [...keptPieces().filter(e => !cats.has(e.category)).map(ownedItem),
-          ...TEST_SET.filter(t => byId[t.pid]).map(t => ({ cat: t.cat, qty: 1, pid: t.pid, vid: null, pos: [50, 50], place: t.place }))];
+          ...TEST_SET.filter(t => byId[t.pid]).map(t => ({ cat: t.cat, qty: 1, pid: t.pid, vid: null, pos: [50, 50], place: t.place,
+            ...(demoRoom() && DEMO_AT[t.cat] ? { at: DEMO_AT[t.cat].slice() } : {}) }))];
 }
+// label spots on the sample lounge before the render is checked: where its saved tracking finds each piece (same values
+// prepareVariants sets later), so the labels don't all start in the middle of the picture
+const DEMO_AT = { coffee_table: [67.9, 72], sofa: [53.3, 65.2], armchair: [87.8, 76.8], rug: [66.5, 83.8], pendant_lamp: [68.3, 25.8] };
 
 /* ---------------- cabinet runs: a drawn line -> real modules that fill its length ----------------
  * Base cabinets are sold in modules (12", 15", ... 36" wide). A run of a given length is filled with the fewest
@@ -596,8 +600,11 @@ async function renderScene(manual = false) {
     }, 700);
     return;
   }
-  if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); prepareVariants(); return; }
-  if (demoRoom() && isDemoDerived(S.scene)) {
+  // the demo's options are always put together again from its saved looks (instant once loaded), never from a picture
+  // stored before a look (e.g. the sofa's own fixed picture) had finished loading
+  const demoScene = demoRoom() && isDemoDerived(S.scene);
+  if (S.renders[sig] && !demoScene) { rememberRender(sig, S.renders[sig]); S.before = false; render(); prepareVariants(); return; }
+  if (demoScene) {
     S.rendering = true; S.before = false; render();
     try { await demoCompose(); } catch (e) { toast(e.message.slice(0, 120)); }
     finally { S.rendering = false; render(); if (renderQueued) { renderQueued = false; renderScene(manual); } }
@@ -676,6 +683,47 @@ async function showOnPhoto(rsImg) {   // render-space picture -> the same pictur
   shownOf.set(rsImg, shown); rsOf.set(shown, rsImg);
   return shown;
 }
+// a piece's crop on the full photo (the demo render pasted on it); box stays in the render's own space
+async function wideCrop(base, box) {
+  const m = [box[0], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * box[1]), box[2], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * box[3])];
+  const soft = await Variants.cropForRecolor(await showOnPhoto(base), m);   // where it sits on the shown picture
+  const hard = await Variants.cropForRecolor(await hardOnPhoto(base), m);   // sent to Gemini: no faded seam to copy
+  return { ...soft, dataUrl: hard.dataUrl, box, wide: true };
+}
+// a finished crop picture -> an overlay that is the whole picture, only its edges feathered into the photo
+async function wholePatch(crop, src) {
+  const im = new Image(); im.src = src; await im.decode();
+  const w = crop.full.width, h = crop.full.height, c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); g.drawImage(im, 0, 0, w, h);
+  const f = Math.max(2, Math.min(w, h) * 0.04);
+  g.globalCompositeOperation = "destination-in";
+  for (const [x0, y0, x1, y1] of [[0, 0, f, 0], [w, 0, w - f, 0], [0, 0, 0, f], [0, h, 0, h - f]]) {
+    const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,1)");
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  }
+  return { canvas: c, rect: crop.rect, wide: true };
+}
+const sofaIndex = run => Object.keys(run.items).find(i => run.items[i].crop?.wide);
+// the sofa picture with holes where other pieces' new looks (render space) are, so a changed table or rug still shows
+async function cutOut(removal, overlays, run) {
+  if (!overlays.length) return removal;
+  const e = run.items[sofaIndex(run)], im = new Image(); im.src = run.base; await im.decode();
+  const sx = DEMO_SPACE.w * e.crop.W / im.naturalWidth, sy = DEMO_SPACE.h * e.crop.H / im.naturalHeight;
+  const c = document.createElement("canvas"); c.width = removal.canvas.width; c.height = removal.canvas.height;
+  const g = c.getContext("2d"); g.drawImage(removal.canvas, 0, 0); g.globalCompositeOperation = "destination-out";
+  for (const o of overlays) g.drawImage(o.canvas, DEMO_SPACE.x * e.crop.W + o.rect.x * sx - removal.rect.x, DEMO_SPACE.y * e.crop.H + o.rect.y * sy - removal.rect.y, o.rect.w * sx, o.rect.h * sy);
+  return { ...removal, canvas: c };
+}
+// the render pasted onto the full photo without the feathered seam (only used as Gemini's input for wideCrop)
+async function hardOnPhoto(rsImg) {
+  const load = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+  const [ph, im] = await Promise.all([load(photoSrc()), load(rsImg)]);
+  const c = Object.assign(document.createElement("canvas"), { width: ph.naturalWidth, height: ph.naturalHeight }), g = c.getContext("2d");
+  g.drawImage(ph, 0, 0);
+  g.drawImage(im, Math.round(DEMO_SPACE.x * c.width), Math.round(DEMO_SPACE.y * c.height), Math.round(DEMO_SPACE.w * c.width), Math.round(DEMO_SPACE.h * c.height));
+  return c.toDataURL("image/jpeg", 0.93);
+}
+let SOFA_WIDE_NEW = false;   // #sofawide=1: render the sofa's full-photo looks again (new AI calls); otherwise from demo-cache
 const VARIANT_MAX = 4;   // colors per product, including the one it was rendered in (also the swatches shown)
 const SIMILAR_MAX = 4;   // similar products listed per piece (also prepared, default color only)
 // V = {base: render image the crops come from, scene: what that render shows, items: {slot index: {pid, from, fromName,
@@ -721,8 +769,9 @@ const variantsCover = (scene = S.scene) => !!V && !!scene && scene.length === V.
 const colorsReady = () => variantsCover() && S.scene.every((it, i) => ["same", "ready"].includes(lookState(it, i).s));
 
 const REPAIR_MAX = 2;   // extra edit renders to add products the render left out
-async function prepareVariants(depth = 0) {
-  const L = lastRender();
+// L0 / quiet: prepare a picture that isn't on screen yet (demoWarm): no "checking" state or toast
+async function prepareVariants(depth = 0, L0 = null, quiet = false) {
+  const L = L0 || lastRender();
   if (!L?.real || !(S.live || MOCK_VARIANTS || demoRoom()) || V?.base === renderSpace(L.image) || (L.fromVariants && V)) return;
   // L.items = exactly what this render shows (the scene may have been edited since)
   const base = renderSpace(L.image), mapped = base !== L.image;   // mapped: shown on the full photo (demo render)
@@ -736,8 +785,10 @@ async function prepareVariants(depth = 0) {
   // every new product is tracked (labels move onto it); then its colors and similar products are prepared
   const todo = L.items.map((it, i) => ({ it, i })).filter(({ it }) => !it.own && byId[it.pid]);
   if (!todo.length) return;
-  S.verifying = true; renderHotspots();   // no product labels until we've checked each one is really in the picture
-  if (!MOCK_VARIANTS) toast("Checking that every product is in the picture…");
+  if (!quiet) {
+    S.verifying = true; renderHotspots();   // no product labels until we've checked each one is really in the picture
+    if (!MOCK_VARIANTS) toast("Checking that every product is in the picture…");
+  }
   try {
     // where everything is already known (the other pieces from the last picture, a sketched piece where it was
     // drawn), skip tracking: labels show right away and nothing is paid
@@ -811,8 +862,13 @@ async function prepareVariants(depth = 0) {
       }
       fresh.add(i);
       const p = byId[it.pid], from = it.vid || null;
-      const entry = run.items[i] = { pid: it.pid, from, fromName: view(it).variant, crop: await Variants.cropForRecolor(run.base, boxes[k]),
+      const wide = demoRoom() && run.mapped && it.cat === "sofa";   // only the saved sample-lounge demo; real AI renders keep the usual crop
+      const entry = run.items[i] = { pid: it.pid, from, fromName: view(it).variant,
+                                     crop: wide ? await wideCrop(run.base, boxes[k]) : await Variants.cropForRecolor(run.base, boxes[k]),
                                      looks: { ["c:" + vkey(from)]: { status: "done" } } };
+      // the demo sofa touches the render's left edge, where the paste onto the full photo fades it: its looks are made
+      // on the full photo instead, and its own look is redrawn there too (a layer), so its left end stays sharp
+      if (wide) jobs.push({ i, entry, key: "layer", color: colorChoices(p).find(c => c.id === from), cat: it.cat });
       for (const c of colorChoices(p).filter(c => c.id !== from)) {
         entry.looks["c:" + vkey(c.id)] = { status: "queued" };
         jobs.push({ i, entry, key: "c:" + vkey(c.id), color: c, cat: it.cat });
@@ -823,7 +879,11 @@ async function prepareVariants(depth = 0) {
       }
     }
     // the piece you're looking at first, then pieces that are new in this picture (e.g. a sketch), colors before similar products
-    jobs.sort((a, b) => (b.i === S.sel) - (a.i === S.sel) || fresh.has(b.i) - fresh.has(a.i) || !!a.swap - !!b.swap);
+    // looks that a design option shows come first (demo: options 2 and 3 switch at once), the sofa's own picture first of all
+    const shown = new Set();
+    for (const o of S.options || []) o.items?.forEach((it, i) => { const e = run.items[i], k = e && lookKey(e, it); if (k) shown.add(i + "|" + k); });
+    const need = j => j.key === "layer" ? 2 : shown.has(j.i + "|" + j.key) ? 1 : 0;
+    jobs.sort((a, b) => need(b) - need(a) || (b.i === S.sel) - (a.i === S.sel) || fresh.has(b.i) - fresh.has(a.i) || !!a.swap - !!b.swap);
     await runJobs(run, jobs);
   } catch (e) {
     if (V === run) toast("Color previews unavailable: " + e.message.slice(0, 90));
@@ -837,9 +897,9 @@ async function runJobs(run, jobs) {
   const worker = async () => {
     for (let j; (j = jobs.shift());) {
       if (V !== run) return;
-      const look = j.entry.looks[j.key];
+      const look = j.key === "layer" ? (j.entry.layerLook ||= {}) : j.entry.looks[j.key];
       const from = { name: byId[j.entry.pid].name, category: CAT_LABEL[j.cat], variant: j.entry.fromName };
-      const api = cacheOnly(!!run.scene[j.i]?.sketched);
+      const api = cacheOnly(!!run.scene[j.i]?.sketched || (j.entry.crop.wide && SOFA_WIDE_NEW));
       look.status = "loading";
       try {
         if (j.prefetch) {   // made together with the sketch (placeSketched)
@@ -852,15 +912,20 @@ async function runJobs(run, jobs) {
           ? await Variants.swap({ crop: j.entry.crop, product: from, api, mock: MOCK_VARIANTS,
               to: { name: j.swap.name, variant: j.swap.variant, image: j.swap.images.main_local || j.swap.images.main, dims_in: j.swap.dims_in } })
           : await Variants.recolor({ crop: j.entry.crop, colorway: j.color, product: from, api, mock: MOCK_VARIANTS });
-        look.overlay = await Variants.makeOverlay(j.entry.crop, img);
+        // the demo sofa: the finished picture is laid on as it is (whole crop, edges feathered), no pixel matching
+        look.overlay = j.entry.crop.wide ? await wholePatch(j.entry.crop, img) : await Variants.makeOverlay(j.entry.crop, img, null, null, true);
+        look.overlay.wide = !!j.entry.crop.wide;   // made on the full photo: laid on after the paste
         look.status = "done";
+        if (j.key === "layer") { j.entry.layer = look.overlay;   // shown as soon as nothing else is rendering
+          (async () => { while (S.rendering) await new Promise(r => setTimeout(r, 100));
+            if (V === run && lastRender() && rsOf.has(lastRender().image)) showColors(); })(); continue; }   // only if a demo picture is up
       } catch (e) { look.status = "error"; look.error = e.message; }
       // the user already picked this one and was waiting for it
       const it = S.scene?.[j.i];
       if (V === run && it && lookState(it, j.i).s === "ready" && !currentRender()) showColors();
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  await Promise.all(Array.from({ length: demoRoom() ? 6 : 3 }, worker));   // demo: saved looks only, no AI calls
 }
 // a restored picture whose looks were still being made when we left it: carry on
 function resumeJobs(run) {
@@ -906,8 +971,18 @@ function isDemoDerived(scene) {
   }) && !scene.some(it => it.sketched && !(V?.items[scene.indexOf(it)]?.layer));
 }
 // show the current scene from the demo render + prepared looks (loads + prepares the demo render the first time)
-let demoBaseRs = null;
+let demoBaseRs = null, demoWarmed = null;
+// load and prepare the demo render and its looks in the background without showing anything (the walkthrough calls
+// this at its start, so picking an option later switches at once)
+function demoWarm() {
+  if (!demoRoom()) return Promise.resolve();
+  return demoWarmed ||= (async () => {
+    demoBaseRs = (await apiPost("/api/cached_render", { key: DEMO_BASE })).image;
+    await prepareVariants(0, { image: await showOnPhoto(demoBaseRs), real: true, items: testScene() }, true);
+  })().catch(() => { demoWarmed = null; });
+}
 async function demoCompose() {
+  if (demoWarmed) await demoWarmed;   // being prepared in the background: use that
   if (!(V?.mapped && V.base === demoBaseRs && V.tracked)) {
     demoBaseRs = (await apiPost("/api/cached_render", { key: DEMO_BASE })).image;
     const shown = await showOnPhoto(demoBaseRs), cur = S.scene;
@@ -1028,9 +1103,20 @@ async function showColors() {
   const overlays = S.scene.map((it, i) => { const l = lookState(it, i), e = V.items[i];
     const o = l.s === "ready" ? l.overlay : l.s === "same" && e?.layer ? e.layer : null;
     return o && { o, rug: it.cat === "rug", size: e?.crop ? area(e.crop.box) : 0 }; }).filter(Boolean)
-    .sort((a, b) => b.rug - a.rug || b.size - a.size).map(x => x.o);
-  let img = S.renders[sig] || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
-  if (!S.renders[sig] && run.mapped) img = await showOnPhoto(img);   // the demo render: shown on the full photo
+    .sort((a, b) => b.rug - a.rug || b.size - a.size).map(x => x.o).filter(o => !o.wide);
+  const wideOv = run.mapped ? S.scene.map((it, i) => { const l = lookState(it, i), e = V.items[i];
+    const o = l.s === "ready" ? l.overlay : l.s === "same" ? e?.layer : null;
+    return o?.wide ? [o] : []; }).flat() : [];
+  const saved = !wideOv.length && S.renders[sig];
+  let img = saved || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
+  if (!saved && run.mapped) {
+    img = await showOnPhoto(img);   // the demo render: shown on the full photo
+    if (wideOv.length) {   // + the sofa picture, laid on the full photo as it is
+      const rs = renderSpace(img);
+      img = await Variants.flatten(img, await Promise.all(wideOv.map(o => cutOut(o, overlays, run))));
+      rsOf.set(img, rs);
+    }
+  }
   if (V !== run || sceneSig() !== sig) return false;   // something else changed meanwhile
   rememberRender(sig, img, true); S.last.fromVariants = true; prepared.set(renderSpace(img), run); S.before = false; render();
   return true;
@@ -1193,7 +1279,7 @@ function renderSides() {
   // the side Back/Next tabs are gone: back is the ← at the left of the bottom bar, next is the → beside send
 }
 function renderMode() {
-  $("#mode").textContent = S.live ? "AI renders on · Gemini" : "Demo renders · AI off";
+  // AI renders on/off: AI_RENDER_ENABLED in .env (no switch on the page)
 }
 
 function renderTopbar() {
@@ -1965,7 +2051,7 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.live=true;S.space.confirmed=false;S.scene=null;S.options=[];S.layout=null;layoutOpen=false;S.sel=null;B.setupApproved=false;chatMode='conversation';chatOpen=false;
+      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.space.confirmed=false;S.scene=null;S.options=[];S.layout=null;layoutOpen=false;S.sel=null;B.setupApproved=false;chatMode='conversation';chatOpen=false;
       if(typeof selectedObject!=='undefined'){selectedObject=null;objectNotice='';renderObjectSelection();}
       saveBrief(); render(); startPhotoConversation();
     };
@@ -2023,17 +2109,23 @@ addEventListener("resize", () => { geom(); renderHotspots(); renderMeasure(); re
 room.addEventListener("load", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
-Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))
-  .then(([d,annotations,ontology]) => {
+Promise.all([
+  ...['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})),
+  fetch(API_BASE + '/api/render', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
+])
+  .then(([d,annotations,ontology,health]) => {
     SofaMatcher.configure(ontology,annotations,d);
     P = d; byId = Object.fromEntries(d.map(p => [p.id, p]));
     restoreDesignerProject();
+    const config = health?.renderConfig;
+    if (typeof config?.aiEnabled === 'boolean') S.live = config.aiEnabled;
     // deep link for demos: #room=bedroom&step=3&sel=0
     const h = new URLSearchParams(location.hash.slice(1));
     if (h.has("ex") && EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
     NO_BAKE = h.has("nobake");
     MOCK_VARIANTS = h.has("variantsmock");
-    ONLY_SKETCH_NEW = !h.has("newrenders");   // demo: only sketches make new AI renders   // #variantsmock=1: color previews without Gemini
+    SOFA_WIDE_NEW = h.has("sofawide");
+    ONLY_SKETCH_NEW = (config?.demoCacheOnly ?? true) && !h.has("newrenders");
     return loadBakedFurniture().then(() => h);
   })
   .then(h => {
@@ -2045,7 +2137,7 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
     }
     S.step = step && S.scene ? Math.min(step, STEPS.length - 1) : NEEDS;   // always open on Needs (a saved design stays loaded); #step=N still deep-links
     if (S.step === SHOP) S.cart = "open";
-    if (h.has("live")) S.live = true;
+    if (h.has("live")) S.live = h.get("live") !== "0";
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
     if (h.get("cart") === "room" && S.scene) { S.cart = "expanded"; S.cartView = "room"; }
     render();

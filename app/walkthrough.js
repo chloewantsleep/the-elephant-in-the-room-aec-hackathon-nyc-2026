@@ -90,6 +90,7 @@
     if (typeof chatOpen !== "undefined") chatOpen = false;
     showImage(); render();
     await loadBakedFurniture(); render();
+    if (typeof demoWarm === "function") demoWarm();   // demo: get the saved picture and its looks ready in the background
   }
 
   const BEATS = [
@@ -115,7 +116,11 @@
         await tap(".next-arrow", 300);
         await until(() => S.step === DESIGN && !S.generating && S.scene);
         await wait(900);
-        await hover('.opt[data-idx="1"]', 900); await hover('.opt[data-idx="2"]', 900); await hover('.opt[data-idx="0"]', 600);
+        for (const k of [1, 2, 0]) {   // pick each option: the picture switches to it (demo: saved, instant)
+          await tap(`.opt[data-idx="${k}"]`, 300);
+          await until(() => !S.rendering && currentRender(), 6000);
+          await wait(k ? 1100 : 700);
+        }
       } },
     { t: "Rendered into your room", s: "the picked pieces, placed in your own photo",
       run: async () => {

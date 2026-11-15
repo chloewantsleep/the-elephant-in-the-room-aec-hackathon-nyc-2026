@@ -91,9 +91,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/"):
             reload_if_changed()
-        if self.path == "/api/health":
+        if self.path in ("/api/health", "/api/render"):
             return self._json(200, {"key": bool(core.KEY), "model": core.MODEL,
-                                    "sketch_engine": sketch_engine()})
+                                    "sketch_engine": sketch_engine(), "renderConfig": core.render_config()})
         rel = os.path.relpath(self.translate_path(self.path), ROOT)
         if rel.startswith("..") or any(part.startswith(".") and part != "." for part in rel.split(os.sep)):
             return self._json(404, {"error": "not found"})  # never serve .env, .git, or anything outside the repo

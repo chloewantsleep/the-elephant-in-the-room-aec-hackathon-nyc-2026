@@ -139,7 +139,9 @@
   // limit: {x0, y0, x1, y1} in crop pixels: anything changed outside it (plus a margin; more below, for the shadow) is dropped
   // cover: another result made on the same crop (e.g. the sketched piece that's in the picture now); its changed pixels
   // are covered too, so this overlay also hides that piece (used for a sketched piece's similar products)
-  async function makeOverlay(crop, recoloredSrc, limit, cover) {
+  // solid: holes inside the changed piece are filled, so where the new product looks like the old one (or the floor)
+  // the old one doesn't show through
+  async function makeOverlay(crop, recoloredSrc, limit, cover, solid) {
     const { full, rect } = crop, w = full.width, h = full.height;
     const rec = await loadImage(recoloredSrc);
     const c = canvas(w, h), g = c.getContext("2d");
@@ -153,11 +155,14 @@
     for (let i = 0, j = 0; j < a.length; i += 4, j++) {
       a[j] = Math.max(smooth(14, 42, diff(o, i)), cv ? smooth(14, 42, diff(cv, i)) : 0);
     }
+    if (solid) { const f = fillShape(a, w, h); for (let j = 0; j < a.length; j++) a[j] = Math.max(a[j], f[j]); }
     const r = Math.max(1, Math.round(Math.min(w, h) * 0.012));
     a = boxBlur(boxBlur(a, w, h, r), w, h, r);
     const feather = Math.max(2, Math.min(w, h) * 0.06);
     for (let y = 0, j = 0; y < h; y++) for (let x = 0; x < w; x++, j++) {
-      let edge = Math.min(1, Math.min(x, w - 1 - x, y, h - 1 - y) / feather);
+      // no fade on a side that is the picture's own edge (nothing beyond it to blend into)
+      let edge = Math.min(1, Math.min(rect.x > 0 ? x : 1e9, rect.x + rect.w < crop.W ? w - 1 - x : 1e9,
+                                      rect.y > 0 ? y : 1e9, rect.y + rect.h < crop.H ? h - 1 - y : 1e9) / feather);
       if (limit) {
         const mx = (limit.x1 - limit.x0) * 0.15 + feather, my = (limit.y1 - limit.y0) * 0.15 + feather;
         const out = Math.max(limit.x0 - mx - x, x - (limit.x1 + mx), limit.y0 - my - y, y - (limit.y1 + my * 1.6), 0);
@@ -167,6 +172,33 @@
     }
     g.putImageData(out, 0, 0);
     return { canvas: c, rect };
+  }
+  // the changed piece's outline: clearly changed pixels, slightly closed, only big pieces kept (noise and specks
+  // dropped), every hole inside them filled; nothing grows past the outline
+  function fillShape(a, w, h) {
+    const n = w * h, r = Math.max(1, Math.round(Math.min(w, h) * 0.006));
+    const g = boxBlur(boxBlur(Float32Array.from(a, v => v > 0.6 ? 1 : 0), w, h, r), w, h, r);
+    const d = new Float32Array(n); for (let j = 0; j < n; j++) d[j] = g[j] > 0.02 ? 1 : 0;
+    const e = boxBlur(boxBlur(d, w, h, r), w, h, r), m = new Uint8Array(n);
+    for (let j = 0; j < n; j++) m[j] = e[j] > 0.98 ? 1 : 0;
+    const lab = new Int32Array(n), sizes = [0], st = [];
+    for (let s0 = 0; s0 < n; s0++) if (m[s0] && !lab[s0]) {
+      const id = sizes.length; let cnt = 0; lab[s0] = id; st.push(s0);
+      while (st.length) { const j = st.pop(), x = j % w; cnt++;
+        if (x > 0 && m[j - 1] && !lab[j - 1]) { lab[j - 1] = id; st.push(j - 1); }
+        if (x < w - 1 && m[j + 1] && !lab[j + 1]) { lab[j + 1] = id; st.push(j + 1); }
+        if (j >= w && m[j - w] && !lab[j - w]) { lab[j - w] = id; st.push(j - w); }
+        if (j < n - w && m[j + w] && !lab[j + w]) { lab[j + w] = id; st.push(j + w); } }
+      sizes.push(cnt);
+    }
+    const keep = sizes.map(c => c > n * 0.03), out = new Uint8Array(n);
+    const push = j => { if (!keep[lab[j]] && !out[j]) { out[j] = 1; st.push(j); } };
+    for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+    for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+    while (st.length) { const j = st.pop(), x = j % w;
+      if (x > 0) push(j - 1); if (x < w - 1) push(j + 1); if (j >= w) push(j - w); if (j < n - w) push(j + w); }
+    const res = new Float32Array(n); for (let j = 0; j < n; j++) res[j] = out[j] ? 0 : 1;
+    return res;
   }
   const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
   function boxBlur(src, w, h, r) {
