@@ -353,6 +353,12 @@ const FLOW: [title: string, body: string, tool: string][] = [
   ["Show", "Renders the picture from the product list.", "Gemini 3.1 Flash Image · " + (RENDER.secs || "—") + " s · $" + (RENDER.usd || "—") + " per render"],
   ["Shop", "List, budget, FF&E schedule.", "Python + Vercel functions · plain JS"],
 ]
+// kinds of product compared, not brands: we have no head-to-head evidence
+const VS: [who: string, gives: string, misses: string][] = [
+  ["AI room-image generators", "A nice picture of a room.", "The furniture may not exist, and you can’t buy it."],
+  ["Store AR, try-in-room apps", "One item from one store, in your room.", "Doesn’t know how you live. Remembers nothing."],
+  ["Interior designers", "Thoughtful, made to measure.", "Slow and costly. Not there when your life changes."],
+]
 const REELS: { title: string; src?: string; poster?: string }[] = [
   { title: "Elephant, start to finish", src: "/video/elephant-start-to-finish.mp4", poster: "/video/elephant-start-to-finish.jpg" },
   // feature demos recorded by the team (deck/public/video/README-feature-demos.md)
@@ -829,6 +835,16 @@ const THEME =
   ".lcl-zcap{bottom:10vh;font-size:clamp(15px,1.3vw,19px)}.lcl-zpill{display:inline-block;padding:.5em 1em;border-radius:999px;background:rgba(20,20,20,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}" +
   ".lcl-zcap1{opacity:calc(var(--z-cap1,0) - var(--z-out,0) * 3)}.lcl-zcap2{opacity:calc(var(--z-cap2,0) - var(--z-head,0) * 3)}" +
   ".lcl-zhead{top:50%;transform:translateY(-50%) scale(calc(.92 + var(--z-head,0) * .08));font-weight:400;font-size:clamp(28px,3.6vw,60px);line-height:1.12;letter-spacing:-.035em;opacity:var(--z-head,0)}.lcl-zhead .lcl-zpill{padding:.35em .8em;border-radius:.6em}@media (max-width:720px){.lcl-zhead{font-size:22px}}" +
+  ".lcl-vs{position:relative;z-index:3;max-width:1240px;margin:0 auto;padding:10vh clamp(16px,2vw,32px) 0;background:var(--paper)}" +
+  ".lcl-vs .lcl-sh{margin:0;font-weight:400;font-size:clamp(30px,3.4vw,56px);letter-spacing:-.035em;line-height:1.04}" +
+  ".lcl-vs-t{max-width:1040px;margin:0 auto}" +
+  ".lcl-vs-r{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr);gap:24px;align-items:baseline;padding:18px 20px;border-top:1px solid rgba(0,0,0,.1);font-size:clamp(15px,1.25vw,18px);line-height:1.35}" +
+  ".lcl-vs-r b{font-weight:400;letter-spacing:-.015em}.lcl-vs-r span{color:var(--soft)}" +
+  ".lcl-vs-h{padding-top:0;padding-bottom:10px;border-top:0;font-size:10px;color:var(--soft)}" +
+  ".lcl-vs-me{margin-top:10px;border:0;border-radius:20px;background:var(--ink);color:var(--paper);font-size:clamp(17px,1.45vw,21px)}.lcl-vs-me span{color:rgba(255,255,255,.75)}.lcl-vs-me span:last-child{color:var(--lime)}" +
+  ".lcl-vs-me b{display:flex;align-items:center;gap:10px;font-weight:500}.lcl-vs-mark{width:1.4em;color:var(--paper)}" +
+  ".lcl-vs .lcl-diff{margin:clamp(56px,9vh,110px) auto clamp(72px,12vh,140px)}" +
+  "@media (max-width:720px){.lcl-vs-r{grid-template-columns:1fr;gap:4px}.lcl-vs-h{display:none}}" +
   ".lcl-steps{list-style:none;max-width:1040px;margin:0 auto;padding:0;counter-reset:st}" +
   ".lcl-steps li{counter-increment:st;display:grid;grid-template-columns:12em minmax(0,1fr) auto;gap:20px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(0,0,0,.1)}.lcl-steps li:last-child{border-bottom:1px solid rgba(0,0,0,.1)}" +
   ".lcl-steps b{font-weight:400;font-size:clamp(18px,1.5vw,22px);letter-spacing:-.02em}.lcl-steps b::before{content:counter(st, decimal-leading-zero) '  ';font:10px ui-monospace,monospace;color:var(--soft);white-space:pre}.lcl-steps span{color:var(--soft);font-size:14.5px}.lcl-steps em{font-style:normal;font-size:10.5px;text-align:right}" +
@@ -1932,6 +1948,43 @@ export default function LoupeCuratorLanding({
         ))}
       </section>
 
+      {/* how this differs: kinds of product, not named competitors (no head-to-head evidence) */}
+      <section className="lcl-vs">
+        <div className="lcl-ghead">
+          <span className="lcl-mono lcl-cmeta">Why Elephant</span>
+          <h2 className="lcl-sh">So how is this different?</h2>
+        </div>
+        <div className="lcl-vs-t" role="table">
+          <div className="lcl-vs-r lcl-vs-h lcl-mono" role="row">
+            <span role="columnheader" />
+            <span role="columnheader">Gives you</span>
+            <span role="columnheader">Misses</span>
+          </div>
+          {VS.map(([who, gives, miss]) => (
+            <div key={who} className="lcl-vs-r" role="row">
+              <b role="cell">{who}</b>
+              <span role="cell">{gives}</span>
+              <span role="cell">{miss}</span>
+            </div>
+          ))}
+          <div className="lcl-vs-r lcl-vs-me" role="row">
+            <b role="cell">
+              <span className="lcl-mark lcl-vs-mark" aria-hidden="true">
+                <ElephantMark />
+              </span>
+              Elephant
+            </b>
+            <span role="cell">Your real room, your habits, real products from more than one store.</span>
+            <span role="cell">It remembers, and adapts when your life changes.</span>
+          </div>
+        </div>
+        <p className="lcl-diff">
+          The picture never invents furniture.
+          <br />
+          Every object in it is a real product with a size, a price and a link.
+        </p>
+      </section>
+
       {/* how it understands you: a spoken sentence becomes a decision, then labels, then a pick in the cart; scroll drives it */}
       <section className="lcl-how" ref={reg("how")}>
         <div className="lcl-how-in">
@@ -2084,11 +2137,6 @@ export default function LoupeCuratorLanding({
 
       {/* tech stack: the steps and what they run on */}
       <section className="lcl-stack" id="stack">
-        <p className="lcl-diff">
-          The picture never invents furniture.
-          <br />
-          Every object in it is a real product with a size, a price and a link.
-        </p>
         <ol className="lcl-steps">
           {FLOW.map(([t, b, tool]) => (
             <li key={t}>
