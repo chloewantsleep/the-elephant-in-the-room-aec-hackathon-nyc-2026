@@ -1,0 +1,224 @@
+{
+  "sku": "ikea:00586096",
+  "url": "https://www.ikea.com/us/en/p/stockholm-2025-sofa-sundhamn-beige-00586096/",
+  "retrieved_at": "2026-11-14T20:35:30.874693+00:00",
+  "measurements": [
+    {
+      "measure": "26 3/4 \"",
+      "name": "Armrest height",
+      "type": "00138"
+    },
+    {
+      "measure": "3 1/2 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    },
+    {
+      "measure": "40 1/2 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "6 1/4 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "26 3/4 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "33 1/8 \"",
+      "name": "Height including back cushions",
+      "type": "00414"
+    },
+    {
+      "measure": "27 1/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "16 1/2 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "84 5/8 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "91 3/4 \"",
+      "name": "Width",
+      "type": "00047"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Solid wood, Particleboard, Fiberboard, Plywood",
+                  "part": "Backrest frame:"
+                },
+                {
+                  "material": "Fiberboard, Plywood",
+                  "part": "Armrest frame:"
+                },
+                {
+                  "material": "Solid pine, Fiberboard, Clear acrylic lacquer",
+                  "part": "Seat frame:"
+                },
+                {
+                  "material": "Coir and natural latex",
+                  "part": "Backrest/ Armrest:"
+                },
+                {
+                  "material": "Latex foam",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                },
+                {
+                  "material": "100 % polyester - hollow fiber (100% recycled), Latex foam",
+                  "part": "Back cushion/ Armrest cushion:"
+                },
+                {
+                  "material": "Solid pine, Clear acrylic lacquer",
+                  "part": "Leg:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Clip:"
+                },
+                {
+                  "material": "68 % cotton, 32 % linen",
+                  "part": "Base fabric:"
+                },
+                {
+                  "material": "Dyed through top-grain leather with a treated and pigmented surface",
+                  "part": "Leather parts:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back fabric:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Frame",
+              "texts": [
+                "Vacuum clean.",
+                "Wipe clean with a damp cloth."
+              ]
+            },
+            {
+              "header": "Removable cover",
+              "texts": [
+                "Machine wash cold, normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron medium temperature, max 300°F/150°C.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            },
+            {
+              "header": "Inner cushion",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "005.860.96",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/stockholm-2025-sofa-sundhamn-beige__AA-2521655-2-100.pdf",
+                  "label": "STOCKHOLM 2025 Sofa"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "005.860.96",
+                  "url": "https://www.ikea.com/us/en/manuals/stockholm-2025-sofa-sundhamn-beige__AA-2666808-2-100.pdf",
+                  "label": "STOCKHOLM 2025 Sofa"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "A simple yet elegant design with generous proportions, beautiful natural materials and a visible wooden frame that creates a robust expression.",
+        "The cover is made of a fabric in cotton and linen with a subtle texture that gives a pleasant feel and enhances the elegant expression.",
+        "A pocket spring core gives the sofa long-lasting comfort and helps it maintain its original shape year after year.",
+        "Easy to keep fresh since the cover is removable and can be washed.",
+        "25-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "Nike Karlsson",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "00586096",
+    "title": "Product details"
+  }
+}

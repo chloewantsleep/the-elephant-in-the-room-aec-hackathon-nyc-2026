@@ -1,0 +1,199 @@
+{
+  "sku": "ikea:80519531",
+  "url": "https://www.ikea.com/us/en/p/kivik-sofa-grann-bomstad-black-80519531/",
+  "retrieved_at": "2026-11-14T20:35:30.842956+00:00",
+  "measurements": [
+    {
+      "measure": "37 3/8 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "32 5/8 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "23 5/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "17 3/4 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "70 7/8 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "89 3/8 \"",
+      "name": "Width",
+      "type": "00047"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "goodToKnow": {
+        "id": "product-details-good-to-know",
+        "title": "Good to know",
+        "contentProps": {
+          "goodToKnow": [
+            {
+              "name": "Purchase-/Other information",
+              "text": "The seat- and back cushions and inside, outside, top and front of the armrests are covered with GRANN – a soft, smooth and strong grain leather with natural variations. Other surfaces have the coated fabric BOMSTAD."
+            }
+          ]
+        }
+      },
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "100 % polyurethane, 75 % polyester, 25 % cotton",
+                  "part": "Coated fabric parts:"
+                },
+                {
+                  "material": "Dyed through top-grain leather with a treated, embossed and pigmented surface",
+                  "part": "Leather:"
+                },
+                {
+                  "material": "Particleboard, Plywood, Fiberboard, Solid wood, Polyurethane foam 1.2 lb/cu.ft.",
+                  "part": "Back and seat frame:"
+                },
+                {
+                  "material": "Particleboard, Plywood, Fiberboard, Solid wood, Polyurethane foam 1.5 lb/cu.ft.",
+                  "part": "Armrest frame:"
+                },
+                {
+                  "material": "High-resilience polyurethane foam (cold foam) 2.2 lb/cu.ft., Polyurethane foam 2.0 lb/cu.ft., Felt liner",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "texts": [
+                "Clean with a dust cloth or vacuum lightly using the soft brush attachment.",
+                "Wipe clean with a damp cloth.",
+                "Protect from direct sunlight to prevent drying out."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "805.195.31",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/kivik-sofa-grann-bomstad-black__AA-508523-1-2.pdf",
+                  "label": "KIVIK Sofa"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "805.195.31",
+                  "url": "https://www.ikea.com/us/en/manuals/kivik-sofa-grann-bomstad-black__AA-1344880-2-2.pdf",
+                  "label": "KIVIK Sofa"
+                },
+                {
+                  "id": "805.195.31",
+                  "url": "https://www.ikea.com/us/en/manuals/kivik-sofa-grann-bomstad-black__AA-2314471-2-100.pdf",
+                  "label": "KIVIK Sofa"
+                },
+                {
+                  "id": "805.195.31",
+                  "url": "https://www.ikea.com/us/en/manuals/kivik-sofa-grann-bomstad-black__AA-2666808-2-100.pdf",
+                  "label": "KIVIK Sofa"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "Enjoy the super comfy KIVIK sofa with deep seat cushions made of pocket springs, high resilience foam and polyester fibers – adding both firm support and relaxing softness.",
+        "Contact surfaces are covered with Grann – a soft, smooth and strong grain leather with natural variations. Other surfaces have Bomstad, a coated fabric.",
+        "The size and depth of the sofa make it perfect for a nice nap or when the whole family is gathered. There is room for everyone and even extra seating on the wide armrests.",
+        "The wide armrests have room for everything from your mobile phone to a bowl of movie snacks and very comfortable to lay your head on when you lie down on the sofa for a rest.",
+        "KIVIK sofa has a strong personality and a clear design language, while the options mean that you can easily match it with your home decor.",
+        "It is easy to combine the sofa with one or more chaise lounges thanks to the removable armrests.",
+        "Pocket springs are a durable solution that makes the sofa retain both its shape and comfort for many years.",
+        "The cover is easy to keep clean as it can be wiped clean with a damp cloth.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "Ola Wihlborg",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "80519531",
+    "title": "Product details"
+  }
+}
