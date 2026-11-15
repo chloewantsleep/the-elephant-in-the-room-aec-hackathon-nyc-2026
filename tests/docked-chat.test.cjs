@@ -9,7 +9,7 @@ test('idle dock shows original input primitive, no full conversation or stale st
  assert.equal(vm.runInContext('dockProgress()',c),'');
  const html=vm.runInContext('dockForm()',c);
  assert.match(html,/class="chat-input"/);assert.match(html,/<input id="designer-message"/);assert.match(html,/aria-label="Voice input"/);
- assert.doesNotMatch(html,/<textarea|dock-collapse/);assert.match(html,/data-action="dock-expand"/);
+ assert.doesNotMatch(html,/<textarea|dock-expand|dock-collapse/);
 });
 test('catalogue selection becomes the same object context used by the capsule',()=>{
  const c=dock();c.S.sel=0;

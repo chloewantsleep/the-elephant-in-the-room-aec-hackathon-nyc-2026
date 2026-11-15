@@ -65,18 +65,16 @@ async function sendDesigner(retry=false){
  if(!retry){B.history.push({role:'user',text,...(target?{object:{label:target.label,category:target.category,box:target.box,productId:target.productId}}:{})});chatDraft='';}
  const photoAtSend=S.space.data,revisionAtSend=B.revision,count=B.history.length;
  chatError='';B.lastError='';chatBusy=true;chatMode='conversation';saveBrief();refreshDesigner();
- let retryWithCode=false;   // a passcode was just entered: send the same message again by itself
  try{
   const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','X-Passcode':passcode.get()},body:JSON.stringify({interface:'studio',messages:B.history,brief:{revision:B.revision,requirements:B.requirements,unknowns:B.unknowns||[],observations:B.observations||[]},photo:S.space.photo==='upload'?S.space.data:null,region:target?{label:target.label,category:target.category,box:target.box,productId:target.productId}:null,project:{room:S.needs.room,space:S.space.confirmed?{width:S.space.wallIn,depth:S.space.depthIn,corridor:S.space.corridor,clearance:S.space.clearanceIn,obstacles:S.space.obstacles}:null,setupApproved:B.setupApproved},selectedCrop:target?.crop||null,contexts:B.contexts||[],editable:typeof editableSelection==='function'?editableSelection():null,selection:(S.scene||[]).map(it=>({category:it.cat,name:view(it).name}))}),signal:AbortSignal.timeout(100000)});
-  const data=await response.json();if(response.status===401){const had=passcode.get(),code=prompt(had?'That team passcode didn’t work. Enter it again (ask in the team chat):':'The designer needs the team passcode (ask in the team chat):');if(code&&code.trim()){passcode.set(code.trim());retryWithCode=true;}const error=Error('The designer needs the team passcode. Ask in the team chat, then press Retry.');error.code='passcode';throw error;}if(!response.ok){const error=Error(data.error||'Connection failed');error.code=data.code;throw error;}
-  if(photoAtSend!==S.space.data||revisionAtSend!==B.revision||count!==B.history.length){const error=Error('The space changed while I was answering. Please try again.');error.code='changed';throw error;}
+  const data=await response.json();if(response.status===401){const code=prompt('Team passcode');if(code)passcode.set(code);throw Error('Please try again');}if(!response.ok){const error=Error(data.error||'Connection failed');error.code=data.code;throw error;}
+  if(photoAtSend!==S.space.data||revisionAtSend!==B.revision||count!==B.history.length)throw Error('The space changed. Please try again');
   B.history.push({role:'assistant',text:data.reply,ui:data.ui});B.proposals=data.proposals||[];B.unknowns=data.unknowns||[];
   if(typeof executeDesignerActions==='function')await executeDesignerActions(data.actions||[],target);
   if(data.observations?.length){B.observations=data.observations;B.observationEvidence=data.observations.map(text=>({text,source:'space_photo',photoKey:photoKey(),certainty:'observation'}));}if(data.annotations?.length)B.annotations=data.annotations;
   if(typeof renderDiagnosis==='function')renderDiagnosis();
  }catch(e){chatError=e.code?e.message:e.name==='TimeoutError'?'That took too long. Your message is saved, please try again.':'Couldn’t reach the designer. Your message is saved.';B.lastError=chatError;}
  finally{chatBusy=false;saveBrief();refreshDesigner();}
- if(retryWithCode){chatError='';B.lastError='';await sendDesigner(true);}
 }
 function applyBrief(){
  if(chatBusy||!B.proposals.length)return;
@@ -105,10 +103,7 @@ function renderLayout(){document.getElementById('layout-sheet')?.remove();}
 function recordEdit(text){syncLayout();B.history.push({role:'assistant',text,manual:true,event:true});if(S.options[S.opt])S.options[S.opt].items=structuredClone(S.scene);saveBrief();}
 function manualRequirement(effect,value,text){for(const r of B.requirements)if(r.status==='confirmed'&&r.effect===effect&&r.category==='all')r.status='superseded';B.requirements.push({id:`manual-${B.revision}-${effect}`,effect,value:String(value),category:'all',status:'confirmed',text,quote:text,priority:'must',scope:'room',evidence_kind:'user_statement',certainty:'explicit',situation:'Room setup confirmed by the user',outcome:'Limits product picks and layout',impact:effect==='budget'?'The design total can’t exceed the budget':'Layout checked against measured sizes'});}
 document.addEventListener('submit',e=>{
- if(e.target.id==='designer-form'){e.preventDefault();
-  // step 01: the bar answers the Needs chat (app.js); after that, or with the conversation open, it talks to the designer
-  if(S.step===NEEDS&&!chatOpen&&typeof chatFree==='function'){const t=chatDraft.trim();if(!t)return;chatDraft='';S.needsMin=false;chatFree(t);render();document.getElementById('designer-message')?.focus();return;}
-  sendDesigner();}
+ if(e.target.id==='designer-form'){e.preventDefault();sendDesigner();}
  if(e.target.id==='space-setup'){
   e.preventDefault();if(chatBusy)return;const f=new FormData(e.target),width=+f.get('width')/2.54,depth=+f.get('depth')/2.54,c=+f.get('clearance')/2.54;
   if(c>=width){chatError='The walkway must be narrower than the room.';renderDesigner();return;}
