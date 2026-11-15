@@ -13,7 +13,7 @@
     "category": {
       "enum": ["sofa", "armchair", "bed", "dining_table", "coffee_table", "side_table", "desk", "office_chair",
                "dining_chair", "stool_bench", "dresser", "nightstand", "wardrobe", "shelving", "tv_stand",
-               "cabinet", "floor_lamp", "table_lamp", "pendant_lamp", "rug", "mirror"]
+               "cabinet", "base_cabinet", "floor_lamp", "table_lamp", "pendant_lamp", "rug", "mirror"]
     },
     "type_name": { "type": ["string", "null"], "description": "Retailer's own type label, e.g. 'Sleeper sofa'" },
     "variant": { "type": ["string", "null"], "description": "Color / fabric of THIS record, e.g. 'Blekinge white'" },

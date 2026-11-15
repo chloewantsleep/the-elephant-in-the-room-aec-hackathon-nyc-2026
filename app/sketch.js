@@ -40,7 +40,22 @@ function skBox(strokes) {
 }
 const skCenter = strokes => { const [x0, y0, x1, y1] = skBox(strokes); return [(x0 + x1) / 2, (y0 + y1) / 2]; };
 const skLabel = cat => CAT_LABEL[cat] || "?";
-const skWidth = m => { const [x0, , x1] = skBox(m.strokes); return Math.round((x1 - x0) / 100 * S.space.wallIn); };
+const SK_RUNS = new Set(["base_cabinet"]);   // sold by length: a line along a wall -> a run of modules (app.js runItems)
+// a single, nearly straight stroke is a line: its two ends, else null. Image % with y scaled to x units.
+function skLineOf(m) {
+  if (m.strokes.length !== 1 || m.strokes[0].length < 2) return null;
+  const s = m.strokes[0], g = geom(), k = g.dh / g.dw, P = ([x, y]) => [x, y * k];
+  const [ax, ay] = P(s[0]), [bx, by] = P(s[s.length - 1]), len = Math.hypot(bx - ax, by - ay);
+  if (len < 8) return null;
+  const off = Math.max(...s.map(q => { const [x, y] = P(q); return Math.abs((bx - ax) * (ay - y) - (ax - x) * (by - ay)) / len; }));
+  return off < len * 0.07 ? [s[0], s[s.length - 1]] : null;
+}
+const skRunLen = ([a, b]) => { const g = geom(); return Math.round(Math.hypot(b[0] - a[0], (b[1] - a[1]) * g.dh / g.dw) / 100 * S.space.wallIn); };
+const skEnds = m => m.ends || (() => { const [x0, , x1, y1] = skBox(m.strokes); return [[x0, y1], [x1, y1]]; })();   // a box: its bottom edge
+const skWidth = m => SK_RUNS.has(m.cat) ? skRunLen(skEnds(m))
+  : (([x0, , x1]) => Math.round((x1 - x0) / 100 * S.space.wallIn))(skBox(m.strokes));
+const skFt = inches => { const f = Math.floor(inches / 12), r = Math.round(inches % 12); return r ? `${f} ft ${r} in` : `${f} ft`; };
+const skTag = (cat, widthIn) => cat ? skLabel(cat) + (SK_RUNS.has(cat) && widthIn ? ` · ${skFt(widthIn)}` : "") : null;
 
 /* ---------------- drawing: a white, glowing pen ---------------- */
 // Draws shapes onto ctx. map: image % -> pixels; unit: base line width in pixels; label(m, i) -> text by the badge.
@@ -95,8 +110,8 @@ function skDraw() {
   if (skCanvas.width !== W * dpr || skCanvas.height !== H * dpr) { skCanvas.width = W * dpr; skCanvas.height = H * dpr; }
   skCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   skCtx.clearRect(0, 0, W, H);
-  if (SK.on) skPaint(skCtx, SK.marks, skScreen, 3.5, { label: m => m.cat ? skLabel(m.cat) : null });
-  else if (S.step === NEEDS) skPaint(skCtx, savedShapes(), skScreen, 3, { alpha: 0.9, label: m => skLabel(m.category) });
+  if (SK.on) skPaint(skCtx, SK.marks, skScreen, 3.5, { label: m => skTag(m.cat, m.widthIn) });
+  else if (S.step === NEEDS) skPaint(skCtx, savedShapes(), skScreen, 3, { alpha: 0.9, label: m => skTag(m.category, m.widthIn) });
 }
 
 const skPhoto = () => new Promise((ok, bad) => {
@@ -119,8 +134,11 @@ async function skComposite() {
 // scene outlined and labeled with what was picked for it, e.g. "Side table · VALNÄS".
 async function sketchGuide() {
   const shapes = savedShapes();
-  const placed = (S.scene || []).filter(it => it.sketched && shapes[it.sk])
-    .map(it => ({ strokes: shapes[it.sk].strokes, text: `${CAT_LABEL[it.cat]} · ${view(it).family || view(it).name}` }));
+  const seen = new Set();   // a cabinet run is several scene items on one drawn line: outline it once
+  const placed = (S.scene || []).filter(it => it.sketched && shapes[it.sk] && !seen.has(it.sk) && seen.add(it.sk))
+    .map(it => ({ strokes: shapes[it.sk].strokes,
+                  text: it.run ? `Base cabinets · ${it.run.family} · ${skFt(it.run.lengthIn)} run`
+                               : `${CAT_LABEL[it.cat]} · ${view(it).family || view(it).name}` }));
   if (!placed.length) return null;
   const im = await skPhoto();
   const k = Math.min(1, 1280 / Math.max(im.naturalWidth, im.naturalHeight));
@@ -162,7 +180,13 @@ skCanvas.addEventListener("pointermove", e => {
 const skEnd = () => {
   if (!skStroke) return;
   skStroke = null;
-  SK.marks[SK.marks.length - 1].t = Date.now();
+  const m = SK.marks[SK.marks.length - 1];
+  m.t = Date.now();
+  m.ends = skLineOf(m);
+  if (m.ends && (!m.mine || m.auto)) {   // a straight line reads as a run of base cabinets (you can change it)
+    Object.assign(m, { cat: "base_cabinet", mine: true, auto: true, why: "A straight line, so a run of base cabinets" });
+    m.widthIn = skWidth(m);
+  } else if (!m.ends && m.auto) Object.assign(m, { cat: null, mine: false, auto: false, why: null });   // it grew into a shape
   skRenderBar(); skDraw();
 };
 skCanvas.addEventListener("pointerup", skEnd);
@@ -179,7 +203,7 @@ async function skAsk(quick) {
   const j = await apiPost("/api/sketch", req);
   for (const it of j.items) {
     const m = SK.marks[it.mark - 1];
-    if (m && !m.mine) Object.assign(m, { cat: it.category, widthIn: it.width_in, why: it.reason });
+    if (m && !m.mine) Object.assign(m, { cat: it.category, widthIn: SK_RUNS.has(it.category) ? skWidth({ ...m, cat: it.category }) : it.width_in, why: it.reason });
   }
   for (const u of j.unclear || []) { const m = SK.marks[u.mark - 1]; if (m && !m.mine && !m.cat) m.why = u.question; }
   return j;
@@ -203,12 +227,13 @@ async function skDone() {
   }
   const items = SK.marks.filter(m => m.cat).map(m => ({
     category: m.cat, widthIn: m.widthIn || skWidth(m), pos: skCenter(m.strokes), strokes: m.strokes,
+    ...(SK_RUNS.has(m.cat) ? { ends: skEnds(m) } : {}),
   }));
   if (!items.length) { SK.error = "Couldn't tell what those are. Draw them a bit bigger, or pick a type."; skRenderBar(); return; }
   S.sketch = { photoKey: photoKey(), items };
   S.dirty = true;   // the next design plans around these
   SK.on = false; SK.result = null; SK.marks = [];
-  toast(`Adding your sketch to the design: ${items.map(it => skLabel(it.category)).join(", ")}`);
+  toast(`Adding your sketch to the design: ${items.map(it => skTag(it.category, it.widthIn)).join(", ")}`);
   if (S.step === NEEDS) render();
   else goto(DESIGN);   // from Design / Edit: re-plan now (goto sees S.dirty)
 }
@@ -227,8 +252,18 @@ function skChip(m, i) {
       <option value="">${m.cat ? "Not sure" : "What is it?"}</option>
       ${SK_TYPES.map(c => `<option value="${c}" ${m.cat === c ? "selected" : ""}>${esc(skLabel(c))}</option>`).join("")}
     </select>
+    ${SK_RUNS.has(m.cat) ? skRunInfo(m, i) : ""}
     <button type="button" class="sk-x" data-sk="del" data-i="${i}" aria-label="Erase shape ${i + 1}">×</button>
   </label>`;
+}
+// "9 ft · $1,197–$1,191" next to a cabinet run: its length (type to adjust) and the price in each cabinet line
+function skRunInfo(m, i) {
+  const q = typeof runQuote === "function" ? runQuote(m.widthIn || 96, m.cat) : [];
+  const t = q.map(x => x.total), lo = Math.min(...t), hi = Math.max(...t);
+  const price = !q.length ? "" : lo === hi ? money(lo) : `${money(lo)}–${money(hi)}`;
+  return `<input class="sk-len" type="number" min="1" max="30" step="0.5" value="${+((m.widthIn || 96) / 12).toFixed(1)}"
+      data-sk-len="${i}" aria-label="Length of run ${i + 1} in feet" title="Length of the run (feet)"><span class="sk-unit">ft</span>
+    ${price ? `<span class="sk-cost" title="${esc(q.map(x => `${x.family}: ${x.pieces.map(p => p.w + '"').join(" + ")} = ${money(x.total)}`).join(" · "))}">${price}</span>` : ""}`;
 }
 
 const PEN_SVG = `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.2-4.6L15.8 4.8a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.6 18.8z"/><path d="M13.6 7l3.4 3.4"/></svg>`;
@@ -295,12 +330,19 @@ document.addEventListener("click", e => {
   else if (act === "guess") skGuess();
   else if (act === "done") skDone();
 });
+document.addEventListener("change", e => {   // a cabinet run's length, typed in feet
+  const i = e.target.dataset.skLen;
+  if (i == null || !SK.marks[+i]) return;
+  const ft = Math.min(30, Math.max(1, +e.target.value || 8));
+  SK.marks[+i].widthIn = Math.round(ft * 12); SK.marks[+i].lenSet = true;
+  skRenderBar(); skDraw();
+});
 document.addEventListener("change", e => {   // picking a type by hand (optional)
   const i = e.target.dataset.skType;
   if (i == null || !SK.marks[+i]) return;
   const m = SK.marks[+i];
   m.cat = e.target.value || null;
-  m.mine = !!m.cat;
+  m.mine = !!m.cat; m.auto = false;
   m.widthIn = m.cat ? skWidth(m) : null;   // estimated from the drawing
   m.why = m.cat ? "Your pick" : null;
   SK.error = null; skRenderBar(); skDraw();

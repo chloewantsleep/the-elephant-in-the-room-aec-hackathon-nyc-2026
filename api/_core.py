@@ -78,6 +78,13 @@ def where(pos):
     return f"{h}, {v} of the frame (about {x:.0f}% from left, {y:.0f}% from top)"
 
 
+def run_text(run):
+    """A drawn cabinet run is sent as several module products; tell the model they form one run."""
+    return (f" This module is part of ONE continuous run of {run.get('line')} base kitchen cabinets,"
+            f" {run.get('length_in')} in. long ({run.get('modules')}), standing side by side along the drawn line"
+            " against the wall, fronts facing into the room. Render the run as one seamless row of cabinets.")
+
+
 def build_prompt(req):
     room = req.get("room", {})
     needs = req.get("needs", {})
@@ -112,7 +119,8 @@ def build_prompt(req):
             f" W {fmt_in(d.get('width'))} x D {fmt_in(d.get('depth'))} x H {fmt_in(d.get('height'))} in."
             + (f" {it['description']}" if it.get("description") else "")
             + (f" Place it: {where(it['pos'])}." if it.get("pos") else "")
-            + (" The user sketched this piece at exactly this spot, so it MUST appear there." if it.get("sketched") else ""))
+            + (" The user sketched this piece at exactly this spot, so it MUST appear there." if it.get("sketched") else "")
+            + (run_text(it["run"]) if it.get("run") else ""))
     if req.get("keep"):
         lines += ["", "KEEP: existing pieces in IMAGE 1 that must remain visible and unchanged (do not move, restyle, cover or replace them):"]
         for k in req["keep"]:

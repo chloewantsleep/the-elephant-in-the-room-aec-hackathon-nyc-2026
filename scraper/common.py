@@ -18,7 +18,7 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 CATEGORIES = [
     "sofa", "armchair", "bed", "dining_table", "coffee_table", "side_table",
     "desk", "office_chair", "dining_chair", "stool_bench", "dresser",
-    "nightstand", "wardrobe", "shelving", "tv_stand", "cabinet",
+    "nightstand", "wardrobe", "shelving", "tv_stand", "cabinet", "base_cabinet",
     "floor_lamp", "table_lamp", "pendant_lamp", "rug", "mirror",
 ]
 

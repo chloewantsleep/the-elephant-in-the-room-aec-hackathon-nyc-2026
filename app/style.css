@@ -697,6 +697,14 @@ body.sketching #room { filter: none; }
   border: 0; background: transparent; font: inherit; font-size: 13px; color: #fff; outline: none; cursor: pointer;
   padding: 2px 0; max-width: 150px;
 }
+/* a cabinet run: its length (editable, feet) and what it costs */
+.sk-chip input.sk-len {   /* beats the app-wide input[type=number] style */
+  width: 46px; min-width: 0; margin: 0; padding: 3px 6px; border: 0; border-radius: 999px; outline: none; text-align: right;
+  background: rgba(255,255,255,.22); color: #fff; font: inherit; font-size: 13px; box-shadow: none;
+}
+.sk-chip input.sk-len:focus { background: rgba(255,255,255,.35); border: 0; }
+.sk-unit { font-size: 12px; opacity: .8; }
+.sk-cost { padding: 3px 9px; border-radius: 999px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .sk-chip option { color: var(--ink); background: #fff; }
 .sk-x {
   width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center;

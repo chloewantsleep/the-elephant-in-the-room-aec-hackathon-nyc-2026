@@ -24,7 +24,8 @@ const CAT_LABEL = {
   side_table: "Side table", desk: "Desk", office_chair: "Office chair", dining_chair: "Dining chair",
   stool_bench: "Bench", dresser: "Dresser", nightstand: "Nightstand", wardrobe: "Wardrobe", shelving: "Shelving",
   tv_stand: "TV stand", cabinet: "Sideboard", floor_lamp: "Floor lamp", table_lamp: "Table lamp",
-  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror", other: "Other",
+  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror",
+  base_cabinet: "Base cabinets", other: "Other",
 };
 
 // Slots per room type. share = share of budget, maxW = max width as a fraction of the wall,
@@ -215,14 +216,67 @@ function slotsWithSketch(tpl = TEMPLATES[S.needs.room]) {
   if (!sk.length) return tpl;
   const slots = tpl.map(s => ({ ...s })), taken = new Set();
   sk.forEach((s, n) => {
-    const mine = { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
-                   maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
+    const mine = RUN_CATS.has(s.category)   // a run (base cabinets): priced by its length, not by a budget share
+      ? { cat: s.category, share: 0, pos: s.pos.slice(), sketched: true, sk: n, lengthIn: s.widthIn || 96, ends: s.ends }
+      : { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
+          maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
     const k = slots.findIndex((t, i) => t.cat === s.category && !t.sketched && !taken.has(i));
     if (k >= 0) { taken.add(k); slots[k] = { ...mine, share: slots[k].share, qty: slots[k].qty }; }
     else slots.push(mine);
   });
   const total = slots.reduce((a, s) => a + s.share, 0);
   return total > 1 ? slots.map(s => ({ ...s, share: s.share / total })) : slots;
+}
+
+/* ---------------- cabinet runs: a drawn line -> real modules that fill its length ----------------
+ * Base cabinets are sold in modules (12", 15", ... 36" wide). A run of a given length is filled with the fewest
+ * modules of one product line that reach it; up to a few inches are left for a filler strip, as a fitter would. */
+const RUN_CATS = new Set(["base_cabinet"]);
+const RUN_GAP = 3;   // inches a filler strip can close
+// product lines that sell the category, cheapest per inch first: [{family, mods: [{p, w}]}]
+function runLines(cat = "base_cabinet") {
+  const fam = {};
+  for (const p of P) if (p.category === cat && p.dims_in.width) (fam[p.family] = fam[p.family] || []).push({ p, w: Math.round(p.dims_in.width) });
+  const perIn = mods => mods.reduce((a, m) => a + m.p.price.amount / m.w, 0) / mods.length;
+  return Object.entries(fam).map(([family, mods]) => ({ family, mods: mods.sort((a, b) => b.w - a.w) }))
+    .sort((a, b) => perIn(a.mods) - perIn(b.mods));
+}
+function fillRun(lengthIn, mods) {
+  const L = Math.max(0, Math.round(lengthIn)), best = new Array(L + 1).fill(Infinity), from = [];
+  best[0] = 0;
+  for (let l = 1; l <= L; l++) mods.forEach((m, k) => {
+    if (m.w <= l && best[l - m.w] + 1 < best[l]) { best[l] = best[l - m.w] + 1; from[l] = k; }
+  });
+  let l = L; while (l > 0 && best[l] === Infinity) l--;
+  const pieces = [];
+  for (let x = l; x > 0; x -= mods[from[x]].w) pieces.push(mods[from[x]]);
+  pieces.sort((a, b) => b.w - a.w);   // wide ones first, so equal widths sit side by side
+  return { pieces, filled: l, gap: L - l, total: pieces.reduce((a, m) => a + m.p.price.amount, 0) };
+}
+// what a run of this length costs in each line (shown on the sketch chip)
+const runQuote = (lengthIn, cat = "base_cabinet") => runLines(cat).map(line => ({ family: line.family, ...fillRun(lengthIn, line.mods) }))
+  .filter(q => q.pieces.length);
+// scene items for a sketched run: one item per module width (qty = how many), placed along the drawn line
+function runItems(slot, rank) {
+  // the lines ranked by what THIS run costs in each: Essentials gets the cheapest, Statement the priciest
+  const quotes = runLines(slot.cat).map(line => ({ line, run: fillRun(slot.lengthIn, line.mods) }))
+    .filter(q => q.run.pieces.length).sort((a, b) => a.run.total - b.run.total);
+  if (!quotes.length) return [];
+  const { line, run } = quotes[Math.min(quotes.length - 1, Math.round(rank * (quotes.length - 1)))];
+  const [a, b] = slot.ends || [[slot.pos[0] - 10, slot.pos[1]], [slot.pos[0] + 10, slot.pos[1]]];
+  const at = t => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const groups = [];
+  for (const m of run.pieces) {
+    const g = groups[groups.length - 1];
+    if (g && g.m.p.id === m.p.id) g.n++; else groups.push({ m, n: 1 });
+  }
+  const modules = run.pieces.map(m => m.w + '"').join(" + ");
+  let start = 0;
+  return groups.map(({ m, n }) => {
+    const mid = (start + m.w * n / 2) / (run.filled || 1); start += m.w * n;
+    return { cat: slot.cat, qty: n, pid: m.p.id, vid: null, pos: at(mid), sketched: true, sk: slot.sk,
+             run: { family: line.family, lengthIn: Math.round(slot.lengthIn), filled: run.filled, modules } };
+  });
 }
 
 function planOptions() {
@@ -233,7 +287,7 @@ function planOptions() {
   const strict = BriefEngine.active(B).some(r => r.effect === "budget");   // a confirmed budget is never exceeded
   const used = {};
   const kept = keptPieces();
-  return STRATEGIES.map(strat => {
+  return STRATEGIES.map((strat, si) => {
     const usedOwn = new Set(), gaps = [];
     let remaining = cap;
     let items = tpl.map(slot => {
@@ -242,6 +296,12 @@ function planOptions() {
       return null;
     }).map((own, k) => own || tpl[k]).map(slot => {
       if (slot.own) return slot;
+      if (RUN_CATS.has(slot.cat) && slot.sketched) {   // a drawn cabinet run: cheapest line for Essentials ... priciest for Statement
+        const run = runItems(slot, si / (STRATEGIES.length - 1));
+        if (!run.length) gaps.push(slot.cat);
+        remaining -= sceneTotal(run);
+        return run;
+      }
       const qty = slot.qty || 1, budget = cap * slot.share / qty;
       // only products that fit and that the confirmed brief allows (brief-engine.js)
       let scored = P.filter(p => p.category === slot.cat && fits(p, slot))
@@ -262,7 +322,7 @@ function planOptions() {
       remaining -= pick.p.price.amount * qty;
       return { cat: slot.cat, qty, pid: pick.p.id, vid: null, pos: slot.pos.slice(), reasons: pick.a.reasons,
                ...(slot.sketched ? { maxW: slot.maxW, sketched: true, sk: slot.sk } : {}) };
-    }).filter(Boolean);
+    }).flat().filter(Boolean);   // a cabinet run adds several items
     kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
     if (S.space.confirmed) {   // measured room: drop what the layout can't place (layout-engine.js)
       const layout = LayoutEngine.plan(items, S.space, view);
@@ -323,7 +383,8 @@ function itemPayload(it) {
   const p = view(it);
   return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
            description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round),
-           ...(it.sketched ? { sketched: true } : {}) };
+           ...(it.sketched ? { sketched: true } : {}),
+           ...(it.run ? { run: { line: it.run.family, length_in: it.run.lengthIn, modules: it.run.modules } } : {}) };
 }
 
 // What changed since the last render? null = too different, do a full render instead.
