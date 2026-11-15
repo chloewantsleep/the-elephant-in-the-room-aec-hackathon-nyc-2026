@@ -106,7 +106,7 @@ const S = {
   preview: null,       // index of the piece open in the product preview
   previewAlt: null,    // product id of a similar item being looked at inside the preview
   sizeOpen: false,
-  needsMin: false,     // the Needs window folded into an elephant bubble     // room size inputs are optional and folded away
+  needsMin: true,      // the Needs window folded into an elephant bubble     // room size inputs are optional and folded away
   chat: null,          // needs conversation {q: current question, log: [{from, text}]}
   existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
