@@ -1687,7 +1687,6 @@ export default function LoupeCuratorLanding({
           <span className="lcl-launch lcl-mono">{launch}</span>
           <nav className="lcl-nav" ref={reg("nav")} aria-label={brand}>
             <span className="lcl-wordmark">{brand}</span>
-            <ActionEl a={signInAction} label="Sign in" className="lcl-btn lcl-mono" cursor="Sign in" />
             <ActionEl a={joinAction} label="Join waitlist" className="lcl-btn lcl-btn-lime lcl-mono" cursor="Join" />
           </nav>
           <button type="button" className="lcl-scroll lcl-mono" onClick={next} data-cursor="Next" aria-label="Scroll to the next part">
