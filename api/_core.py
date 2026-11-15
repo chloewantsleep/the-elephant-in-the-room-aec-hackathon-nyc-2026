@@ -316,6 +316,8 @@ def detect(req):
     """req = {photo} -> {items:[{label, category, box (0-1000: ymin,xmin,ymax,xmax), description, dims_in}]}"""
     if not KEY:
         raise RuntimeError("No GEMINI_API_KEY.")
+    if "locate" in req:
+        return locate_in_render(req["photo"], req["locate"])
     if "layout" in req:
         return inspect_render_layout(req["photo"], req["layout"])
 
@@ -379,6 +381,54 @@ def clean_render_layout(raw, slots):
             positions.append([x, y, turn if type(turn) is int and 0 <= turn <= 3 else 0])
         items[item["id"]] = {**colors(item, ("body", "detail")), "positions": positions[:slots[item["id"]]]}
     return {**colors(raw, ("floor", "leftWall", "rightWall")), "items": items}
+
+
+def clean_boxes(raw, slots):
+    """{id: [[ymin, xmin, ymax, xmax], ...]} with 0-1000 ints, at most qty boxes per listed id."""
+    out = {}
+    for item in raw if isinstance(raw, list) else (raw.get("items") if isinstance(raw, dict) else None) or []:
+        if not isinstance(item, dict) or type(item.get("id")) is not int or item["id"] not in slots:
+            continue
+        boxes = []
+        for b in item.get("boxes") if isinstance(item.get("boxes"), list) else []:
+            if (isinstance(b, list) and len(b) == 4 and all(type(v) in (int, float) and math.isfinite(v) for v in b)):
+                y0, x0, y1, x1 = [max(0, min(1000, int(v))) for v in b]
+                if y1 > y0 and x1 > x0:
+                    boxes.append([y0, x0, y1, x1])
+        if boxes:
+            out[item["id"]] = boxes[:slots[item["id"]]]
+    return out
+
+
+def locate_in_render(photo, items):
+    """Where each listed piece is in a finished render: one box per visible copy.
+
+    items = [{id, category, name, qty}] -> {boxes: {id: [[ymin, xmin, ymax, xmax], ...]}} (0-1000).
+    Only boxes, which the model draws reliably; the browser turns their bottom edges into floor positions.
+    """
+    if not isinstance(photo, str) or not photo.startswith("data:image/"):
+        raise ValueError("Expected a rendered image.")
+    if not isinstance(items, list) or any(not isinstance(it, dict) or type(it.get("id")) is not int for it in items):
+        raise ValueError("Expected a list of furniture.")
+    slots = {it["id"]: it["qty"] if type(it.get("qty")) is int and 0 < it["qty"] <= 12 else 1 for it in items}
+    listed = [{k: it.get(k) for k in ("id", "category", "name", "qty")} for it in items]
+
+    def run():
+        prompt = (
+            "Find each piece of furniture from the list in this room image. For every listed id return the box of each "
+            "visible copy (qty says how many there should be; return fewer if fewer are visible, none if it is not in the image). "
+            "Boxes are [ymin, xmin, ymax, xmax] normalized to 0-1000 and must tightly cover the whole piece, legs included, "
+            "down to where it touches the floor. Do not box furniture that is not in the list. "
+            'Return JSON: {"items": [{"id": <id>, "boxes": [[ymin, xmin, ymax, xmax], ...]}]}\n'
+            "Furniture: " + json.dumps(listed))
+        body = {"contents": [{"role": "user", "parts": [image_part(photo), {"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}
+        t0 = time.time()
+        res = gemini(f"models/{TEXT_MODEL}:generateContent", body)
+        raw = json.loads("".join(p.get("text", "") for p in res["candidates"][0]["content"]["parts"]))
+        return {"boxes": clean_boxes(raw, slots), "model": TEXT_MODEL, "ms": int((time.time() - t0) * 1000)}
+
+    return cached("render-boxes", {"photo": photo, "items": listed, "m": TEXT_MODEL, "v": 1}, run)
 
 
 def inspect_render_layout(photo, layout):

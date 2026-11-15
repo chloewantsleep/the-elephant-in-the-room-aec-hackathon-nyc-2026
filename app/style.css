@@ -1045,31 +1045,49 @@ body.intro-on .brand { visibility: hidden; }
 #wt-btn { position: absolute; top: 26px; left: 76px; z-index: 5; padding: 8px 16px; font-size: 12.5px; }
 body.intro-on #wt-btn, body.walkthrough #wt-btn { display: none; }
 #wt-cap:empty { display: none; }
+/* subtitle: one small line above the chat bar */
 #wt-cap {
-  position: fixed; left: 28px; bottom: calc(var(--frame-inset-y) + 18px); z-index: 60; width: min(360px, calc(100vw - 32px));
-  padding: 14px 18px 16px; border-radius: 20px; color: #fff;
-  background: rgba(20,20,20,.62); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-  box-shadow: 0 10px 40px rgba(0,0,0,.25); animation: wt-in .35s ease;
+  position: fixed; left: 50%; bottom: calc(var(--frame-inset-y) + 84px); transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 5px 6px 5px 14px; border-radius: 999px;
+  font-size: 13px; line-height: 18px; white-space: nowrap; color: #fff; background: rgba(15,15,15,.55);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); animation: wt-in .25s ease;
 }
-#wt-cap .wt-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: .7; letter-spacing: .04em; }
-#wt-cap .wt-ctl { display: flex; gap: 2px; }
-#wt-cap .wt-ctl button { width: 26px; height: 26px; border-radius: 50%; font-size: 14px; line-height: 1; }
-#wt-cap .wt-ctl button:hover { background: rgba(255,255,255,.18); }
-#wt-cap b { display: block; margin-top: 6px; font-size: 21px; font-weight: 500; line-height: 1.25; }
-#wt-cap p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.45; opacity: .85; }
-#wt-cap .wt-bar { display: block; height: 2px; margin-top: 12px; border-radius: 2px; background: rgba(255,255,255,.18); overflow: hidden; visibility: hidden; }
-#wt-cap .wt-bar.go { visibility: visible; }
-#wt-cap .wt-bar i { display: block; height: 100%; width: 0; background: #fff; }
-#wt-cap.paused .wt-bar i { animation: wt-blink 1s ease infinite; }
-#wt-cap.done .wt-bar { visibility: hidden; }
-@keyframes wt-in { from { opacity: 0; transform: translateY(8px); } }
-@keyframes wt-blink { 50% { opacity: .3; } }
+#wt-cap b { font-weight: 500; }
+#wt-cap .wt-s { opacity: .8; overflow: hidden; text-overflow: ellipsis; }
+#wt-cap .wt-n { font-size: 11px; opacity: .55; }
+#wt-cap button { width: 20px; height: 20px; border-radius: 50%; font-size: 13px; line-height: 1; opacity: .6; }
+#wt-cap button:hover { opacity: 1; background: rgba(255,255,255,.18); }
+body.walkthrough #toast { display: none !important; }   /* the subtitle does the talking */
+@keyframes wt-in { from { opacity: 0; } }
 #wt-cursor {
   position: fixed; left: 50%; top: 50%; z-index: 80; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
   background: rgba(255,255,255,.9); box-shadow: 0 0 0 2px rgba(20,20,20,.85), 0 4px 14px rgba(0,0,0,.35);
-  pointer-events: none; opacity: 0; transition: left .7s cubic-bezier(.5,0,.2,1), top .7s cubic-bezier(.5,0,.2,1), opacity .3s;
+  pointer-events: none; opacity: 0; transition: left .4s cubic-bezier(.5,0,.2,1), top .4s cubic-bezier(.5,0,.2,1), opacity .3s;
 }
 #wt-cursor.show { opacity: 1; }
 #wt-cursor.press::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid #fff; animation: wt-press .5s ease-out forwards; }
 @keyframes wt-press { to { inset: -18px; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #wt-cursor { transition: opacity .3s; } }
+
+/* ---------- needs chat: swipe deck for the style question (needs-swipe.js) ---------- */
+.swipe { align-self: stretch; margin: 2px 0 4px; }
+.swipe-card {
+  position: relative; border-radius: 18px; background: #fff; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,.10); cursor: grab; touch-action: none; user-select: none;
+  transition: transform .2s ease;
+}
+.swipe-card:active { cursor: grabbing; transition: none; }
+.swipe-card img { display: block; width: 100%; height: 170px; object-fit: contain; padding: 12px; box-sizing: border-box; pointer-events: none; }
+.swipe-card .meta { padding: 0 14px 12px; }
+.swipe-card .meta b { display: block; font-size: 13.5px; font-weight: 600; }
+.swipe-card .meta small { color: var(--ink-soft); font-size: 12px; }
+.swipe-card .count { position: absolute; top: 10px; right: 12px; font-size: 11px; color: var(--ink-soft); }
+.swipe-card[data-hint="like"] { box-shadow: 0 0 0 3px var(--ok), 0 8px 24px rgba(0,0,0,.10); }
+.swipe-card[data-hint="skip"] { box-shadow: 0 0 0 3px var(--warn), 0 8px 24px rgba(0,0,0,.10); }
+.swipe-btns { display: flex; justify-content: center; gap: 16px; margin-top: 10px; }
+.swipe-btns .round {
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: #fff;
+  font-size: 18px; cursor: pointer; color: var(--warn); transition: transform .15s;
+}
+.swipe-btns .round.like { color: var(--ok); }
+.swipe-btns .round:hover { transform: scale(1.08); }

@@ -80,12 +80,92 @@ function shopSample(ref, item) {
   return ref?.items?.[item.slotId] || ref?.profile?.items[item.own ? "own:" + item.own : item.cat];
 }
 
+/* Where each piece sits on the floor, roughly, from where it is in the room photo (item.pos, % of the image).
+ * A level default camera (horizon a little above the middle): lower in the picture = nearer, and the
+ * left/right offset widens with distance. The result is spread over the floor so front/back and
+ * left/right relationships match the picture.
+ * Every spot is where the piece meets the floor: the bottom of its box. Boxes come from the AI render of this
+ * design when Gemini has read it (renderBoxes, by slot id), else from the photo scan for pieces you keep; a
+ * piece with neither uses its planned spot (item.pos, the center the render was asked to draw it at). */
+const SHOP_HORIZON = .42, SHOP_FAR = .1;
+// -> Map: slotId -> [u, v] (first copy) and "slotId:i" -> [u, v] for every copy with its own spot in the photo
+const shopBottom = b => [(b[1] + b[3]) / 20, b[2] / 10];   // box 0-1000 -> bottom middle, image %
+function shopPhotoAnchors(items, renderBoxes = null) {
+  const photo = document.getElementById("room");
+  const aspect = photo?.naturalWidth && photo?.naturalHeight ? photo.naturalWidth / photo.naturalHeight : 4 / 3;
+  const spots = [];   // [key, x, near]
+  items.forEach((item, k) => {
+    const id = item.slotId ?? k;
+    // a piece found in the photo has a box per copy; anything else has one spot
+    const seen = renderBoxes?.[id];
+    const boxes = seen?.length ? seen : item.own && typeof exById === "function" ? exById(item.own)?.boxes : null;
+    const pts = boxes?.length ? boxes.map(shopBottom)
+      : Array.isArray(item.pos) ? [[item.pos[0], Math.min(100, item.pos[1] + 6)]] : [];   // center -> about where it stands
+    pts.forEach((pos, i) => {
+      const u = pos[0] / 100, v = pos[1] / 100;
+      const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
+      // left/right widens a little with distance (not the full 1/near, which would fling far pieces to the walls
+      // and squeeze everything near the camera into the middle)
+      spots.push([`${id}:${i}`, (u - .5) * aspect * (1 + .6 * (1 - near)), near]);
+    });
+  });
+  const out = new Map();
+  if (!spots.length) return out;
+  const xs = spots.map(s => s[1]), ns = spots.map(s => s[2]);
+  const span = (lo, hi) => Math.max(hi - lo, 1e-6);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), n0 = Math.min(...ns), n1 = Math.max(...ns);
+  for (const [key, x, n] of spots) {
+    // spread over the whole floor, wall to wall and back to front (evenly by how low it sits in the picture)
+    const uv = [spots.length > 1 ? .08 + .84 * (x - x0) / span(x0, x1) : .5, spots.length > 1 ? .1 + .82 * (n - n0) / span(n0, n1) : .5];
+    out.set(key, uv);
+    if (key.endsWith(":0")) out.set(+key.slice(0, -2), uv);
+  }
+  return out;
+}
+
 function shopSceneLayout(items, space, room, ref) {
   const anchors = SHOP_ROOM_ANCHORS[room] || SHOP_ROOM_ANCHORS.living;
-  const profile = space.confirmed ? null : ref?.profile;
+  const profile = space.confirmed || !ref?.demoExact ? null : ref.profile;   // the baked demo room size, only for that render
   let width = Math.max(36, shopPositive(space.wallIn, 144), profile?.width || 0);
   let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
-  const distance = 5;
+  // a walkway between different pieces; pieces that are used together sit close
+  const distance = 26, sameDistance = 4;
+  const PAIRS = { "dining_chair|dining_table": 4, "stool_bench|dining_table": 4, "office_chair|desk": 4,
+    "nightstand|bed": 4, "coffee_table|sofa": 16, "coffee_table|armchair": 16, "side_table|sofa": 4,
+    "side_table|armchair": 4 };
+  const gapBetween = (a, b) => a.id != null && a.id === b.id ? sameDistance
+    : PAIRS[`${a.cat}|${b.cat}`] ?? PAIRS[`${b.cat}|${a.cat}`] ?? distance;
+  const fromPhoto = shopPhotoAnchors(items, ref?.boxes);
+
+  // A bigger floor when the pieces need it (unless the room was measured): enough area for the footprints,
+  // and far enough apart that pieces at their photo spots keep a walkway between them.
+  if (!space.confirmed) {
+    const NO_ROOM = new Set(["rug", "table_lamp", "pendant_lamp", "mirror"]);
+    const spots = [];
+    let area = 0;
+    items.forEach(item => {
+      if (NO_ROOM.has(item.cat)) return;
+      const dims = view(item).dims_in, w = shopPositive(dims.width, 22), d = shopPositive(dims.depth, shopPositive(dims.width, 18));
+      area += w * d * (item.qty || 1);
+      for (let i = 0; i < (item.qty || 1); i++) {
+        const uv = fromPhoto.get(`${item.slotId}:${i}`);
+        if (uv) spots.push({ id: item.slotId, cat: item.cat, uv, w, d });
+      }
+    });
+    const byArea = Math.sqrt(area * 5 / (width * depth));   // pieces cover at most ~20% of the floor
+    const needs = [];
+    for (let a = 0; a < spots.length; a++) for (let b = a + 1; b < spots.length; b++) {
+      const p = spots[a], q = spots[b], gap = gapBetween(p, q);
+      const du = Math.abs(p.uv[0] - q.uv[0]) * width, dv = Math.abs(p.uv[1] - q.uv[1]) * depth;
+      const need = Math.min(du > 1e-6 ? ((p.w + q.w) / 2 + gap) / du : Infinity, dv > 1e-6 ? ((p.d + q.d) / 2 + gap) / dv : Infinity);
+      if (Number.isFinite(need)) needs.push(need);
+    }
+    // most pairs get their walkway from the bigger floor; the few on almost the same spot are left to the clearance check
+    needs.sort((a, b) => a - b);
+    const bySpacing = needs.length ? needs[Math.floor(needs.length * .85)] : 1;
+    const grow = Math.min(2.2, Math.max(1, byArea, bySpacing));
+    width = Math.round(width * grow); depth = Math.round(depth * grow);
+  }
 
   function arrange() {
     const entries = items.map((item, index) => {
@@ -109,30 +189,37 @@ function shopSceneLayout(items, space, room, ref) {
         if (!rect.layer) occupied.push(piece);
       }
     }
-    const priority = { sofa: 0, bed: 0, dining_table: 0, desk: 0, coffee_table: 1,
+    // storage against the walls goes first (it can only stand there), then the tables and seats that belong to them
+    const priority = { wardrobe: -1, cabinet: -1, shelving: -1, dresser: -1, tv_stand: -1, sofa: 0, bed: 0, dining_table: 0, stool_bench: .5, dining_chair: .5, desk: .7, coffee_table: 1,
       rug: 3, table_lamp: 4, pendant_lamp: 4 };
     entries.sort((a, b) => (priority[a.item.cat] ?? 2) - (priority[b.item.cat] ?? 2));
     const first = cat => entries.find(row => row.item.cat === cat)?.pieces[0];
 
-    function openSpot(x, y, rw, rd) {
+    // uv: this piece's spot in the photo. A spot that would put it on the wrong side of a piece already placed
+    // (left/right or front/back, compared with the photo) costs extra, so moving aside keeps the picture's order.
+    function openSpot(x, y, rw, rd, id, cat, uv) {
+      const flips = (px, py) => uv ? occupied.reduce((n, p) => n + (!p.uv ? 0
+        : (Math.abs(uv[0] - p.uv[0]) > .1 && Math.sign(uv[0] - p.uv[0]) !== Math.sign(px - p.x) ? 1 : 0)
+        + (Math.abs(uv[1] - p.uv[1]) > .1 && Math.sign(uv[1] - p.uv[1]) !== Math.sign(py - p.y) ? 1 : 0)), 0) : 0;
       const x0 = rw / 2 + 3, x1 = width - x0, y0 = rd / 2 + 3, y1 = depth - y0;
       if (x1 < x0 || y1 < y0) return null;
       const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
       const boundedX = clamp(x, x0, x1), boundedY = clamp(y, y0, y1);
+      const gapTo = p => gapBetween({ id, cat }, p);
       const clear = (px, py) => occupied.every(p => (
-        Math.abs(px - p.x) >= (rw + p.rw) / 2 + distance - .001 ||
-        Math.abs(py - p.y) >= (rd + p.rd) / 2 + distance - .001
+        Math.abs(px - p.x) >= (rw + p.rw) / 2 + gapTo(p) - .001 ||
+        Math.abs(py - p.y) >= (rd + p.rd) / 2 + gapTo(p) - .001
       ));
       if (clear(boundedX, boundedY)) return [boundedX, boundedY];
       const xs = [boundedX, x0, x1], ys = [boundedY, y0, y1];
       for (const p of occupied) {
-        const gx = (rw + p.rw) / 2 + distance, gy = (rd + p.rd) / 2 + distance;
+        const gx = (rw + p.rw) / 2 + gapTo(p), gy = (rd + p.rd) / 2 + gapTo(p);
         xs.push(p.x - gx, p.x + gx); ys.push(p.y - gy, p.y + gy);
       }
       let choice = null, score = Infinity;
       for (const px of xs) for (const py of ys) {
         if (px < x0 || px > x1 || py < y0 || py > y1) continue;
-        const cost = ((px - x) / width) ** 2 + ((py - y) / depth) ** 2;
+        const cost = ((px - x) / width) ** 2 + ((py - y) / depth) ** 2 + .25 * flips(px, py);
         if (cost < score && clear(px, py)) { score = cost; choice = [px, py]; }
       }
       return choice;
@@ -143,9 +230,10 @@ function shopSceneLayout(items, space, room, ref) {
       const parent = cat === "table_lamp" ? first(room === "office" ? "desk" : "nightstand") : null;
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
+      let main = null;
       const z = parent?.h || (cat === "mirror" ? 32 : cat === "pendant_lamp" ? 80 : 0);
-      const imageAnchor = [item.pos[0] / 100, (item.pos[1] - 15) / 95];
-      const [u, v, direction = 0] = item.sketched ? imageAnchor : anchors[cat] || imageAnchor;
+      const seen = fromPhoto.get(item.slotId);   // where the picture has it; the room-type default only if it has no spot
+      const [u, v] = seen || anchors[cat] || [.5, .5], direction = anchors[cat]?.[2] || 0;
       const qty = item.qty || 1;
       for (let i = 0; i < qty; i++) {
         const confirmed = fixed.get(`${row.id}:${i}`);
@@ -155,35 +243,52 @@ function shopSceneLayout(items, space, room, ref) {
         }
         let x = u * width, y = v * depth, turn = direction;
         if (cat === "nightstand" && bed) {
-          x = bed.x + (i % 2 ? 1 : -1) * (bed.rw / 2 + w / 2 + distance);
+          x = bed.x + (i % 2 ? 1 : -1) * (bed.rw / 2 + w / 2 + 4);
           y = bed.y - bed.rd * .32;
         } else if (cat === "coffee_table" && sofa) {
-          x = sofa.x; y = sofa.y + sofa.rd / 2 + d / 2 + 12;
+          x = sofa.x; y = sofa.y + sofa.rd / 2 + d / 2 + 18;
         } else if (cat === "office_chair" && desk) {
-          x = desk.x; y = desk.y + desk.rd / 2 + d / 2 + 12;
+          x = desk.x; y = desk.y + desk.rd / 2 + d / 2 + 4;
         } else if (cat === "dining_chair" && table) {
           x = table.x + (Math.floor(i / 2) - (Math.ceil(qty / 2) - 1) / 2) * (w + 10);
           y = table.y + (i % 2 ? 1 : -1) * (table.rd / 2 + d / 2 + 9);
           turn = i % 2 ? 2 : 0;
+        } else if (cat === "stool_bench" && table) {
+          // counter stools in a row along the table's front, in the order the photo shows them left to right
+          const order = Array.from({ length: qty }, (_, k) => k)
+            .sort((a, b) => (fromPhoto.get(`${item.slotId}:${a}`)?.[0] ?? a) - (fromPhoto.get(`${item.slotId}:${b}`)?.[0] ?? b));
+          const step = Math.max(w + 4, Math.min(w * 1.8, table.rw / qty));
+          x = table.x + (order.indexOf(i) - (qty - 1) / 2) * step;
+          y = table.y + table.rd / 2 + d / 2 + 4;
+          turn = 2;
+        } else if (cat === "rug" && (main = { living: sofa, bedroom: bed, dining: table, office: desk }[room] || sofa || bed || table || desk)) {
+          // the rug lies under the room's main piece, reaching a little in front of it
+          x = main.x; y = main.y + Math.max(0, d / 2 - main.rd / 2 - 6);
         } else if (parent || support) {
           x = parent ? parent.x + parent.rw * .25 : support.x;
           y = parent ? parent.y - parent.rd * .18 : support.y;
+        } else if (i > 0 && fromPhoto.has(`${item.slotId}:${i}`)) {   // this copy has its own spot in the photo
+          const [cu, cv] = fromPhoto.get(`${item.slotId}:${i}`);
+          x = cu * width; y = cv * depth;
         } else if (qty > 1) {
           x += (i % 3 - Math.min(2, qty - 1) / 2) * (w + 6);
           y += Math.floor(i / 3) * (d + 6);
         }
 
-        const hint = item.sketched && ref?.profile ? null : sample?.positions?.[i];
-        if (item.sketched && !hint) [x, y, turn] = [u * width, v * depth, direction];
+        const hint = null;   // the hand-measured demo spots were taken on the old demo render; the render is read instead
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
         const rw = turn % 2 ? d : w, rd = turn % 2 ? w : d;
-        const piece = { x, y, z, turn, w, d, h, rw, rd };
+        const piece = { x, y, z, turn, w, d, h, rw, rd, id: row.id, cat };
         if (cat === "rug" || z > 0) {
           piece.x = Math.min(width - rw / 2, Math.max(rw / 2, x));
           piece.y = Math.min(depth - rd / 2, Math.max(rd / 2, y));
           if (rw > width || rd > depth) return null;
         } else {
-          const spot = openSpot(x, y, rw, rd);
+          const ruled = (cat === "nightstand" && bed) || (cat === "coffee_table" && sofa) || (cat === "office_chair" && desk)
+            || ((cat === "dining_chair" || cat === "stool_bench") && table);   // placed by its partner, not by the photo
+          const uv = ruled ? null : fromPhoto.get(`${item.slotId}:${i}`) || seen;
+          const spot = openSpot(x, y, rw, rd, row.id, cat, uv);
+          piece.uv = uv;
           if (!spot) return null;
           [piece.x, piece.y] = spot;
           occupied.push(piece);
@@ -196,46 +301,53 @@ function shopSceneLayout(items, space, room, ref) {
 
   for (;;) {
     const placed = arrange();
-    if (placed) return { width, depth, items: placed };
+    if (placed) {
+      if (!space.confirmed) {   // no measured room: trim the open front and right side to the furniture plus a walkway
+        const pieces = placed.flatMap(row => row.pieces);
+        width = Math.round(Math.min(width, Math.max(96, ...pieces.map(p => p.x + p.rw / 2 + 30))));
+        depth = Math.round(Math.min(depth, Math.max(96, ...pieces.map(p => p.y + p.rd / 2 + 30))));
+      }
+      return { width, depth, items: placed };
+    }
     width = Math.ceil(width * 1.16);
     depth = Math.ceil(depth * 1.16);
   }
 }
 
-const shopReferenceCache = new Map();
-
+// the picture shown beside the plan, and the hand-measured demo layouts (no AI call: the plan comes from item.pos)
 function shopReference(items) {
   const image = S.renders[sceneSig(items)];
-  if (image?.startsWith("data:image/") && image !== photoSrc()) {
-    return shopReferenceCache.get(image) || { image, status: "pending" };
-  }
   const profile = S.space.photo === "demo" && example().room === S.needs.room
     ? SHOP_DEMO_LAYOUTS[S.needs.room] : null;
   const demoExact = profile && S.opt === 0 && S.existing?.baked &&
     S.existing.items.every(piece => items.some(item => item.own === piece.id));
-  return { image, profile, demoExact };
+  const read = image && shopRenderBoxes.get(image);
+  return { image, profile, demoExact, boxes: read?.boxes || null, reading: read?.status === "pending" };
 }
 
-async function loadShopReference(items, ref) {
-  if (ref.status !== "pending" || shopReferenceCache.has(ref.image)) return;
-  shopReferenceCache.set(ref.image, ref);
+// Gemini reads where each piece landed in this design's AI render (boxes only; cached on the server too).
+// Until it answers, or if it can't, the plan uses the planned spots.
+const shopRenderBoxes = new Map();
+async function readRenderBoxes(items, image) {
+  // an AI render of this design, or the baked demo render when this is exactly its design
+  const demoRender = typeof example === "function" && image === example().render && shopReference(items).demoExact;
+  if (!image || image === photoSrc() || (!image.startsWith("data:image/") && !demoRender) || shopRenderBoxes.has(image)) return;
+  shopRenderBoxes.set(image, { status: "pending" });
   try {
-    const layout = items.map(item => {
-      const p = view(item);
-      return { id: item.slotId, category: item.cat, name: p.name, finish: p.variant, qty: item.qty };
+    const locate = items.filter(it => !it.own || exById(it.own)).map(it => {
+      const p = view(it);
+      return { id: it.slotId, category: it.cat, name: [p.name, p.variant].filter(Boolean).join(", ").slice(0, 120), qty: it.qty || 1 };
     });
-    const image = new Image();
-    image.src = ref.image;
-    await image.decode();
-    const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = Object.assign(document.createElement("canvas"), {
-      width: Math.max(1, Math.round(image.naturalWidth * scale)), height: Math.max(1, Math.round(image.naturalHeight * scale)),
-    });
-    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-    const result = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), layout });
-    shopReferenceCache.set(ref.image, { ...result, image: ref.image, status: "ready" });
+    const pic = new Image();   // onload, not decode(): decode() can stall while the tab is in the background
+    await new Promise((done, fail) => { pic.onload = done; pic.onerror = fail; pic.src = image; });
+    const scale = Math.min(1, 1024 / Math.max(pic.naturalWidth, pic.naturalHeight));
+    const canvas = Object.assign(document.createElement("canvas"),
+      { width: Math.round(pic.naturalWidth * scale), height: Math.round(pic.naturalHeight * scale) });
+    canvas.getContext("2d").drawImage(pic, 0, 0, canvas.width, canvas.height);
+    const res = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), locate });
+    shopRenderBoxes.set(image, { status: "ready", boxes: res.boxes || {} });
   } catch {
-    shopReferenceCache.set(ref.image, { image: ref.image, status: "unavailable" });
+    shopRenderBoxes.set(image, { status: "failed" });
   }
   if (S.cart === "expanded" && S.cartView === "room" && S.preview == null) renderCart();
 }

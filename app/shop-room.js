@@ -296,15 +296,17 @@ function shopRoomMarkup() {
   if (option) option.shopOriginal ??= structuredClone(option.items);
   const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
   const ref = shopReference(original);
-  loadShopReference(original, ref);
+  readRenderBoxes(original, ref.image);
   const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
   const demo = S.space.photo === "demo";
   let refSrc = ref.image || (demo ? example().render : photoSrc());
-  if (!demo && refSrc.startsWith("assets/demo-render-")) refSrc = photoSrc();
-  const refLabel = refSrc === photoSrc() ? "Original room photo"
+  // a saved demo render only shows the example's own design; for any other design show the room photo instead
+  const noRender = refSrc.startsWith("assets/demo-render-") && !ref.demoExact;
+  if (noRender) refSrc = photoSrc();
+  const refLabel = noRender ? "Room photo · this design has no AI render yet" : refSrc === photoSrc() ? "Original room photo"
     : refSrc.startsWith("assets/demo-render-") ? "Demo reference render" : "Design reference render";
-  const planLabel = ref.status === "pending" ? "Matching render…"
-    : ref.status === "ready" || ref.demoExact ? "Estimated from render" : "Estimated layout · Product finishes";
+  const planLabel = ref.boxes ? "Positions read from the render" : ref.reading ? "Reading the render…"
+    : ref.demoExact ? "Measured from the demo render" : "Laid out from the design's positions";
 
   return `<div class="shop-layout">
     <section class="shop-plan" aria-label="Isometric room diagram">
@@ -322,7 +324,7 @@ function shopRoomMarkup() {
         <figcaption>${refLabel}</figcaption>
       </figure>
       <div class="shop-total">
-        <h3>Room items <span>· ${original.length}</span></h3>
+        <h3>Room items <span>· ${plan.items.length}</span></h3>
         <span>${money(sceneTotal(original))} to buy</span>
       </div>
       <div class="shop-items">
