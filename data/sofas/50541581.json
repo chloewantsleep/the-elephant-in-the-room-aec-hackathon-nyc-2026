@@ -1,0 +1,230 @@
+{
+  "sku": "ikea:50541581",
+  "url": "https://www.ikea.com/us/en/p/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray-50541581/",
+  "retrieved_at": "2026-11-14T20:35:30.832660+00:00",
+  "measurements": [
+    {
+      "measure": "92 7/8 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "60 1/4 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "35 3/8 \"",
+      "name": "Height",
+      "type": "00041"
+    },
+    {
+      "measure": "28 3/4 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "78 3/4 \"",
+      "name": "Bed length",
+      "type": "00029"
+    },
+    {
+      "measure": "55 7/8 \"",
+      "name": "Bed width",
+      "type": "00030"
+    },
+    {
+      "measure": "18 1/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "20 1/2 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "55 7/8 \"",
+      "name": "Depth chaise",
+      "type": "00371"
+    },
+    {
+      "measure": "48 \"",
+      "name": "Seat depth, chaise lounge",
+      "type": "00253"
+    },
+    {
+      "measure": "55 7/8 \"",
+      "name": "Total depth folded out",
+      "type": "00580"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Laminated veneer lumber, Plywood",
+                  "part": "Seat frame:"
+                },
+                {
+                  "material": "Plywood, Particleboard, Solid wood",
+                  "part": "Armrest frame:"
+                },
+                {
+                  "material": "Plywood, Particleboard, Solid wood, Polyurethane foam 1.5 lb/cu.ft.",
+                  "part": "Backrest:"
+                },
+                {
+                  "material": "Plywood, Particleboard",
+                  "part": "Bed storage box:"
+                },
+                {
+                  "material": "Polyurethane foam 2.0 lb/cu.ft.",
+                  "part": "Seat:"
+                },
+                {
+                  "material": "Polyurethane foam 1.5 lb/cu.ft.",
+                  "part": "Armrest:"
+                },
+                {
+                  "material": "100 % polyester - hollow fiber (100% recycled), 30% cut polyurethane foam/ 70% polyester fibers, Polyurethane foam.",
+                  "part": "Back cushion:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Leg/ Clip:"
+                },
+                {
+                  "material": "100% polyester (min. 90% recycled)",
+                  "part": "Fabric:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Frame, non-removable cover",
+              "texts": [
+                "Vacuum clean.",
+                "Wipe clean with a damp cloth."
+              ]
+            },
+            {
+              "header": "Cushion cover",
+              "texts": [
+                "Do not wash.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Do not iron.",
+                "Do not dry clean."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 5-6 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This cover’s ability to resist abrasion has been tested to handle 55,000 cycles. 15,000 cycles or more is suitable for furniture used every day at home. Over 30,000 cycles means a good ability to resist abrasion."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "505.415.81",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray__AA-2392686-7-100.pdf",
+                  "label": "BÅRSLÖV 3-seat sleeper sofa with chaise"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "505.415.81",
+                  "url": "https://www.ikea.com/us/en/manuals/barsloev-3-seat-sleeper-sofa-with-chaise-tibbleby-beige-gray__AA-2666808-2-100.pdf",
+                  "label": "BÅRSLÖV 3-seat sleeper sofa with chaise"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "BÅRSLÖV sofa-bed comes with soft shapes and generously sized, comfortable cushions that make it a perfect place to sink into.",
+        "This sofa converts quickly and easily into a spacious bed when you remove the back cushions and pull out the underframe.",
+        "Storage space under the chaise. The lid stays open so you can safely and easily take things in and out.",
+        "The chaise longue can be placed either to the left or right, so you can adapt the sofa to your space and your preferences.",
+        "The cover has been treated with easy-care, which means that spills won’t seep into the fabric, but stay on the surface and are easily absorbed with a dry cloth.",
+        "The fixed sofa cover is made of TIBBLEBY, a dope-dyed polyester fabric with a soft surface, light luster and a discreet herringbone pattern.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "Ola Wihlborg",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "50541581",
+    "title": "Product details"
+  }
+}

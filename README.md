@@ -10,7 +10,7 @@ Tell us what you need, show us your room, and get a render of your space furnish
 
 ```bash
 cp .env.example .env             # then paste your Gemini API key into .env (never commit it)
-python3 server.py                # from the repo root, no install needed
+python3 server.py                # from the repo root (Windows: python server.py)
 # open http://localhost:8000/app/
 ```
 
@@ -23,7 +23,8 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
   - **the render.** `server.py` sends the room photo and the white-background product photos to Gemini (`gemini-3.1-flash-image`, about 8 s and about $0.07 per image). Selecting an option renders it. After edits, click **Re-render**. **Before** toggles back to the original photo.
 - **Real (furniture you already own):** in **Needs**, uploading a photo (or clicking *Find my furniture*) calls `/api/detect` (Gemini vision, boxes + category + estimated size). Each piece is cropped in the browser and sent to `/api/isolate`, which returns a **white-background isometric product shot**. The shots appear in the right-hand panel as they finish. **Keep** a piece and the planner designs around it (shown as "Yours · $0"; nothing of that type gets bought). **Ditch** it and the render removes it. Kept pieces can later be replaced with real products in Edit.
 - **Mocked, to replace:** `planOptions()` in `app/app.js` stands in for the AI layout agent (P2). Room analysis is the user typing one wall length (P2). Pin positions are per-slot defaults; drag them onto the render.
-- **Shopping list:** a left icon rail (from Design on) opens the list as its own column and pushes the room view aside (To buy / Keeping, total vs budget). **Expand** pushes the view off-screen and shows a full-page grid of everything in the room, with filters (All / To buy / Keeping / category). Clicking a card jumps to that piece in Edit. Deep link: `#step=3&cart=expanded`.
+- **Sketch Ideas (draw your furniture):** the white pen ball in the top-left corner (Needs, Design, Edit) opens a clean board. Draw rough shapes where you want pieces with the glowing white pen: a long box for a sofa, a tall line for a floor lamp, a blob up top for a pendant. Strokes drawn right after each other in the same spot join one shape. Naming a shape is optional: pick a type on its chip, tap **✦ Guess with AI**, or just press **Done** and each unnamed shape gets a free, instant guess from its size and place (no AI). Once a sketch is saved, the sketched pieces are **added to the generated design**, each a real product placed where you drew it at about the size you drew. A sketched piece of a type the design already has (e.g. a floor lamp) moves that piece to where you drew it instead of adding a second one. Live renders get a layout guide (the photo with the outlines labeled) so Gemini puts each piece inside its outline. Pieces only appear in the picture with AI renders on. **Remove sketch** in the Needs window goes back to the plain design. The AI guess uses Claude if `ANTHROPIC_API_KEY` is set, else Gemini (the render key, about a cent and ~10 s), else free shape rules; if an AI reader fails, the rules answer instead. Force one with `SKETCH_ENGINE=claude|gemini|rules` in `.env`.
+- **Shopping list:** a left icon rail (from Design on) opens the list as its own column and pushes the room view aside (To buy / Keeping, total vs budget). **Expand** pushes the view off-screen and shows a full-page grid of everything in the room, with filters (All / To buy / Keeping / category). Clicking a card jumps to that piece in Edit. Deep link: `#step=3&cart=expanded`. **FF&E schedule** (in the list and in the grid) hands the room on in two files made from the same rows. **PDF** opens the print dialog on a designed sheet (the picture, the totals against the budget, one row per piece with its photo); choose "Save as PDF". No PDF library is used. **CSV** downloads `ffe-schedule.csv` in the 13 columns of a designer's FF&E schedule (Space, Room #, Item #, Item Description, Category, Qty, Unit, Spec / Notes, Vendor, Unit Cost, Total Cost, Drawing Ref, Status). Kept pieces are listed as "Existing, keep" with no cost.
 - **Demo renders (default):** to save credits, renders show a saved image (`app/assets/demo-render-*.jpg`) instead of calling Gemini. Click **Demo renders · AI off** (top right) or open with `#live=1` to switch to real AI renders. Furniture detection and isometric shots still use the API but are cached.
 - **Cost control:** identical requests are cached in `renders/cache/` (gitignored), so reloading or re-selecting an option is free.
 - **Other commands:** `python3 server.py --test` renders a demo scene into `renders/`. `python3 server.py --models` lists the image models your key can use. Set `GEMINI_IMAGE_MODEL` in `.env` to switch models.
@@ -38,16 +39,17 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
 
 Every push to `main` deploys automatically to production on Vercel. Teammates only need the link, no setup.
 - The site is static (`app/`, `data/`) plus one Python function, `api/render.py`, which calls Gemini.
-- `GEMINI_API_KEY` and `DEMO_PASSCODE` live in the Vercel project's environment variables, never in git.
+- `GEMINI_API_KEY`, `DEMO_PASSCODE` (and optionally `ANTHROPIC_API_KEY`) live in the Vercel project's environment variables, never in git.
 - AI renders cost money, so the site asks for the **team passcode** once per browser. Ask in the team chat.
 
 ## Repo layout
 
 | Path | What |
 |---|---|
-| `app/` | UI MVP (`index.html`, `style.css`, `app.js`) |
-| `server.py` | Local dev server + `/api/render` → Gemini (key from `.env`) |
-| `api/` | `render.py` = Vercel function, `_core.py` = render logic shared with `server.py` |
+| `app/` | UI MVP (`index.html`, `style.css`, `app.js`, `sketch.js` = sketch furniture onto the photo) |
+| `server.py` | Local dev server + `/api/render` → Gemini, `/api/sketch` → sketch reader (keys from `.env`) |
+| `sketch_ai.py` | Reads sketched shapes → furniture types + sizes (Claude, Gemini or rules) |
+| `api/` | Vercel functions (`render.py`, `detect.py`, `isolate.py`, `sketch.py`), `_core.py` = logic shared with `server.py` |
 | `deck/` | Pitch deck (Vite + React), deployed to elephant-pitch.vercel.app |
 | `vercel.json` | Vercel config: `/` → `/app/`, function timeout, bundled product images |
 | `data/products.json` | 316 real IKEA products. See [`data/README.md`](data/README.md) and [`data/SUMMARY.md`](data/SUMMARY.md) |
@@ -193,3 +195,9 @@ Everything else is stretch.
 | Wayfair, RH, AllModern | via paid third-party scrapers | partial | No public catalog API |
 
 These are unofficial sources and fine for a hackathon demo. **Snapshot the data ahead of time; don't scrape live during the demo.** Check each retailer's terms before turning this into a product.
+
+## Conversational living brief (local branch)
+
+The Needs step now starts with photo/context-led conversation. The designer is also available during Design/Edit/Shop. Confirmed requirements drive catalogue filtering, ranking and swap eligibility; see [implementation and validation notes](docs/living-brief.md).
+
+`GEMINI_API_KEY` is required for real chat/photo analysis; `GEMINI_CHAT_MODEL` optionally selects the text/vision model. With no key the interface reports the missing connection; there is no sample fallback. Changes here are local until deployed.

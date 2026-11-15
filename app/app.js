@@ -81,6 +81,7 @@ const STRATEGIES = [
 
 const S = {
   step: 0,
+  removedCategories: [],
   needs: { room: "living", style: "Warm minimal", budget: 3000, notes: "", mode: "non-pro" },
   space: { wallIn: 144, depthIn: 132, photo: "demo", ex: 0 },   // photo: "demo" = one of EXAMPLES, "upload" = yours
   dirty: true,         // needs/space changed since the last plan
@@ -111,6 +112,7 @@ const S = {
   before: false,       // show the original photo instead of the render
 };
 
+S.needs.budget=BriefEngine.budget(B,S.needs.budget);
 let P = [], byId = {};
 const $ = (s, el = document) => el.querySelector(s);
 const room = $("#room");
@@ -154,11 +156,20 @@ function view(item) {
   if (!v) return p;
   return { ...p, id: v.id, variant: v.variant, price: { amount: v.price ?? p.price.amount, currency: "USD" },
            images: { ...p.images, main_local: null, main: v.image || p.images.main }, url: v.url || p.url,
+           sofa: p.sofa ? {...p.sofa, attributes:{...p.sofa.attributes, washable_cover:{value:null,status:"unknown"},removable_cover:{value:null,status:"unknown"}}} : undefined,
            description: `${p.name} in ${v.variant}` };
 }
-const slotOf = item => TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
-const maxWidthFor = item => slotOf(item).maxW * S.space.wallIn;
-const fits = (p, item) => p.dims_in.width == null || p.dims_in.width <= maxWidthFor(item);
+const slotOf = item => item.maxW ? item : TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
+const maxWidthFor = item => Math.min(slotOf(item).maxW * S.space.wallIn, ...BriefEngine.active(B).filter(r=>r.effect==='max_width' && (r.scope!=='candidate'||r.productId===item.pid||r.productId===item.vid) && r.priority==='must' && (r.category==='all'||r.category===item.cat)).map(r=>Number(r.value)));
+// no width: fine for most pieces, but a sofa without a verified width is unverified (sofa-matcher.js)
+const fits = (p, item) => p.dims_in.width == null ? p.category !== "sofa" : p.dims_in.width <= maxWidthFor(item);
+function layoutAllows(items){if(!S.space.confirmed)return true;const l=LayoutEngine.plan(items,S.space,view);return l.ready&&!l.unplaced.some(r=>!r.accessory&&!items[r.i].own);}
+function eligibleSwap(p,it) {
+ if(!p)return false;
+ const base=byId[p.id]||P.find(q=>q.variants.some(v=>v.id===p.id));if(!base)return false;
+ const trial=S.scene.map(item=>item===it?{...item,pid:base.id,vid:base.id===p.id?null:p.id,own:null}:item);
+ return BriefEngine.assess(p,it.cat,B).eligible&&sceneTotal(trial)<=BriefEngine.budget(B,S.needs.budget)&&layoutAllows(trial);
+}
 const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * (it.qty || 1), 0);
 
 function toast(msg) {
@@ -188,53 +199,98 @@ function toImage(x, y) {
   return [((x - g.ox) / g.dw) * 100, ((y - g.oy) / g.dh) * 100];
 }
 
-/* ---------------- ⑤ the planner (MOCK of the AI layout agent) ---------------- */
+/* ---------------- Brief-driven catalogue planner ---------------- */
 const keptPieces = () => S.existing?.photoKey === photoKey() ? S.existing.items.filter(e => e.keep && e.status !== "error") : [];
 const boxCenter = b => [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20];   // box 0-1000 -> image %
 const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ? e.category : "other", qty: e.count || 1,
                           own: e.id, pid: null, vid: null, pos: boxCenter(e.box) });
 
+// Pieces the user sketched on this photo (sketch.js): [{category, widthIn, pos}]
+const sketched = () => S.sketch?.photoKey === photoKey() ? S.sketch.items : [];
+
+// What to design: the room template plus the sketched pieces. A sketched piece of a type the template already has
+// takes that slot (the template's floor lamp moves to where you drew one); other sketched pieces are added.
+// Each sketched piece goes at the spot and about the size it was drawn. Budget share per piece comes from the
+// templates (a sofa gets more than a lamp), scaled down if the extra pieces push the total over the budget.
+const SHARE = Object.fromEntries(Object.values(TEMPLATES).flat().reverse().map(s => [s.cat, s.share]));
+function slotsWithSketch(tpl = TEMPLATES[S.needs.room]) {
+  const sk = sketched(), wall = S.space.wallIn;
+  if (!sk.length) return tpl;
+  const slots = tpl.map(s => ({ ...s })), taken = new Set();
+  sk.forEach((s, n) => {
+    const mine = { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
+                   maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
+    const k = slots.findIndex((t, i) => t.cat === s.category && !t.sketched && !taken.has(i));
+    if (k >= 0) { taken.add(k); slots[k] = { ...mine, share: slots[k].share, qty: slots[k].qty }; }
+    else slots.push(mine);
+  });
+  const total = slots.reduce((a, s) => a + s.share, 0);
+  return total > 1 ? slots.map(s => ({ ...s, share: s.share / total })) : slots;
+}
+
 function planOptions() {
-  const tpl = TEMPLATES[S.needs.room];
+  // the brief can drop or add categories; then the sketch goes on top (what the user drew always stays)
+  const tpl = slotsWithSketch(BriefEngine.slots(TEMPLATES[S.needs.room], B, TEMPLATES))
+    .filter(s => s.sketched || !S.removedCategories.includes(s.cat));
+  const cap = BriefEngine.budget(B, S.needs.budget);
+  const strict = BriefEngine.active(B).some(r => r.effect === "budget");   // a confirmed budget is never exceeded
   const used = {};
   const kept = keptPieces();
   return STRATEGIES.map(strat => {
-    const usedOwn = new Set();
-    const items = tpl.map(slot => {
-      const mine = kept.find(e => e.category === slot.cat && !usedOwn.has(e.id));
+    const usedOwn = new Set(), gaps = [];
+    let remaining = cap;
+    let items = tpl.map(slot => {
+      const mine = !slot.sketched && kept.find(e => e.category === slot.cat && !usedOwn.has(e.id));
       if (mine) { usedOwn.add(mine.id); return ownedItem(mine); }   // you already have one: keep it, don't buy
       return null;
     }).map((own, k) => own || tpl[k]).map(slot => {
       if (slot.own) return slot;
-      const budget = S.needs.budget * slot.share / (slot.qty || 1);
-      const maxW = slot.maxW * S.space.wallIn;
-      let pool = P.filter(p => p.category === slot.cat && (p.dims_in.width == null || p.dims_in.width <= maxW));
-      if (!pool.length) pool = P.filter(p => p.category === slot.cat);
-      const fresh = pool.filter(p => !(used[slot.cat] || []).includes(p.id));
-      const cands = (fresh.length ? fresh : pool).filter(p => p.price.amount <= budget * 1.35);
-      const list = cands.length ? cands : pool.slice().sort((a, b) => a.price.amount - b.price.amount).slice(0, 1);
+      const qty = slot.qty || 1, budget = cap * slot.share / qty;
+      // only products that fit and that the confirmed brief allows (brief-engine.js)
+      let scored = P.filter(p => p.category === slot.cat && fits(p, slot))
+        .map(p => ({ p, a: BriefEngine.assess(p, slot.cat, B) })).filter(x => x.a.eligible);
+      if (!scored.length && slot.sketched) {   // a sketch is a rough size: nothing that small? take the closest sizes
+        scored = P.filter(p => p.category === slot.cat).map(p => ({ p, a: BriefEngine.assess(p, slot.cat, B) }))
+          .filter(x => x.a.eligible).sort((a, b) => (a.p.dims_in.width ?? 1e9) - (b.p.dims_in.width ?? 1e9)).slice(0, 3);
+      }
+      const pool = strict ? scored.filter(x => x.p.price.amount * qty <= remaining) : scored;
+      if (!pool.length) { gaps.push(slot.cat); return null; }
+      const fresh = pool.filter(x => !(used[slot.cat] || []).includes(x.p.id));
+      const cands = (fresh.length ? fresh : pool).filter(x => x.p.price.amount <= budget * 1.35);
+      const list = cands.length ? cands : pool.slice().sort((a, b) => a.p.price.amount - b.p.price.amount).slice(0, 1);
       const target = budget * strat.target;
-      const pick = list.slice().sort((a, b) => Math.abs(a.price.amount - target) - Math.abs(b.price.amount - target))[0];
-      (used[slot.cat] = used[slot.cat] || []).push(pick.id);
-      return { cat: slot.cat, qty: slot.qty || 1, pid: pick.id, vid: null, pos: slot.pos.slice() };
-    });
+      const pick = list.slice().sort((a, b) => b.a.score - a.a.score ||
+        Math.abs(a.p.price.amount - target) - Math.abs(b.p.price.amount - target))[0];
+      (used[slot.cat] = used[slot.cat] || []).push(pick.p.id);
+      remaining -= pick.p.price.amount * qty;
+      return { cat: slot.cat, qty, pid: pick.p.id, vid: null, pos: slot.pos.slice(), reasons: pick.a.reasons,
+               ...(slot.sketched ? { maxW: slot.maxW, sketched: true, sk: slot.sk } : {}) };
+    }).filter(Boolean);
     kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
-    return { name: strat.name, items: items.map((item, slotId) => ({ ...item, slotId })) };
+    if (S.space.confirmed) {   // measured room: drop what the layout can't place (layout-engine.js)
+      const layout = LayoutEngine.plan(items, S.space, view);
+      const blocked = new Set(layout.unplaced.filter(r => !r.accessory && !items[r.i].own).map(r => r.i));
+      for (const i of blocked) gaps.push(items[i].cat);
+      items = items.filter((it, i) => !blocked.has(i));
+    }
+    items = items.map((item, slotId) => ({ ...item, slotId }));
+    return { name: strat.name, items, gaps, shopOriginal: structuredClone(items) };
   });
 }
 
 function generate() {
-  S.generating = true; S.stage = 0; S.sel = null;
+  if (typeof designGate === "function" && !designGate()) { chatMode = "setup"; chatOpen = true; renderDesigner(); return; }
+  S.generating = true; S.stage = 0; S.sel = null; S.step = DESIGN;
   render();
   const n = stagesText().length;
-  const tick = () => {
+  const tick = () => {   // walk through the stages, then show the options and render option 1
     S.stage++;
     if (S.stage >= n) {
       S.options = planOptions(); S.opt = 0;
       S.scene = structuredClone(S.options[0].items);
       S.shopMode = "current"; S.shopSelected = null;
       S.generating = false; S.dirty = false;
-      render();
+      syncLayout(); saveBrief(); render();
       renderScene();
       return;
     }
@@ -248,6 +304,7 @@ function stagesText() {
     `Reading your needs · ${S.needs.style.toLowerCase()}, ${money(S.needs.budget)}`,
     `Scaling the room · back wall ${inch(S.space.wallIn)}`,
     ...(keptCount() ? [`Keeping ${keptCount()} of your pieces`] : []),
+    ...(sketched().length ? [`Adding your ${sketched().length} sketched piece${sketched().length > 1 ? "s" : ""}`] : []),
     `Searching ${P.length} real products`,
     "Checking fit and budget",
     "Composing 3 options",
@@ -260,12 +317,15 @@ function render() {
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
   renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart(); renderMode();
+  if (typeof renderSketch === "function") renderSketch();   // sketch.js: shapes drawn on the photo -> furniture types
+  renderDesigner(); renderDiagnosis(); if(typeof renderLayout==='function')renderLayout();
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
 const photoSrc = () => S.space.photo === "demo" ? example().src : S.space.data;
-const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn, S.space.depthIn,
-  S.needs.style, items.map(it => [it.pid, it.vid, it.qty, it.own, it.pos.map(Math.round)])]);
+const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn, S.needs.style,
+  S.space.depthIn, S.space.corridor, S.space.clearanceIn, S.space.obstacles, B.revision,
+  items.map(it => [it.pid, it.vid, it.qty, it.own, it.pos])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
 const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
@@ -280,24 +340,31 @@ function showImage() {
 function itemPayload(it) {
   const p = view(it);
   return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
-           description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round) };
+           description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round),
+           ...(it.sketched ? { sketched: true } : {}) };
 }
 
 // What changed since the last render? null = too different, do a full render instead.
 function editsSinceLast() {
   const L = lastRender();
-  if (!L?.real || L.wallIn !== S.space.wallIn || L.depthIn !== S.space.depthIn || L.style !== S.needs.style) return null;
-  const diff = shopDiff(L.items, S.scene);
-  const changed = diff.filter(row => row.current && row.changes.length)
-    .map(({ current, before, changes }) => ({ ...itemPayload(current), replaces: before ? view(before).name : null,
-      moved: changes.includes("Moved") }));
-  const removed = diff.filter(row => !row.current).map(({ before }) => ({ category: CAT_LABEL[before.cat], name: view(before).name }));
+  if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
+  // the diff below matches pieces by category; with two of the same kind (e.g. a sketched second armchair) do a full render
+  const dup = items => new Set(items.map(it => it.cat)).size !== items.length;
+  if (dup(L.items) || dup(S.scene)) return null;
+  const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
+  const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
+  // a piece the sketch moved (newly sketched, or sketched somewhere else) counts as changed, so the render moves it
+  const spot = it => it.sketched ? it.pos.map(Math.round).join() : "";
+  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own && spot(a) === spot(b);
+  const changed = S.scene.filter(it => !before[it.cat] || !same(before[it.cat], it))
+    .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
+  const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
   const n = changed.length + removed.length;
   return n && n <= 3 ? { changed, removed } : null;
 }
 
 function renderRequest() {
-  const base = { room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style } };
+  const base = { room: { width_in: S.space.wallIn, depth_in: S.space.depthIn }, needs: { style: S.needs.style, brief:BriefEngine.active(B).map(r=>({text:r.text,impact:r.impact,scope:r.scope,productId:r.productId,category:r.category})) } };
   const edits = editsSinceLast();
   if (edits) {
     // edit mode: start from the current render and change only these pieces (keeps everything else stable)
@@ -310,13 +377,15 @@ function renderRequest() {
   return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
            items: S.scene.filter(it => !it.own).map(itemPayload),
            keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
-           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
+           remove_existing: ex.filter(e => !e.id.startsWith("picked-") && !S.scene.some(it => it.own === e.id)).map(here) };
 }
 
 // real = the image truly shows this scene (an AI render), so AI edits can build on it
-function rememberRender(sig, image, snapshot, real = true) {
+function rememberRender(sig, image, real = true) {
   S.renders[sig] = image;
-  if (snapshot.photoKey === photoKey()) S.last = { ...snapshot, image, real };
+  S.last = { image, real, photoKey: photoKey(), wallIn: S.space.wallIn, style: S.needs.style,
+             items: structuredClone(S.scene) };
+  if(typeof persistRenderedImage==='function')persistRenderedImage(sig,S.last);
 }
 
 function setLive(on) {
@@ -351,8 +420,7 @@ async function apiPost(path, obj) {
 async function renderScene(manual = false) {
   if (S.rendering || !S.scene || !S.scene.length) return;
   const sig = sceneSig();
-  const snapshot = { photoKey: photoKey(), wallIn: S.space.wallIn, depthIn: S.space.depthIn,
-    style: S.needs.style, items: structuredClone(S.scene) };
+  S.renderError='';
   if (!S.live) {
     // demo mode: show a saved render instead of calling Gemini (saves credits while we build)
     if (S.renders[sig]) { S.before = false; render(); return; }
@@ -370,14 +438,17 @@ async function renderScene(manual = false) {
     S.rendering = true; S.before = false; render();
     setTimeout(() => {
       // a saved demo image only fits the default plan; otherwise show your photo with the pieces you keep
-      const img = isBaked ? example().render : keepsMine ? photoSrc() : S.space.photo === "demo" ? example().render : EXAMPLES[0].render;
-      rememberRender(sig, img, snapshot, isBaked); S.rendering = false; render();
-      toast(isBaked ? "Demo render · AI renders are off (top right to turn on)" : keepsMine ? "Demo mode: showing your photo with the pieces you keep. Turn on AI renders to see the new ones in it"
-                      : "Demo render · AI renders are off (top right to turn on)");
+      const sk = S.scene.some(it => it.sketched);   // sketched pieces: no saved image has them, so show the photo
+      const img = isBaked ? example().render : keepsMine || sk ? photoSrc() : S.space.photo === "demo" ? example().render : EXAMPLES[0].render;
+      rememberRender(sig, img, isBaked); S.rendering = false; render();
+      toast(isBaked ? "Demo render · AI renders are off (top right to turn on)"
+            : sk ? "Demo mode: your sketched pieces show as pins. Turn on AI renders (top right) to see them in the picture"
+            : keepsMine ? "Demo mode: showing your photo with the pieces you keep. Turn on AI renders to see the new ones in it"
+            : "Demo render · AI renders are off (top right to turn on)");
     }, 700);
     return;
   }
-  if (S.renders[sig]) { rememberRender(sig, S.renders[sig], snapshot); S.before = false; render(); return; }
+  if (S.renders[sig]) { rememberRender(sig, S.renders[sig]); S.before = false; render(); return; }
   const reqObj = renderRequest();
   if (reqObj.mode !== "edit" && !reqObj.items.length && !(reqObj.remove_existing || []).length) {
     S.before = true; render(); toast("You're keeping everything, so there's nothing new to render yet");   // don't pay for a copy
@@ -385,12 +456,18 @@ async function renderScene(manual = false) {
   }
   S.rendering = true; S.before = false; render();
   try {
+    // sketched pieces in this render? send the sketch itself as a layout guide (sketch.js)
+    if (reqObj.items.some(it => it.sketched) && typeof sketchGuide === "function") {
+      const guide = await sketchGuide();
+      if (guide) reqObj.layout_guide = guide;
+    }
     const j = await apiPost("/api/render", reqObj);
-    rememberRender(sig, j.image, snapshot);
+    if(sig!==sceneSig()){toast('The design changed, so this image doesn’t show it. Render again.');return;}
+    rememberRender(sig, j.image);if(typeof logTransition==='function')logTransition('Render updated with the current picks and colors.');
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
   } catch (e) {
-    toast(e.message.slice(0, 120));
+    S.renderError=e.message; if(typeof logTransition==='function')logTransition('Render failed. Your picks are saved, so you can retry.');toast(e.message.slice(0,120));
   } finally {
     S.rendering = false; render();
   }
@@ -426,7 +503,7 @@ async function loadBakedFurniture() {
     const items = (await r.json()).items;
     if (photoKey() !== key) return;   // user switched photos meanwhile
     S.existing = { photoKey: key, status: "done", baked: true,
-                   items: items.map(e => ({ ...e, keep: true, status: e.iso ? "done" : "error" })) };
+                   items: items.map(e => ({ ...e, keep: false, status: e.iso ? "done" : "error" })) };
     S.dirty = true;
   } catch { /* no baked file: the user can still scan */ }
 }
@@ -439,7 +516,7 @@ async function scanFurniture() {
   try {
     const det = await apiPost("/api/detect", { photo: photoForApi() });
     if (!alive()) return;
-    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
+    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: false, status: "loading", iso: null, crop: null }));
     run.status = run.items.length ? "isolating" : "done";
     S.dirty = true; render();
     if (!run.items.length) { toast("No furniture found in this photo"); return; }
@@ -542,7 +619,7 @@ function renderHotspots() {
       <div class="hs-line"></div>
       <button class="hs-pill" data-action="select" data-idx="${i}">
         <img src="${esc(imgOf(p))}" alt="">
-        <span><small>${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}</small><b>${esc(label)}</b></span>
+        <span><small>${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}${it.sketched ? " · ✎ sketched" : ""}</small><b>${esc(label)}</b></span>
       </button>
       <div class="hs-dot" data-drag="${i}" title="Drag to place"></div>
     </div>`);
@@ -552,7 +629,7 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); }
+  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); if (typeof renderDesigner === "function") renderDesigner(); }
   else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = "";   // shop lives in the left drawer
@@ -653,14 +730,14 @@ function needsCard() {
       ${S.chat && QUESTIONS[S.chat.q] ? `<i class="dot"></i>` : ""}</button>`;
   }
   if (!S.chat || (S.chat.q === 0 && S.chat.log.length === 2)) chatStart();   // opening follows the latest photo scan
-  const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptCount();
+  const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptCount(), sk = sketched();
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
   const demo = sp.photo === "demo";
   const total = ex ? ex.items.reduce((m, e) => m + (e.count || 1), 0) : 0;
   const strip = !ex ? `<button class="link-btn" data-action="scan">Find furniture in this photo</button>`
     : ex.status === "detecting" ? `<span class="muted"><i class="spin dark"></i> Finding your furniture…</span>`
     : ex.status === "error" ? `<button class="link-btn" data-action="scan-again">Retry furniture scan</button>`
-    : `<div class="fx-head"><span>Your furniture</span><span class="muted">keeping ${kept} of ${total} · tap to ditch</span></div>
+    : `<div class="fx-head"><span>Your furniture</span><span class="muted">${kept ? `keeping ${kept} of ${total} · tap to change` : `${total} found · tap what you keep`}</span></div>
        <div class="fx-strip">${ex.items.map(e => `<button class="fx ${e.keep ? "" : "ditched"}" data-ex="${e.id}" data-action="keep-toggle" data-id="${e.id}"
            title="${esc(cap(e.label))}${e.keep ? " · tap to ditch" : " · tap to keep"}">
            <span class="fx-img">${e.iso ? `<img src="${esc(e.iso)}" alt="">` : e.crop ? `<img src="${esc(e.crop)}" alt=""><i class="shimmer"></i>` : `<i class="shimmer"></i>`}
@@ -670,6 +747,7 @@ function needsCard() {
       <b>${ROOMS[n.room]} · ${esc(n.style)} · ${money(n.budget)}</b>
       ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
       ${kept ? `<small>Designing around ${kept} piece${kept > 1 ? "s" : ""} you keep</small>` : ""}
+      ${sk.length ? `<small>Sketched: ${esc(sk.map(s => CAT_LABEL[s.category]).join(", "))}</small>` : ""}
     </div>
     <button class="btn block" data-action="next">Design my room →</button>` : "";
   return `<div class="card needs-win">
@@ -677,7 +755,8 @@ function needsCard() {
       <button class="photo-mini" data-action="upload" id="drop" title="Upload or drop a photo of your room"><img src="${esc(photoSrc())}" alt=""><i>↑</i></button>
       <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
-          · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button></span></div>
+          · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
+      ${S.chat.log.length > 2 ? `<button class="icon-btn" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
       <button class="icon-btn" data-action="needs-min" title="Minimize" aria-label="Minimize">–</button>
     </div>
     ${S.sizeOpen ? `<div class="size-row">
@@ -689,12 +768,7 @@ function needsCard() {
       ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       ${brief}
     </div>
-    <form class="chat-input" data-chat>
-      <input type="text" placeholder="${q ? "Or just type: budget 2500, seats 4…" : "Add anything else…"}" aria-label="Message">
-      <button class="send" aria-label="Send">↑</button>
-      ${S.chat.log.length > 2 ? `<button type="button" class="restart" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
-    </form>
-  </div>`;
+  </div>`;   // you type in the one bar at the bottom (docked-chat.js); on this step it answers this chat
 }
 function afterChatRender() {
   const log = $(".chat-log");
@@ -705,31 +779,37 @@ function afterChatRender() {
 function progressCard() {
   return `<div class="card card-center" style="width:400px">
     <h2>Designing…</h2>
-    <p class="sub">Choosing from real, in-stock furniture.</p>
+    <p class="sub">Choosing from the real product catalogue snapshot.</p>
     <ul class="stages">${stagesText().map((t, i) =>
       `<li class="${i < S.stage ? "done" : i === S.stage ? "now" : ""}"><span class="tick">${i < S.stage ? "✓" : ""}</span>${esc(t)}</li>`).join("")}</ul>
   </div>`;
 }
 function optionsView() {
-  return `<div class="options">${S.options.map((o, i) => {
-    const imgs = o.items.slice(0, 4).map(it => `<img src="${esc(imgOf(view(it)))}" alt="">`).join("");
+  return `<button class="btn sofa-browse" data-action="sofa-browse">Find your sofa ↗</button><div class="options">${S.options.map((o, i) => {
+    // sketched pieces first, so what you drew is visible on the card
+    const shown = o.items.filter(it => it.sketched).concat(o.items.filter(it => !it.sketched)).slice(0, 4);
+    const imgs = shown.map(it => `<img src="${esc(imgOf(view(it)))}" alt="" class="${it.sketched ? "sk-thumb" : ""}">`).join("");
+    const nSk = o.items.filter(it => it.sketched).length;
     return `<button class="opt ${S.opt === i ? "on" : ""}" data-action="option" data-idx="${i}">
       <div class="grid">${imgs}</div>
       <b>Option ${i + 1} · ${o.name}</b>
-      <small>${money(sceneTotal(o.items))} · ${o.items.length} pieces</small>
+      <small>${money(sceneTotal(o.items))} · ${o.items.length} pieces${nSk ? ` · ✎ ${nSk} sketched` : ""}</small>
     </button>`;
   }).join("")}</div>
   <button class="btn options-cta" data-action="next">Edit this design →</button>`;
 }
 
 /* edit */
-function editHint() { return ""; }
+// the next step, always one clear button: tap a piece to change it, or move on to the list
+function editHint() {
+  return `<button class="btn options-cta" data-action="next">Done · shop the list →</button>`;
+}
 function detailCard() {
   const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
   const colorways = base ? [{ id: null, variant: base.variant, image: imgOf(base) }, ...base.variants.map(v => ({ id: v.id, variant: v.variant, image: v.image }))] : [];
-  const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it))
-    .sort((a, b) => Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
+  const alts = P.filter(q => q.category === it.cat && q.id !== it.pid && fits(q, it) && eligibleSwap(q, it))
+    .sort((a, b) => BriefEngine.assess(b,it.cat,B).score-BriefEngine.assess(a,it.cat,B).score || Math.abs(a.price.amount - p.price.amount) - Math.abs(b.price.amount - p.price.amount)).slice(0, 6);
   return `<div class="card card-right">
     <button class="close" data-action="close" aria-label="Close">×</button>
     <img class="p-img" src="${esc(imgOf(p))}" alt="">
@@ -739,9 +819,11 @@ function detailCard() {
     <p class="p-price">${p.owned ? `<span class="fit">Already yours · $0</span>` : money(p.price.amount)}${it.qty > 1 ? ` <small style="font-size:13px;color:var(--ink-soft)">each · ${money(p.price.amount * it.qty)}</small>` : ""}</p>
     <dl class="facts">
       <dt>Size</dt><dd>${dimsText(p)}</dd>
-      <dt>Fit</dt><dd><span class="fit ${ok ? "" : "no"}">${ok ? "Fits" : "Too wide"} · max ${inch(maxWidthFor(it))} wide</span></dd>
+      <dt>Fit</dt><dd><span class="fit ${ok ? "" : "no"}">${ok ? "Width check passes" : "Too wide"} · max ${inch(maxWidthFor(it))} wide</span></dd>
       ${p.materials.length ? `<dt>Material</dt><dd>${esc(p.materials.slice(0, 4).join(", "))}</dd>` : ""}
     </dl>
+    <div class="selection-reasons"><b>Why this is here</b><p>Within the current budget and width allowance. Width-only check; circulation and depth need verification.</p>${BriefEngine.assess(p,it.cat,B).reasons.map(id=>B.requirements.find(r=>r.id===id)).filter(Boolean).map(r=>`<p>✓ ${esc(r.text)}</p>`).join('')}${BriefEngine.active(B).filter(r=>r.effect==='design_note' && (r.category==='all'||r.category===it.cat)).map(r=>`<p>To verify: ${esc(r.text)}</p>`).join('')}</div>
+    ${it.cat==='sofa'?sofaEvidence(p):''}
     ${colorways.length > 1 ? `<label class="field">Colorways · ${colorways.length}</label>
       <div class="swatches">${colorways.slice(0, 10).map(c =>
         `<button class="swatch ${(it.vid || null) === c.id ? "on" : ""}" data-action="colorway" data-vid="${c.id || ""}" title="${esc(c.variant)}"><img src="${esc(c.image)}" alt=""></button>`).join("")}</div>` : ""}
@@ -775,8 +857,8 @@ function cartSummary() {
 }
 function cartRow({ it, i }) {
   const p = view(it);
-  return `<li><button class="row-img" data-action="cart-item" data-idx="${i}"><img src="${esc(imgOf(p))}" alt=""></button>
-    <div><b>${esc(p.name)}</b><small>${esc(p.owned ? CAT_LABEL[it.cat] : p.variant || "")}</small><small>${dimsText(p)}</small></div>
+  return `<li><button class="row-img" data-action="cart-item" data-idx="${i}" aria-label="Select ${esc(p.name)}"><img src="${esc(imgOf(p))}" alt=""></button>
+    <div><b>${esc(p.name)}</b><small>${esc(p.owned ? CAT_LABEL[it.cat] : p.variant || "")}</small><small>${dimsText(p)}</small>${it.cat==='sofa'?`<small>${esc(sofaReason(SofaMatcher.assess(p,B)))}</small>`:''}</div>
     <div class="amt">${p.owned ? `${it.qty > 1 ? it.qty + " × " : ""}Yours` : `${it.qty > 1 ? it.qty + " × " : ""}${money(p.price.amount)}<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.brand)} ↗</a>`}</div></li>`;
 }
 
@@ -809,8 +891,14 @@ function renderCart() {
     ${cartSummary()}
     <button class="btn ghost shop-launch" data-action="shop-view" data-view="room">Explore room view <span aria-hidden="true">↗</span></button>
     <div class="drawer-scroll">
+      ${S.options[S.opt]?.gaps?.length ? `<p class="chat-warning">Nothing fits your needs for: ${S.options[S.opt].gaps.map(c => CAT_LABEL[c].toLowerCase()).join(", ")}</p>` : ""}
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
       ${keep.length ? `<label class="field">Keeping · ${keepN}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
+    </div>
+    <div class="btn-row sched-row">
+      <span>FF&amp;E schedule</span>
+      <button class="btn" data-action="schedule-pdf" title="Print the schedule, or save it as a PDF">PDF</button>
+      <button class="btn ghost" data-action="schedule" title="Download the schedule as a spreadsheet file">CSV</button>
     </div>
     <div class="btn-row">
       <button class="btn ghost" data-action="copy">Copy list</button>
@@ -835,7 +923,9 @@ function renderCart() {
           <button class="xchip ${roomView ? "" : "on"}" data-action="shop-view" data-view="list" aria-pressed="${!roomView}">List</button>
           <button class="xchip ${roomView ? "on" : ""}" data-action="shop-view" data-view="room" aria-pressed="${roomView}">Room view</button>
         </div>
-        ${roomView ? "" : '<button class="xchip x-copy" data-action="copy">Copy list</button>'}
+        ${roomView ? "" : `<button class="xchip x-copy" data-action="copy">Copy list</button>
+        <button class="xchip" data-action="schedule-pdf" title="Print the FF&amp;E schedule, or save it as a PDF">Schedule PDF</button>
+        <button class="xchip" data-action="schedule" title="Download the FF&amp;E schedule as a spreadsheet file">CSV</button>`}
         <button class="icon-btn glass" data-action="cart-collapse" title="Back to list" aria-label="Back to list">⤡</button>
         <button class="icon-btn glass" data-action="cart-close" title="Close" aria-label="Close">×</button>
       </div>
@@ -968,6 +1058,7 @@ function previewMarkup(it, i, stars) {
 
 /* ---------------- actions ---------------- */
 function goto(i) {
+  if(i>=DESIGN && typeof designGate==='function' && !designGate()){chatMode='setup';chatOpen=true;renderDesigner();return;}
   i = Math.max(0, Math.min(STEPS.length - 1, i));
   S.step = i; S.sel = null;
   if (i === SHOP) S.cart = "open";
@@ -980,6 +1071,8 @@ function exportScene() {
   return {
     room: { width_in: S.space.wallIn, depth_in: S.space.depthIn, photo: S.space.photo === "demo" ? example().src : "upload" },
     needs: { ...S.needs, budget_usd: S.needs.budget },
+    brief: B,
+    layout: S.layout,
     items: S.scene.map(it => {
       const p = view(it);
       return { slot: it.cat, qty: it.qty, sku: p.id, name: p.name, variant: p.variant, price_usd: p.price.amount,
@@ -988,6 +1081,98 @@ function exportScene() {
     }),
     total_usd: sceneTotal(S.scene),
   };
+}
+
+// FF&E schedule: the room as the list a designer hands on. The 13 columns are those of a real FF&E schedule sheet;
+// "Room #" stays empty (a photo has no room number) and "Drawing Ref" names the photo the design was made on.
+const SCHEDULE_COLS = ["Space", "Room #", "Item #", "Item Description", "Category", "Qty", "Unit", "Spec / Notes",
+                       "Vendor", "Unit Cost", "Total Cost", "Drawing Ref", "Status"];
+// One list, two files: every schedule line as an object. The CSV and the printed sheet (PDF) both read it.
+function scheduleItems() {
+  const space = ROOMS[S.needs.room] || S.needs.room;
+  const ref = S.space.photo === "demo" ? example().src.split("/").pop() : "Uploaded room photo";
+  return S.scene.map((it, i) => {
+    const p = view(it), q = it.qty || 1, d = p.dims_in;
+    const dims = [["W", d.width], ["D", d.depth], ["H", d.height]].filter(x => x[1] != null)
+      .map(x => `${x[0]} ${+(+x[1]).toFixed(1)} in`).join(" x ");
+    return { space, ref, no: "FFE-" + String(i + 1).padStart(3, "0"), name: p.name, variant: p.owned ? "" : p.variant || "",
+             category: CAT_LABEL[it.cat], qty: q, dims: (p.estimated && dims ? "approx. " : "") + dims,
+             materials: (p.materials || []).join(", "), sku: p.owned ? "" : String(p.id).split(":").pop(),
+             note: p.owned ? p.description || "" : "", url: p.url || "", vendor: p.owned ? "Existing" : p.brand,
+             unit: p.owned ? null : p.price.amount, total: p.owned ? null : p.price.amount * q,
+             status: p.owned ? "Existing, keep" : "Selected", owned: !!p.owned, img: imgOf(p), priced: p.scraped_at || "" };
+  });
+}
+function scheduleRows() {
+  const rows = scheduleItems().map(x => [x.space, "", x.no, x.variant ? `${x.name}, ${x.variant}` : x.name, x.category, x.qty, "EA",
+    [x.dims, x.materials, x.sku && "SKU " + x.sku, x.note, x.url].filter(Boolean).join("; "), x.vendor,
+    x.unit == null ? "" : x.unit.toFixed(2), x.total == null ? "" : x.total.toFixed(2), x.ref, x.status]);
+  rows.push(["", "", "", "TOTAL TO BUY", "", "", "", "", "", "", sceneTotal(S.scene).toFixed(2), "", ""]);
+  return rows;
+}
+
+// The same list as a page for paper: the picture, the facts, one row per piece with its photo. It is printed, and the
+// browser's "Save as PDF" makes the file, so the app needs no PDF library. Styles: the print block in style.css.
+const usd = n => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function scheduleSheet() {
+  const items = scheduleItems(), tot = sceneTotal(S.scene), b = S.needs.budget, over = tot > b;
+  const buy = items.filter(x => !x.owned), keepN = items.filter(x => x.owned).reduce((n, x) => n + x.qty, 0);
+  const priced = buy.map(x => x.priced).sort().pop();
+  const day = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const fact = (k, v, cls = "") => `<div class="${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
+  const row = x => `<tr>
+      <td><img src="${esc(x.img)}" alt=""></td>
+      <td class="no">${x.no}</td>
+      <td class="name"><b>${esc(x.name)}</b>${x.variant ? `<small>${esc(x.variant)}</small>` : ""}</td>
+      <td>${esc(x.category)}</td>
+      <td class="n">${x.qty}</td>
+      <td class="spec">${esc([x.dims, x.materials, x.note].filter(Boolean).join(" · "))}${x.sku ? `<small>SKU ${esc(x.sku)}</small>` : ""}</td>
+      <td>${x.url ? `<a href="${esc(x.url)}">${esc(x.vendor)}</a>` : esc(x.vendor)}</td>
+      <td class="n">${x.unit == null ? "" : usd(x.unit)}</td>
+      <td class="n">${x.total == null ? "" : usd(x.total)}</td>
+      <td><span class="sh-pill ${x.owned ? "keep" : ""}">${x.status}</span></td>
+    </tr>`;
+  return `<header class="sh-head">
+      <div>
+        <div class="sh-brand">The Elephant in the Room</div>
+        <h1>FF&amp;E schedule</h1>
+        <p class="sh-meta">${esc(items[0]?.space || "")} · ${esc(S.needs.style.toLowerCase())} · ${day}</p>
+        <dl class="sh-facts">
+          ${fact("To buy", `${buy.length} piece${buy.length === 1 ? "" : "s"}`)}
+          ${fact("Keeping", keepN)}
+          ${fact("Total", usd(tot))}
+          ${fact("Budget", `${money(b)} · ${over ? money(tot - b) + " over" : money(b - tot) + " left"}`, over ? "over" : "")}
+        </dl>
+      </div>
+      <img class="sh-room" src="${esc(room.currentSrc || room.src)}" alt="">
+    </header>
+    <table class="sh-table">
+      <thead><tr><th></th><th>Item #</th><th>Item</th><th>Category</th><th class="n">Qty</th><th>Spec / notes</th><th>Vendor</th>
+        <th class="n">Unit cost</th><th class="n">Total</th><th>Status</th></tr></thead>
+      <tbody>${items.map(row).join("")}</tbody>
+      <tfoot><tr><td colspan="8">Total to buy</td><td class="n">${usd(tot)}</td><td></td></tr></tfoot>
+    </table>
+    <p class="sh-foot">${priced ? `Prices and sizes as listed by the retailer on ${esc(priced)}. ` : ""}Sizes of kept pieces are estimates from the photo. Drawing ref: ${esc(items[0]?.ref || "")}.</p>`;
+}
+async function printSchedule() {
+  const sheet = $("#sheet"), title = document.title;
+  sheet.innerHTML = scheduleSheet();
+  await Promise.all([...sheet.querySelectorAll("img")].map(im => im.decode().catch(() => {})));   // photos in before the dialog opens
+  document.title = `FF&E schedule - ${ROOMS[S.needs.room] || S.needs.room}`;                      // the PDF's default file name
+  addEventListener("afterprint", () => { document.title = title; sheet.innerHTML = ""; }, { once: true });
+  print();
+}
+// A cell that starts like a formula gets a leading quote, so a spreadsheet shows it as text instead of running it.
+const csvCell = v => {
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const toCsv = rows => "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n") + "\r\n";   // BOM: Excel reads UTF-8
+
+function saveFile(name, text, type) {
+  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([text], { type })), download: name });
+  link.click(); URL.revokeObjectURL(link.href);
 }
 
 // click on empty room / empty space around a window -> hide every open window
@@ -1013,6 +1198,7 @@ document.addEventListener("click", e => {
   else if (act === "upload") $("#file").click();
   else if (act === "demo") {
     if (S.space.photo === "demo") S.space.ex = (S.space.ex + 1) % EXAMPLES.length;
+    B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null;
     S.space.photo = "demo"; S.space.data = null; S.dirty = true;
     if (!S.chat || S.chat.q === 0) S.needs.room = example().room;   // until the user picks a room in the chat
     showImage(); render();
@@ -1021,7 +1207,7 @@ document.addEventListener("click", e => {
   else if (act === "option") {
     S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items);
     S.shopMode = "current"; S.shopSelected = null;
-    render(); renderScene();
+    syncLayout(); saveBrief(); render(); renderScene();
   }
   else if (act === "render") renderScene(true);
   else if (act === "chat") {
@@ -1042,16 +1228,14 @@ document.addEventListener("click", e => {
   else if (act === "select") { S.sel = +a.dataset.idx; if (S.step !== EDIT) S.step = EDIT; render(); }
   else if (act === "close") { S.sel = null; render(); }
   else if (act === "swap") {
-    const it = S.scene[S.sel]; it.pid = a.dataset.pid; it.vid = null; delete it.own;
-    render(); toast(`Swapped to ${byId[it.pid].name} · click Update render`);
+    try{changeSceneProduct(S.sel,a.dataset.pid,null);toast('Swapped. Click Update render to see it');}catch(e){toast(e.message);}
   } else if (act === "colorway") {
-    S.scene[S.sel].vid = a.dataset.vid || null; render();
-    toast(`Color · ${view(S.scene[S.sel]).variant}`);
+    try{changeSceneProduct(S.sel,S.scene[S.sel].pid,a.dataset.vid||null);toast('Color changed. Click Update render');}catch(e){toast(e.message);}
   } else if (act === "remove") {
-    const [it] = S.scene.splice(S.sel, 1); S.sel = null;
+    const [it] = S.scene.splice(S.sel, 1); recordEdit(`I removed ${view(it).name} from this design.`); S.removedCategories.push(it.cat); S.sel = null;
     if (it.own && exById(it.own)) exById(it.own).keep = false;
     render();
-    toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
+    syncLayout();saveBrief();renderDesigner();toast(`Removed ${CAT_LABEL[it.cat].toLowerCase()}`);
   } else if (act === "labels") document.body.classList.toggle("no-labels");
   else if (act === "live") {
     setLive(!S.live);
@@ -1103,10 +1287,11 @@ document.addEventListener("click", e => {
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
     navigator.clipboard.writeText(txt).then(() => toast("Shopping list copied"), () => toast("Copy failed"));
   } else if (act === "download") {
-    const blob = new Blob([JSON.stringify(exportScene(), null, 2)], { type: "application/json" });
-    const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "scene.json" });
-    link.click(); URL.revokeObjectURL(link.href);
-  }
+    saveFile("scene.json", JSON.stringify(exportScene(), null, 2), "application/json");
+  } else if (act === "schedule") {
+    saveFile("ffe-schedule.csv", toCsv([SCHEDULE_COLS, ...scheduleRows()]), "text/csv;charset=utf-8");
+    toast("FF&E schedule downloaded");
+  } else if (act === "schedule-pdf") printSchedule();
 });
 
 document.addEventListener("input", e => {
@@ -1136,26 +1321,19 @@ function loadPhoto(file) {
       const c = Object.assign(document.createElement("canvas"), { width: img.width * k, height: img.height * k });
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       S.space.data = c.toDataURL("image/jpeg", 0.9); S.space.photo = "upload"; S.dirty = true;
-      showImage(); render(); toast("Room photo loaded · looking for your furniture");
-      scanFurniture();
+      B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null; S.space.confirmed=false;S.scene=null;S.options=[];S.layout=null;layoutOpen=false;S.sel=null;B.setupApproved=false;chatMode='conversation';chatOpen=false;
+      if(typeof selectedObject!=='undefined'){selectedObject=null;objectNotice='';renderObjectSelection();}
+      saveBrief(); showImage(); render(); toast("Room photo loaded · looking for your furniture");
+      scanFurniture(); startPhotoConversation();
     };
     img.src = r.result;
   };
   r.readAsDataURL(file);
 }
-$("#file").addEventListener("change", e => loadPhoto(e.target.files[0]));
+$("#file").addEventListener("change", e => { const file=e.target.files[0]; e.target.value=""; loadPhoto(file); });
 addEventListener("dragover", e => { if (S.step === NEEDS) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
 addEventListener("drop", e => { if (S.step === NEEDS) { e.preventDefault(); loadPhoto(e.dataTransfer.files[0]); } });
-
-document.addEventListener("submit", e => {
-  if (!e.target.matches("[data-chat]")) return;
-  e.preventDefault();
-  const input = e.target.querySelector("input"), text = input.value.trim();
-  if (!text) return;
-  chatFree(text); renderPanel();
-  $(".chat-input input")?.focus();
-});
 
 /* hover a piece in the panel -> highlight its box on the photo */
 document.addEventListener("mouseover", e => {
@@ -1187,28 +1365,29 @@ addEventListener("keydown", e => {
   else if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
   else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); });
+addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
-fetch("../data/products.json")
-  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d => {
+Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))
+  .then(([d,annotations,ontology]) => {
+    SofaMatcher.configure(ontology,annotations,d);
     P = d; byId = Object.fromEntries(d.map(p => [p.id, p]));
+    restoreDesignerProject();
     // deep link for demos: #room=bedroom&step=3&sel=0
     const h = new URLSearchParams(location.hash.slice(1));
-    if (EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
+    if (h.has("ex") && EXAMPLES[+h.get("ex")]) { S.space.ex = +h.get("ex"); S.needs.room = example().room; }   // #ex=1 = bar counter
     NO_BAKE = h.has("nobake");
     return loadBakedFurniture().then(() => h);
   })
   .then(h => {
     if (ROOMS[h.get("room")]) S.needs.room = h.get("room");
     const step = +h.get("step") || 0;
-    if (step >= DESIGN) {
+    if (step >= DESIGN && designGate()) {
       S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
-    S.step = Math.min(step, STEPS.length - 1);
+    S.step = S.scene ? Math.min(step||DESIGN, STEPS.length - 1) : NEEDS;
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
@@ -1217,7 +1396,7 @@ fetch("../data/products.json")
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1
       scanFurniture().then(() => {
-        if (step >= DESIGN) { S.options = planOptions(); S.scene = structuredClone(S.options[S.opt].items); render(); }
+        if (step >= DESIGN && designGate()) { S.options = planOptions(); S.scene = structuredClone(S.options[0].items); render(); }
         after();
       });
     } else after();

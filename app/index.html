@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="floating-chat.css">
 </head>
 <body>
   <main id="stage">
@@ -23,8 +24,10 @@
       <div id="measure" hidden></div>
       <div id="boxes"></div>
       <div id="hotspots"></div>
+      <canvas id="sketch" hidden aria-label="Sketch layer: draw on the room"></canvas>
 
       <div class="frame">
+        <button id="skfab" class="sk-fab" data-sk="enter" hidden aria-label="Sketch furniture"></button>
         <div class="brand">The Elephant in the Room</div>
         <div id="topbar" class="topbar" hidden></div>
         <button id="mode" class="mock-tag" data-action="live" title="Switch between demo renders and live AI renders"></button>
@@ -33,6 +36,7 @@
         <button class="side side-right" id="next" data-action="next"></button>
 
         <section id="panel"></section>
+        <section id="sketchbar" hidden aria-label="Sketch tools"></section>
         <nav id="rail" class="rail" hidden aria-label="Shortcuts"></nav>
 
         <nav id="steps" class="pill-row" aria-label="Pipeline steps"></nav>
@@ -43,10 +47,20 @@
     </div>
     <div id="toast" class="pill pill-static" hidden></div>
   </main>
+  <input id="context-file" type="file" accept="image/*" hidden>
+  <section id="sheet" aria-hidden="true"></section>   <!-- the FF&E schedule as a page for paper; filled only while printing -->
   <input id="file" type="file" accept="image/*" hidden>
+  <script src="sofa-matcher.js"></script>
+  <script src="brief-engine.js"></script>
+  <script src="layout-engine.js"></script>
+  <script src="designer.js"></script>
+  <script src="sofa-ui.js"></script>
   <script src="shop-layout.js"></script>
   <script src="shop-products.js"></script>
   <script src="shop-room.js"></script>
   <script src="app.js"></script>
+  <script src="docked-chat.js"></script>
+  <script src="design-workflow.js"></script>
+  <script src="sketch.js"></script>
 </body>
 </html>

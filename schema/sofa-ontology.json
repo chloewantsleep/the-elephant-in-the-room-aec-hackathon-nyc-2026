@@ -1,0 +1,24 @@
+{
+ "version":1,
+ "basis":"Schema.org Product / PropertyValue with per-attribute provenance; sofa-specific decision vocabulary",
+ "units":"inches",
+ "attributes":{
+  "width":"Overall width, never packaging width","depth":"Overall depth","height":"Overall height",
+  "seat_depth":"Usable seat depth","seat_width":"Usable seat width","seat_height":"Unloaded seat height",
+  "arm_height":"Arm height from floor","arm_width":"Arm top width","arm_height_above_seat":"Arm height minus seat height; derived, not a comfort measurement",
+  "padded_arms":"Padding explicitly described or foam listed in armrest construction; not a softness rating",
+  "wide_arms":"Manufacturer describes wide arms","low_arms":"Manufacturer describes low arms",
+  "removable_cover":"Manufacturer documents removable cover","washable_cover":"Manufacturer explicitly documents machine washing the cover",
+  "sleeper":"Documented bed conversion","bed_width":"Bed width","bed_length":"Bed length","storage":"Documented storage",
+  "firmness":"Unknown without specific vendor evidence or physical testing","back_angle":"Unknown without a measured source","seat_compression":"Unknown without physical testing"
+ },
+ "profiles":{
+  "side_lounge":{"label":"Leaning sideways to read","meaning":"Room to stretch and a padded arm contact surface; does not imply high arms are necessary","signals":[["seat_width",1,2],["seat_depth",1,1],["padded_arms",1,2],["arm_width",1,1]],"caution":"Head support and cushion feel still need a sit test."},
+  "cross_legged":{"label":"Sitting cross-legged","meaning":"Prioritize usable seat depth and width, not external sofa depth","signals":[["seat_depth",1,3],["seat_width",1,1]],"caution":"Body size and preferred back support can change the fit."},
+  "upright_chat":{"label":"Sitting upright to talk","meaning":"Prefer comparatively shallower seats; no claim of ergonomic fit","signals":[["seat_depth",-1,3],["seat_height",1,1]],"caution":"Back angle and cushion compression are not verified."},
+  "frequent_rising":{"label":"Getting up frequently","meaning":"Prioritize comparatively higher and shallower seats","signals":[["seat_height",1,3],["seat_depth",-1,1]],"caution":"Seat height alone cannot establish ease of standing for an individual."},
+  "overnight_guests":{"label":"Hosting overnight guests","meaning":"Look for documented conversion and bed dimensions","signals":[["sleeper",1,3],["bed_length",1,1],["bed_width",1,1]],"caution":"Bed size, mechanism and sleep comfort need confirmation."},
+  "easy_clean":{"label":"Cleaning covers regularly","meaning":"Prioritize documented removable, machine-washable covers for this exact version","signals":[["washable_cover",1,3],["removable_cover",1,1]],"caution":"Washability is not evidence of stain or pet-scratch resistance."}
+ },
+ "scoring":"Numeric signals use relative position within the verified catalogue, scaled 0 to 1 in the preferred direction; known less-aligned values earn less support, missing values earn none; direction and weight are explicit. Boolean documented true adds its weight; unknown adds zero and is disclosed. Lifestyle scores only rank, never filter. All hard constraints are checked separately. Profiles are design hypotheses confirmed by the user, not universal ergonomic rules."
+}

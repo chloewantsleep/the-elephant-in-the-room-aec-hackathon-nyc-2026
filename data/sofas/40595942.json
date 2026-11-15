@@ -1,0 +1,213 @@
+{
+  "sku": "ikea:40595942",
+  "url": "https://www.ikea.com/us/en/p/glostad-sofa-knisa-dark-gray-40595942/",
+  "retrieved_at": "2026-11-14T20:35:30.598689+00:00",
+  "measurements": [
+    {
+      "measure": "30 3/4 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "9 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "26 3/4 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "16 1/8 \"",
+      "name": "Seat height",
+      "type": "00039"
+    },
+    {
+      "measure": "70 1/8 \"",
+      "name": "Width",
+      "type": "00047"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "goodToKnow": {
+        "id": "product-details-good-to-know",
+        "title": "Good to know",
+        "contentProps": {
+          "goodToKnow": [
+            {
+              "name": "Purchase-/Other information",
+              "text": "Stationary cover."
+            }
+          ]
+        }
+      },
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "100% polyester (min. 90% recycled)",
+                  "part": "Fabric:"
+                },
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining:"
+                },
+                {
+                  "material": "Steel, Steel, Epoxy/polyester powder coating",
+                  "part": "Back frame:"
+                },
+                {
+                  "material": "Plywood, Laminated veneer lumber, Steel, Steel, Epoxy/polyester powder coating",
+                  "part": "Seat frame:"
+                },
+                {
+                  "material": "Steel, Epoxy/polyester powder coating",
+                  "part": "Armrest:"
+                },
+                {
+                  "material": "Polyurethane foam 1.5 lb/cu.ft., Felt liner, Steel",
+                  "part": "Seat:"
+                },
+                {
+                  "material": "100 % polyester - hollow fiber (100% recycled), 30% cut polyurethane foam/ 70% polyester fibers, Polyurethane foam",
+                  "part": "Backrest cushion:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Leg:"
+                },
+                {
+                  "material": "Steel, Galvanized",
+                  "part": "Metal part:"
+                }
+              ]
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Frame, non-removable cover",
+              "texts": [
+                "Vacuum clean.",
+                "Wipe clean with a damp cloth."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "This cover’s ability to resist abrasion has been tested to handle 40,000 cycles. 15,000 cycles or more is suitable for furniture used every day at home. Over 30,000 cycles means a good ability to resist abrasion."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 5-6 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This seating furniture is tested and complies with relevant strength and durability standards. The tests simulate typical usage of the product and are based on use by persons weighing up to 242 lbs."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "405.959.42",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/glostad-sofa-knisa-dark-gray__AA-2506407-2-100.pdf",
+                  "label": "GLOSTAD Sofa"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "405.959.42",
+                  "url": "https://www.ikea.com/us/en/manuals/glostad-sofa-knisa-dark-gray__AA-2144060-1-2.pdf",
+                  "label": "GLOSTAD Sofa"
+                },
+                {
+                  "id": "405.959.42",
+                  "url": "https://www.ikea.com/us/en/manuals/glostad-sofa-knisa-dark-gray__AA-2314490-1-100.pdf",
+                  "label": "GLOSTAD Sofa"
+                },
+                {
+                  "id": "405.959.42",
+                  "url": "https://www.ikea.com/us/en/manuals/glostad-sofa-knisa-dark-gray__AA-2666808-2-100.pdf",
+                  "label": "GLOSTAD Sofa"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "GLOSTAD sofa has a simple design which is also comfortable with its thick seat, padded armrests and soft back cushions that sit firmly in place.",
+        "The sofa's low weight makes it easy to move – in your current home or when moving to a new home.",
+        "The slightly angled legs make the sofa stable, while giving it a personal expression.",
+        "The design allows us to use the material more efficiently in production, which is good for the planet – and helps us give you a lower price.",
+        "A sofa with small dimensions, which is easy to furnish with, even when space is limited.",
+        "This cover is made from Knisa fabric in polyester, which is dope-dyed. It’s a durable material which has a soft feel.",
+        "Designed so that you can quickly and easily assemble it with just 10 screws.",
+        "10 year Limited warranty. Read about the terms in the warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "Jonas Hultqvist",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "40595942",
+    "title": "Product details"
+  }
+}

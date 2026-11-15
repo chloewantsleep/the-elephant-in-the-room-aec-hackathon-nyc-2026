@@ -82,7 +82,7 @@ function shopSample(ref, item) {
 
 function shopSceneLayout(rows, space, room, originalRef, currentRef) {
   const anchors = SHOP_ROOM_ANCHORS[room] || SHOP_ROOM_ANCHORS.living;
-  const profiles = [originalRef?.profile, currentRef?.profile];
+  const profiles = space.confirmed ? [] : [originalRef?.profile, currentRef?.profile];
   let width = Math.max(36, shopPositive(space.wallIn, 144), ...profiles.map(p => p?.width || 0));
   let depth = Math.max(36, shopPositive(space.depthIn, 132), ...profiles.map(p => p?.depth || 0));
   const distance = 5;
@@ -100,10 +100,22 @@ function shopSceneLayout(rows, space, room, originalRef, currentRef) {
         form: sample?.form, w: shopPositive(dimensions.width, 22), d: shopPositive(dimensions.depth, shopPositive(dimensions.width, 18)),
         h: shopPositive(dimensions.height, 20), pieces: [] };
     });
+    const measured = space.confirmed ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
+    const fixed = new Map();
+    const occupied = [];
+    if (measured?.ready) {
+      for (const rect of measured.reserved) {
+        occupied.push({ x: rect.x + rect.w / 2, y: rect.y + rect.d / 2, rw: rect.w, rd: rect.d });
+      }
+      for (const rect of measured.placed) {
+        const piece = { x: rect.x + rect.w / 2, y: rect.y + rect.d / 2, rw: rect.w, rd: rect.d, turn: rect.rotated ? 1 : 0 };
+        fixed.set(`${entries[rect.i].id}:${rect.q}`, piece);
+        if (!rect.layer) occupied.push(piece);
+      }
+    }
     const priority = { sofa: 0, bed: 0, dining_table: 0, desk: 0, coffee_table: 1,
       rug: 3, table_lamp: 4, pendant_lamp: 4 };
     entries.sort((a, b) => (priority[a.item.cat] ?? 2) - (priority[b.item.cat] ?? 2));
-    const occupied = [];
     const first = cat => entries.find(row => row.item.cat === cat)?.pieces[0];
 
     function openSpot(x, y, rw, rd) {
@@ -136,9 +148,15 @@ function shopSceneLayout(rows, space, room, originalRef, currentRef) {
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
       const z = parent?.h || (cat === "mirror" ? 32 : cat === "pendant_lamp" ? 80 : 0);
-      const [u, v, direction = 0] = anchors[cat] || [item.pos[0] / 100, (item.pos[1] - 15) / 95];
+      const imageAnchor = [item.pos[0] / 100, (item.pos[1] - 15) / 95];
+      const [u, v, direction = 0] = item.sketched ? imageAnchor : anchors[cat] || imageAnchor;
       const qty = item.qty || 1;
       for (let i = 0; i < qty; i++) {
+        const confirmed = fixed.get(`${row.id}:${i}`);
+        if (confirmed) {
+          row.pieces.push({ ...confirmed, z, w, d, h });
+          continue;
+        }
         let x = u * width, y = v * depth, turn = direction;
         if (cat === "nightstand" && bed) {
           x = bed.x + (i % 2 ? 1 : -1) * (bed.rw / 2 + w / 2 + distance);
@@ -159,11 +177,12 @@ function shopSceneLayout(rows, space, room, originalRef, currentRef) {
           y += Math.floor(i / 3) * (d + 6);
         }
 
-        const hint = sample?.positions?.[i];
+        const hint = item.sketched && ref?.profile ? null : sample?.positions?.[i];
+        if (item.sketched && !hint) [x, y, turn] = [u * width, v * depth, direction];
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
-        else if (original?.pieces[i]) ({ x, y, turn } = original.pieces[i]);
+        else if (!item.sketched && original?.pieces[i]) ({ x, y, turn } = original.pieces[i]);
 
-        if (version === "current" && row.before && row.changes.includes("Moved") && !(ref?.items && hint)) {
+        if (version === "current" && !item.sketched && row.before && row.changes.includes("Moved") && !(ref?.items && hint)) {
           x += (item.pos[0] - row.before.pos[0]) * width / 100;
           y += (item.pos[1] - row.before.pos[1]) * depth / 100;
         }
@@ -204,7 +223,8 @@ function shopReference(items) {
   }
   const profile = S.space.photo === "demo" && example().room === S.needs.room
     ? SHOP_DEMO_LAYOUTS[S.needs.room] : null;
-  const demoExact = profile && S.opt === 0 && S.existing?.baked;
+  const demoExact = profile && S.opt === 0 && S.existing?.baked &&
+    S.existing.items.every(piece => items.some(item => item.own === piece.id));
   return { image, profile, demoExact };
 }
 

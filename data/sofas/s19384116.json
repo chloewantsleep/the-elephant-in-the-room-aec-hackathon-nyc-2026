@@ -1,0 +1,246 @@
+{
+  "sku": "ikea:s19384116",
+  "url": "https://www.ikea.com/us/en/p/uppland-sofa-blekinge-white-s19384116/",
+  "retrieved_at": "2026-11-14T20:35:30.747430+00:00",
+  "measurements": [
+    {
+      "measure": "36 1/4 \"",
+      "name": "Height including back cushions",
+      "type": "00414"
+    },
+    {
+      "measure": "29 7/8 \"",
+      "name": "Backrest height",
+      "type": "00413"
+    },
+    {
+      "measure": "88 1/4 \"",
+      "name": "Width",
+      "type": "00047"
+    },
+    {
+      "measure": "36 1/4 \"",
+      "name": "Depth",
+      "type": "00044"
+    },
+    {
+      "measure": "6 3/4 \"",
+      "name": "Height under furniture",
+      "type": "00242"
+    },
+    {
+      "measure": "9 7/8 \"",
+      "name": "Armrest width",
+      "type": "00449"
+    },
+    {
+      "measure": "26 3/4 \"",
+      "name": "Armrest height",
+      "type": "00138"
+    },
+    {
+      "measure": "68 1/8 \"",
+      "name": "Seat width",
+      "type": "00037"
+    },
+    {
+      "measure": "22 7/8 \"",
+      "name": "Seat depth",
+      "type": "00036"
+    },
+    {
+      "measure": "18 1/2 \"",
+      "name": "Seat height",
+      "type": "00039"
+    }
+  ],
+  "details": {
+    "accordionObject": {
+      "materialsAndCare": {
+        "id": "product-details-material-and-care",
+        "title": "Materials and care",
+        "contentProps": {
+          "materials": [
+            {
+              "materials": [
+                {
+                  "material": "Particleboard, Plywood, Solid wood, Polyurethane foam 1.2 lb/cu.ft., Laminated veneer lumber, Fiberboard",
+                  "part": "Back and seat frame:"
+                },
+                {
+                  "material": "Particleboard, Solid wood, Polyurethane foam 1.2 lb/cu.ft., Polyurethane foam 1.5 lb/cu.ft., Laminated veneer lumber, Fiberboard",
+                  "part": "Armrest frame:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled), Felt liner, Polyurethane foam 2.0 lb/cu.ft., High-resilience polyurethane foam (cold foam) 2.2 lb/cu.ft.",
+                  "part": "Seat cushion:"
+                },
+                {
+                  "material": "30% cut polyurethane foam/ 70% polyester fibers",
+                  "part": "Backrest cushion:"
+                },
+                {
+                  "material": "Steel",
+                  "part": "Pocket spring unit:"
+                },
+                {
+                  "material": "Polypropylene",
+                  "part": "Leg:"
+                },
+                {
+                  "material": "Polyester wadding",
+                  "part": "Smolder resistant lining/ Smolder resistant lining:"
+                }
+              ],
+              "productType": "Sofa frame"
+            },
+            {
+              "materials": [
+                {
+                  "material": "100 % cotton",
+                  "part": "Fabric:"
+                },
+                {
+                  "material": "100 % polyester (100% recycled)",
+                  "part": "Back fabric:"
+                }
+              ],
+              "productType": "Cover for sofa"
+            }
+          ],
+          "materialsAndCareLinks": [],
+          "careInstructions": [
+            {
+              "header": "Removable cover",
+              "productType": "Cover for sofa",
+              "texts": [
+                "Machine wash warm (max 140°F/60°C) normal cycle.",
+                "To be washed separately.",
+                "Do not bleach.",
+                "Do not tumble dry.",
+                "Iron high.",
+                "Iron on reverse side.",
+                "Dry clean any solvent except trichloroethylene."
+              ]
+            },
+            {
+              "header": "Frame",
+              "productType": "Sofa frame",
+              "texts": [
+                "Wipe clean using a damp cloth and a mild cleaner.",
+                "Wipe dry with a clean cloth."
+              ]
+            },
+            {
+              "header": "Lining",
+              "productType": "Sofa frame",
+              "texts": [
+                "Clean with a dust cloth or vacuum lightly using the soft brush attachment."
+              ]
+            }
+          ],
+          "proposition65": [],
+          "detailsMaterialText": "Material",
+          "detailsCareText": "Care",
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "warningText": "Warning"
+        }
+      },
+      "safetyAndCompliance": {
+        "id": "product-details-safety-and-compliance",
+        "title": "Safety and compliance",
+        "contentProps": {
+          "safetyAndCompliance": [
+            {
+              "name": "Test results and compliance",
+              "text": "The cover has a lightfastness level of 5 (the ability to resist color fading) on a scale of 1 to 8. According to industry standards, a lightfastness level of 4 or higher is suitable for home use."
+            },
+            {
+              "name": "Test results and compliance",
+              "text": "This cover's ability to resist abrasion has been tested to handle 20,000 cycles. A cover that withstands 15,000 cycles or more is suitable for furniture that should withstand everyday use in the home."
+            }
+          ],
+          "safetyAndComplianceLinks": [],
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)"
+        }
+      },
+      "assemblyAndDocuments": {
+        "id": "product-details-assembly-and-documents",
+        "title": "Assembly and documents",
+        "contentProps": {
+          "ariaOpensInNewTabLabel": "{text} (opens in a new tab)",
+          "assemblyVideos": [],
+          "attachments": {
+            "assembly": {
+              "header": "Assembly instructions",
+              "attachments": [
+                {
+                  "id": "304.725.31",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/uppland-sofa-frame__AA-2202687-1-2.pdf",
+                  "label": "UPPLAND Sofa frame"
+                },
+                {
+                  "id": "504.876.35",
+                  "url": "https://www.ikea.com/us/en/assembly_instructions/uppland-cover-for-sofa-blekinge-white__AA-2202690-2-100.pdf",
+                  "label": "UPPLAND Cover for sofa"
+                }
+              ]
+            },
+            "software": {
+              "header": "Software",
+              "attachments": []
+            },
+            "declaration": {
+              "header": "Declaration of Conformity",
+              "attachments": []
+            },
+            "other": {
+              "header": "Other documents",
+              "attachments": []
+            },
+            "customerDisassembly": {
+              "header": "Disassembly instructions",
+              "attachments": []
+            },
+            "professionalDisassembly": {
+              "header": "Disassembly & Recycling (For industry professionals)",
+              "attachments": []
+            },
+            "manual": {
+              "header": "Advice and care instructions",
+              "attachments": [
+                {
+                  "id": "304.725.31",
+                  "url": "https://www.ikea.com/us/en/manuals/uppland-sofa-frame__AA-2314490-1-100.pdf",
+                  "label": "UPPLAND Sofa frame"
+                },
+                {
+                  "id": "304.725.31",
+                  "url": "https://www.ikea.com/us/en/manuals/uppland-sofa-frame__AA-2666808-2-100.pdf",
+                  "label": "UPPLAND Sofa frame"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "eventLabel": "pip_details",
+    "articleNumberLabel": "Article Number",
+    "productDescriptionProps": {
+      "paragraphs": [
+        "Enjoy the super comfy UPPLAND sofa with embracing feel and deep seat cushions made of pocket springs, high resilience foam and polyester fibers, adding both firm support and relaxing softness.",
+        "Reversible back cushions provide soft support for your back and two different sides to wear. Thanks to the combination of polyester fibers and cut foam the cushions will retain their shape and comfort year after year.",
+        "The cover is easy to keep clean since it is removable and can be machine washed.",
+        "A range of coordinated covers makes it easy for you to give your furniture a new look.",
+        "10-year limited warranty. Read about the terms in the limited warranty brochure."
+      ],
+      "designerLabel": "Designer",
+      "designerName": "IKEA of Sweden",
+      "labelClosed": "Show more",
+      "labelOpen": "Show less"
+    },
+    "productId": "19384116",
+    "title": "Product details"
+  }
+}

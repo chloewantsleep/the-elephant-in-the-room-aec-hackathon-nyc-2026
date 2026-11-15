@@ -1,5 +1,29 @@
 /* Shop's schematic and comparison, backed by the same items as the shopping list. */
 
+function restoreShopSlots(options, scene, selectedOption) {
+  for (const option of options) {
+    option.items.forEach((item, i) => { item.slotId ??= i; });
+    option.shopOriginal ??= structuredClone(option.items);
+  }
+  if (!scene) return;
+  const original = options[selectedOption]?.shopOriginal || [];
+  const slots = new Map(original.map(item => [item.slotId, item]));
+  const used = new Set();
+  const unmatched = scene.filter(item => {
+    const before = slots.get(item.slotId);
+    if (item.slotId == null || used.has(item.slotId) || (before && before.cat !== item.cat)) return true;
+    used.add(item.slotId);
+    return false;
+  });
+  let next = Math.max(-1, ...used, ...slots.keys()) + 1;
+  for (const item of unmatched) {
+    const candidates = original.filter(before => before.cat === item.cat && !used.has(before.slotId));
+    const match = candidates.find(before => before.own === item.own && before.pid === item.pid) || candidates[0];
+    item.slotId = match?.slotId ?? next++;
+    used.add(item.slotId);
+  }
+}
+
 function shopDiff(original, current) {
   const before = new Map(original.map(it => [it.slotId, it]));
   const indices = new Map(current.map((it, index) => [it.slotId, index]));
@@ -329,7 +353,8 @@ function shopDiagram(layout, ref, mode, selected) {
 }
 
 function shopRoomMarkup() {
-  const original = S.options[S.opt]?.items || [], mode = S.shopMode;
+  restoreShopSlots(S.options, S.scene, S.opt);
+  const original = S.options[S.opt]?.shopOriginal || [], mode = S.shopMode;
   const rows = shopDiff(original, S.scene);
   const originalRef = shopReference(original), currentRef = shopReference(S.scene);
   const ref = mode === "original" ? originalRef : currentRef;
