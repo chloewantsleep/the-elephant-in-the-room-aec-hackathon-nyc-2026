@@ -352,11 +352,16 @@ const FLOW: [title: string, body: string, tool: string][] = [
   ["Show", "Renders the picture from the product list.", "Gemini 3.1 Flash Image · " + (RENDER.secs || "—") + " s · $" + (RENDER.usd || "—") + " per render"],
   ["Shop", "List, budget, FF&E schedule.", "Python + Vercel functions · plain JS"],
 ]
+// QR codes at the end (public/img/qr-*.svg, made with the qrcode npm CLI)
+const QRS: [label: string, src: string, href: string][] = [
+  ["Live demo", "/img/qr-demo.svg", "https://the-elephant-in-the-room.vercel.app"],
+  ["GitHub", "/img/qr-github.svg", "https://github.com/chloewantsleep/the-elephant-in-the-room-aec-hackathon-nyc-2026"],
+]
 // kinds of product compared, not brands (no head-to-head evidence). Map: x = real products you can buy now, y = knows how you live and remembers
 const VS: [who: string, note: string, x: number, y: number][] = [
-  ["AI room-image generators", "Pretty, but the furniture isn’t real.", 0.25, 0.25],
-  ["Store AR apps", "Real, but one store. No memory of you.", 0.75, 0.25],
-  ["Interior designers", "Knows you. Slow, costly, not always there.", 0.25, 0.75],
+  ["AI room-image generators", "Pretty, but not real furniture.", 0.25, 0.25],
+  ["Store AR apps", "Real, but one store, no memory.", 0.75, 0.25],
+  ["Interior designers", "Knows you, but slow and costly.", 0.25, 0.75],
 ]
 const VSP = { axes: [0.04, 0.2], d0: [0.18, 0.3], d1: [0.3, 0.42], d2: [0.42, 0.54], me: [0.6, 0.76], head: [0.78, 0.9] } as const
 const REELS: { title: string; src?: string; poster?: string }[] = [
@@ -594,6 +599,7 @@ const CSS =
   "@keyframes lcl-bit{50%{translate:6px -10px}}" +
   /* footer */
   ".lcl-foot{position:relative;z-index:5;margin-top:calc(var(--h) * -.5);padding:12px}" +
+  ".lcl-qrs{display:flex;justify-content:center;gap:clamp(24px,5vw,72px)}.lcl-qr{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--ink);text-decoration:none}.lcl-qr img{width:clamp(120px,12vw,170px);height:auto;padding:10px;border-radius:16px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.08)}.lcl-qr span{font-size:11px}" +
   ".lcl-fcard{display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-height:calc(var(--h) * .62);padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:0 -10px 40px rgba(0,0,0,.06)}" +
   ".lcl-frow{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}" +
   ".lcl-frow a,.lcl-frow span{color:inherit;text-decoration:none}" +
@@ -851,19 +857,19 @@ const THEME =
   ".lcl-vs{position:relative;z-index:3;height:calc(var(--h) * 3.4);background:var(--paper)}" +
   ".lcl-vs-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(16px,3vh,32px);padding:0 clamp(16px,2vw,32px)}" +
   ".lcl-vs .lcl-sh{margin:6px 0 0;font-weight:400;font-size:clamp(32px,4vw,68px);letter-spacing:-.04em;line-height:1}" +
-  ".lcl-vs-map{position:relative;width:min(980px,100%);height:min(58vh,560px);margin:0 auto}" +
-  ".lcl-vs-ax{position:absolute;left:0;bottom:0;background:var(--ink)}.lcl-vs-ax-x{height:2px;width:calc(var(--vs-axes,0) * 100%)}.lcl-vs-ax-y{width:2px;height:calc(var(--vs-axes,0) * 100%)}" +
-  ".lcl-vs-lx,.lcl-vs-ly{position:absolute;font-size:10.5px;color:var(--soft);opacity:var(--vs-axes,0)}.lcl-vs-lx{right:0;bottom:-26px}.lcl-vs-ly{left:-26px;bottom:0;transform-origin:0 100%;transform:rotate(-90deg) translateY(100%);white-space:nowrap}" +
-  ".lcl-vs-q{position:absolute;left:50%;bottom:50%;right:0;top:0;border-radius:0 18px 0 0;background:var(--lime);opacity:calc(var(--vs-me,0) * .55)}" +
-  ".lcl-vs-dot,.lcl-vs-me{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;width:220px;text-align:center;transform:translate(-50%,50%)}" +
-  ".lcl-vs-dot{opacity:var(--p);transform:translate(-50%,50%) scale(calc(.7 + var(--p) * .3))}" +
-  ".lcl-vs-dot i{width:16px;height:16px;border-radius:50%;background:rgba(20,20,20,.35)}.lcl-vs-dot b,.lcl-vs-me b{font-weight:400;font-size:clamp(15px,1.3vw,19px);letter-spacing:-.015em}.lcl-vs-dot small{font-size:12.5px;color:var(--soft);line-height:1.3}" +
-  ".lcl-vs-dot{filter:grayscale(1);}.lcl-vs-dot b{color:var(--soft)}" +
-  ".lcl-vs-me{opacity:var(--vs-me,0);transform:translate(-50%,calc(50% - (1 - var(--vs-me,0)) * 120px)) scale(calc(.6 + var(--vs-me,0) * .4))}.lcl-vs-me b{font-weight:500;font-size:clamp(20px,1.8vw,28px)}.lcl-vs-me small{font-size:13px;line-height:1.3}" +
-  ".lcl-vs-me .lcl-vs-mark{width:56px;padding:12px;border-radius:50%;background:var(--ink);color:var(--paper);box-sizing:content-box}.lcl-vs-say{margin-top:18px!important}" +
+  ".lcl-vs-map{position:relative;width:min(1240px,100%);height:min(54vh,600px);margin:12px 0 18px}" +
+  ".lcl-vs-ax{position:absolute;background:var(--ink)}.lcl-vs-ax-x{left:0;right:0;top:50%;height:2px;transform:scaleX(var(--vs-axes,0))}.lcl-vs-ax-y{top:0;bottom:0;left:50%;width:2px;transform:scaleY(var(--vs-axes,0))}" +
+  ".lcl-vs-end{position:absolute;padding:4px 10px;border-radius:999px;background:var(--paper);font-size:clamp(14px,1.2vw,18px);color:var(--ink);white-space:nowrap;opacity:var(--vs-axes,0)}" +
+  ".lcl-vs-r{right:0;top:50%;transform:translateY(-50%)}.lcl-vs-l{left:0;top:50%;transform:translateY(-50%)}.lcl-vs-t{left:50%;top:0;transform:translate(-50%,-50%)}.lcl-vs-b{left:50%;bottom:0;transform:translate(-50%,50%)}" +
+  ".lcl-vs-q{position:absolute;left:50%;top:0;right:0;bottom:50%;border-radius:0 24px 0 0;background:var(--lime);opacity:calc(var(--vs-me,0) * .6)}" +
+  ".lcl-vs-dot,.lcl-vs-me{position:absolute;display:flex;flex-direction:column;align-items:center;gap:6px;width:min(40%,420px);text-align:center;transform:translate(-50%,50%)}" +
+  ".lcl-vs-dot{opacity:var(--p);transform:translate(-50%,50%) scale(calc(.8 + var(--p) * .2))}" +
+  ".lcl-vs-dot b,.lcl-vs-me b{font-weight:400;font-size:clamp(22px,2.2vw,34px);letter-spacing:-.025em;line-height:1.1}.lcl-vs-dot b{color:rgba(20,20,20,.55)}.lcl-vs-dot small,.lcl-vs-me small{font-size:clamp(15px,1.3vw,19px);line-height:1.3;color:var(--soft)}" +
+  ".lcl-vs-me{opacity:var(--vs-me,0);transform:translate(-50%,calc(50% - (1 - var(--vs-me,0)) * 120px)) scale(calc(.7 + var(--vs-me,0) * .3))}.lcl-vs-me b{font-weight:500;font-size:clamp(28px,2.8vw,44px)}.lcl-vs-me small{color:var(--ink)}" +
+  "@media (max-width:720px){.lcl-vs-map{height:62vh}.lcl-vs-dot,.lcl-vs-me{width:46%}.lcl-vs-dot b{font-size:17px}.lcl-vs-me b{font-size:22px}.lcl-vs-dot small,.lcl-vs-me small{font-size:12px}.lcl-vs-end{font-size:11px;padding:3px 6px}.lcl-vs-me .lcl-vs-mark{width:30px;padding:7px}}" +
+  ".lcl-vs-me .lcl-vs-mark{width:56px;padding:12px;border-radius:50%;background:var(--ink);color:var(--paper);box-sizing:content-box}.lcl-vs-say{margin-top:22px!important}" +
   ".lcl-vs-say{margin:0;color:#fff;font-size:clamp(17px,1.5vw,22px);opacity:var(--vs-head,0);transform:translateY(calc((1 - var(--vs-head,0)) * 16px))}" +
   ".lcl-vs-after{position:relative;z-index:3;background:var(--paper);padding:2vh clamp(16px,2vw,32px) 0}.lcl-vs-after .lcl-diff{margin:clamp(40px,7vh,90px) auto clamp(72px,12vh,140px)}" +
-  "@media (max-width:720px){.lcl-vs-map{height:52vh;width:calc(100% - 24px);margin:0 0 0 24px}.lcl-vs-dot,.lcl-vs-me{width:130px}.lcl-vs-dot small{font-size:10.5px}.lcl-vs-me small{font-size:11px}.lcl-vs-me .lcl-vs-mark{width:36px;padding:8px}}" +
   ".lcl-steps{list-style:none;max-width:1040px;margin:0 auto;padding:0;counter-reset:st}" +
   ".lcl-steps li{counter-increment:st;display:grid;grid-template-columns:12em minmax(0,1fr) auto;gap:20px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(0,0,0,.1)}.lcl-steps li:last-child{border-bottom:1px solid rgba(0,0,0,.1)}" +
   ".lcl-steps b{font-weight:400;font-size:clamp(18px,1.5vw,22px);letter-spacing:-.02em}.lcl-steps b::before{content:counter(st, decimal-leading-zero) '  ';font:10px ui-monospace,monospace;color:var(--soft);white-space:pre}.lcl-steps span{color:var(--soft);font-size:14.5px}.lcl-steps em{font-style:normal;font-size:10.5px;text-align:right}" +
@@ -2015,11 +2021,12 @@ export default function LoupeCuratorLanding({
             <span className="lcl-vs-q" aria-hidden="true" />
             <i className="lcl-vs-ax lcl-vs-ax-x" />
             <i className="lcl-vs-ax lcl-vs-ax-y" />
-            <span className="lcl-vs-lx lcl-mono">Real products you can buy, right now →</span>
-            <span className="lcl-vs-ly lcl-mono">Knows how you live, and remembers →</span>
+            <span className="lcl-vs-end lcl-vs-r">Real products you can buy →</span>
+            <span className="lcl-vs-end lcl-vs-l">← Not real, or one store</span>
+            <span className="lcl-vs-end lcl-vs-t">↑ Knows how you live</span>
+            <span className="lcl-vs-end lcl-vs-b">Doesn’t know you ↓</span>
             {VS.map(([who, note, x, y], k) => (
               <span key={who} className="lcl-vs-dot" style={{ left: x * 100 + "%", bottom: y * 100 + "%", "--p": "var(--vs-d" + k + ",0)" } as CSSProperties}>
-                <i />
                 <b>{who}</b>
                 <small>{note}</small>
               </span>
@@ -2029,7 +2036,7 @@ export default function LoupeCuratorLanding({
                 <ElephantMark />
               </span>
               <b>Elephant</b>
-              <small>Your real room, your habits, real products. It remembers, and adapts.</small>
+              <small>Your room, your habits, real products. It remembers.</small>
             </span>
           </div>
           <p className="lcl-vs-say">
@@ -2315,6 +2322,14 @@ export default function LoupeCuratorLanding({
               <ActionEl a={signInAction} label="Sign in" className="lcl-btn lcl-mono" cursor="Sign in" />
               <ActionEl a={joinAction} label="Join waitlist" className="lcl-btn lcl-btn-lime lcl-mono" cursor="Join" />
             </span>
+          </div>
+          <div className="lcl-qrs">
+            {QRS.map(([label, src, href]) => (
+              <a key={label} className="lcl-qr" href={href} data-cursor="Open">
+                <img src={src} alt={"QR code: " + label} draggable={false} />
+                <span className="lcl-mono">Scan · {label}</span>
+              </a>
+            ))}
           </div>
           <p className="lcl-big2" aria-label={brand}>
             {sunAt < 0 ? brand : brand.slice(0, sunAt)}
