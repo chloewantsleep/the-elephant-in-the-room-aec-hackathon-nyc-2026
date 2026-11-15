@@ -390,7 +390,7 @@ const FLICK = ["tile-sofa", "hl-5", "tile-armchair", "hl-6", "tile-rug", "tile-p
 const TEAM: { name: string; url: string; key: string }[] = [
   { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", key: "yimeng" },
   { name: "Yu Chen", url: "https://www.linkedin.com/in/yu-chen-2a586b249/", key: "yu" },
-  { name: "Chloe", url: "https://www.linkedin.com/in/jiayueni/", key: "chloe" },
+  { name: "Chloe Ni", url: "https://www.linkedin.com/in/jiayueni/", key: "chloe" },
   { name: "Jiahao Li", url: "https://www.linkedin.com/in/jiahao-li-no-on/", key: "jiahao" },
   { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
   { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },

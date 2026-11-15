@@ -114,7 +114,7 @@ After a render, each new product is found in the picture, cropped, and prepared 
 
 ![The team as a paper collage](deck/public/img/team-collage.jpg)
 
-| [Yimeng Ding](https://www.linkedin.com/in/yimeng-ding/) | [Yu Chen](https://www.linkedin.com/in/yu-chen-2a586b249/) | [Chloe](https://www.linkedin.com/in/jiayueni/) | [Jiahao Li](https://www.linkedin.com/in/jiahao-li-no-on/) | [Shicong Cao](https://www.linkedin.com/in/shicong-cao/) | [Han Zhao](https://www.linkedin.com/in/han-zhao-52b78a249/) |
+| [Yimeng Ding](https://www.linkedin.com/in/yimeng-ding/) | [Yu Chen](https://www.linkedin.com/in/yu-chen-2a586b249/) | [Chloe Ni](https://www.linkedin.com/in/jiayueni/) | [Jiahao Li](https://www.linkedin.com/in/jiahao-li-no-on/) | [Shicong Cao](https://www.linkedin.com/in/shicong-cao/) | [Han Zhao](https://www.linkedin.com/in/han-zhao-52b78a249/) |
 |---|---|---|---|---|---|
 
 ---
