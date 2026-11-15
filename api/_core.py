@@ -423,5 +423,5 @@ def demo_request():
     items = [{"name": p["name"], "variant": p["variant"], "category": cat, "qty": 1, "dims_in": p["dims_in"],
               "description": p.get("description"), "image": p["images"]["main_local"] or p["images"]["main"], "pos": pos}
              for cat, (p, pos) in pick.items()]
-    return {"room_image": "app/assets/example-lounge.jpg", "room": {"width_in": 144, "depth_in": 132},
+    return {"room_image": "app/assets/example-lounge-wide.jpg", "room": {"width_in": 144, "depth_in": 132},
             "needs": {"style": "warm minimal"}, "items": items}

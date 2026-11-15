@@ -67,7 +67,7 @@ const TEMPLATES = {
 
 // Example rooms: photos taken at the AEC Hackathon NYC venue. Each has a matching demo render (no AI spend).
 const EXAMPLES = [
-  { name: "Lounge", src: "assets/example-lounge.jpg", room: "living", render: "assets/demo-render-lounge.jpg",
+  { name: "Lounge", src: "assets/example-lounge-wide.jpg", room: "living", render: "assets/demo-render-lounge-wide.jpg",
     furniture: "assets/examples/lounge.json" },
   { name: "Bar counter", src: "assets/example-bar.jpg", room: "dining", render: "assets/demo-render-bar.jpg",
     furniture: "assets/examples/bar.json" },
