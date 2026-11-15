@@ -9,28 +9,28 @@
    "count": 3,
    "box": [
     674,
-    384,
+    587,
     1000,
-    998
+    999
    ],
    "boxes": [
     [
      674,
-     384,
+     587,
      1000,
-     998
+     999
     ],
     [
      510,
-     378,
+     583,
      793,
-     672
+     780
     ],
     [
      498,
-     17,
+     341,
      742,
-     267
+     509
     ]
    ],
    "description": "Curved bucket-style grey upholstered lounge chair with a padded seat cushion and pedestal swivel base.",
@@ -48,16 +48,16 @@
    "count": 1,
    "box": [
     668,
-    41,
+    358,
     946,
-    513
+    674
    ],
    "boxes": [
     [
      668,
-     41,
+     358,
      946,
-     513
+     674
     ]
    ],
    "description": "Contemporary round coffee table with a frosted glass top and polished cross-style metal pedestal base.",
@@ -75,14 +75,14 @@
    "count": 1,
    "box": [
     594,
-    734,
+    822,
     874,
     999
    ],
    "boxes": [
     [
      594,
-     734,
+     822,
      874,
      999
     ]
@@ -102,46 +102,46 @@
    "count": 6,
    "box": [
     433,
-    735,
+    822,
     570,
-    829
+    885
    ],
    "boxes": [
     [
      430,
-     474,
+     648,
      573,
-     557
+     703
     ],
     [
      432,
-     626,
+     749,
      572,
-     711
+     806
     ],
     [
      428,
-     404,
+     601,
      543,
-     476
+     649
     ],
     [
      423,
-     287,
+     522,
      543,
-     349
+     564
     ],
     [
      433,
-     735,
+     822,
      570,
-     829
+     885
     ],
     [
      423,
-     585,
+     722,
      554,
-     655
+     769
     ]
    ],
    "description": "Modern black bar stool with an upholstered shell seat and slender metal legs.",
@@ -159,16 +159,16 @@
    "count": 1,
    "box": [
     404,
-    295,
+    528,
     566,
-    769
+    845
    ],
    "boxes": [
     [
      404,
-     295,
+     528,
      566,
-     769
+     845
     ]
    ],
    "description": "Long communal high-top counter table with a wooden tabletop and black industrial base on castors.",
@@ -186,16 +186,16 @@
    "count": 1,
    "box": [
     676,
-    0,
+    330,
     1000,
-    993
+    995
    ],
    "boxes": [
     [
      676,
-     0,
+     330,
      1000,
-     993
+     995
     ]
    ],
    "description": "Large vintage-style brown patchwork rug placed under the lounge seating area.",
@@ -206,5 +206,6 @@
    },
    "iso": "assets/examples/lounge/e5.jpg"
   }
- ]
+ ],
+ "photo_note": "boxes remapped from the old 1429x1600 right-side crop to the full 4:3 photo"
 }

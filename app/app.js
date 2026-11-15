@@ -372,7 +372,7 @@ const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn
   S.space.depthIn, S.space.corridor, S.space.clearanceIn, S.space.obstacles, B.revision,
   items.map(it => [it.pid, it.vid, it.qty, it.own, it.pos])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
-const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
+const photoKey = () => S.space.photo === "demo" ? "demo2-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
 const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
