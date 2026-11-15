@@ -122,8 +122,40 @@ function shopSceneLayout(items, space, room, ref) {
   const profile = space.confirmed ? null : ref?.profile;
   let width = Math.max(36, shopPositive(space.wallIn, 144), profile?.width || 0);
   let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
-  const distance = 5;
+  const distance = 14, sameDistance = 3;   // a walkway between different pieces; copies of one piece (stools, chairs) sit close
   const fromPhoto = shopPhotoAnchors(items);
+
+  // A bigger floor when the pieces need it (unless the room was measured): enough area for the footprints,
+  // and far enough apart that pieces at their photo spots keep a walkway between them.
+  if (!space.confirmed) {
+    const NO_ROOM = new Set(["rug", "table_lamp", "pendant_lamp", "mirror"]);
+    const spots = [];
+    let area = 0;
+    items.forEach(item => {
+      if (NO_ROOM.has(item.cat)) return;
+      const dims = view(item).dims_in, w = shopPositive(dims.width, 22), d = shopPositive(dims.depth, shopPositive(dims.width, 18));
+      area += w * d * (item.qty || 1);
+      for (let i = 0; i < (item.qty || 1); i++) {
+        const uv = fromPhoto.get(`${item.slotId}:${i}`);
+        if (uv) spots.push({ id: item.slotId, cat: item.cat, uv, w, d });
+      }
+    });
+    const byArea = Math.sqrt(area * 3.2 / (width * depth));   // pieces cover at most ~30% of the floor
+    const needs = [];
+    for (let a = 0; a < spots.length; a++) for (let b = a + 1; b < spots.length; b++) {
+      const p = spots[a], q = spots[b];
+      const seated = (x, y) => ["dining_chair", "office_chair", "stool_bench"].includes(x.cat) && ["dining_table", "desk"].includes(y.cat);
+      const gap = p.id === q.id || seated(p, q) || seated(q, p) ? sameDistance : distance;
+      const du = Math.abs(p.uv[0] - q.uv[0]) * width, dv = Math.abs(p.uv[1] - q.uv[1]) * depth;
+      const need = Math.min(du > 1e-6 ? ((p.w + q.w) / 2 + gap) / du : Infinity, dv > 1e-6 ? ((p.d + q.d) / 2 + gap) / dv : Infinity);
+      if (Number.isFinite(need)) needs.push(need);
+    }
+    // most pairs get their walkway from the bigger floor; the few on almost the same spot are left to the clearance check
+    needs.sort((a, b) => a - b);
+    const bySpacing = needs.length ? needs[Math.floor(needs.length * .75)] : 1;
+    const grow = Math.min(1.9, Math.max(1, byArea, bySpacing));
+    width = Math.round(width * grow); depth = Math.round(depth * grow);
+  }
 
   function arrange() {
     const entries = items.map((item, index) => {
@@ -152,19 +184,23 @@ function shopSceneLayout(items, space, room, ref) {
     entries.sort((a, b) => (priority[a.item.cat] ?? 2) - (priority[b.item.cat] ?? 2));
     const first = cat => entries.find(row => row.item.cat === cat)?.pieces[0];
 
-    function openSpot(x, y, rw, rd) {
+    // seats pull up to their table or desk; everything else keeps a walkway
+    const SEATS = new Set(["dining_chair", "office_chair", "stool_bench"]), TABLES = new Set(["dining_table", "desk"]);
+    function openSpot(x, y, rw, rd, id, cat) {
       const x0 = rw / 2 + 3, x1 = width - x0, y0 = rd / 2 + 3, y1 = depth - y0;
       if (x1 < x0 || y1 < y0) return null;
       const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
       const boundedX = clamp(x, x0, x1), boundedY = clamp(y, y0, y1);
+      const gapTo = p => (p.id != null && p.id === id) || (SEATS.has(cat) && TABLES.has(p.cat)) || (TABLES.has(cat) && SEATS.has(p.cat))
+        ? sameDistance : distance;
       const clear = (px, py) => occupied.every(p => (
-        Math.abs(px - p.x) >= (rw + p.rw) / 2 + distance - .001 ||
-        Math.abs(py - p.y) >= (rd + p.rd) / 2 + distance - .001
+        Math.abs(px - p.x) >= (rw + p.rw) / 2 + gapTo(p) - .001 ||
+        Math.abs(py - p.y) >= (rd + p.rd) / 2 + gapTo(p) - .001
       ));
       if (clear(boundedX, boundedY)) return [boundedX, boundedY];
       const xs = [boundedX, x0, x1], ys = [boundedY, y0, y1];
       for (const p of occupied) {
-        const gx = (rw + p.rw) / 2 + distance, gy = (rd + p.rd) / 2 + distance;
+        const gx = (rw + p.rw) / 2 + gapTo(p), gy = (rd + p.rd) / 2 + gapTo(p);
         xs.push(p.x - gx, p.x + gx); ys.push(p.y - gy, p.y + gy);
       }
       let choice = null, score = Infinity;
@@ -217,13 +253,13 @@ function shopSceneLayout(items, space, room, ref) {
         const hint = item.sketched && ref?.profile ? null : sample?.positions?.[i];
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
         const rw = turn % 2 ? d : w, rd = turn % 2 ? w : d;
-        const piece = { x, y, z, turn, w, d, h, rw, rd };
+        const piece = { x, y, z, turn, w, d, h, rw, rd, id: row.id, cat };
         if (cat === "rug" || z > 0) {
           piece.x = Math.min(width - rw / 2, Math.max(rw / 2, x));
           piece.y = Math.min(depth - rd / 2, Math.max(rd / 2, y));
           if (rw > width || rd > depth) return null;
         } else {
-          const spot = openSpot(x, y, rw, rd);
+          const spot = openSpot(x, y, rw, rd, row.id, cat);
           if (!spot) return null;
           [piece.x, piece.y] = spot;
           occupied.push(piece);
