@@ -119,7 +119,7 @@ function shopPhotoAnchors(items) {
 
 function shopSceneLayout(items, space, room, ref) {
   const anchors = SHOP_ROOM_ANCHORS[room] || SHOP_ROOM_ANCHORS.living;
-  const profile = space.confirmed ? null : ref?.profile;
+  const profile = space.confirmed || !ref?.demoExact ? null : ref.profile;   // the baked demo room size, only for that render
   let width = Math.max(36, shopPositive(space.wallIn, 144), profile?.width || 0);
   let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
   // a walkway between different pieces; pieces that are used together sit close
@@ -157,7 +157,7 @@ function shopSceneLayout(items, space, room, ref) {
     // most pairs get their walkway from the bigger floor; the few on almost the same spot are left to the clearance check
     needs.sort((a, b) => a - b);
     const bySpacing = needs.length ? needs[Math.floor(needs.length * .85)] : 1;
-    const grow = Math.min(2.6, Math.max(1, byArea, bySpacing));
+    const grow = Math.min(2.2, Math.max(1, byArea, bySpacing));
     width = Math.round(width * grow); depth = Math.round(depth * grow);
   }
 
@@ -183,13 +183,18 @@ function shopSceneLayout(items, space, room, ref) {
         if (!rect.layer) occupied.push(piece);
       }
     }
-    // tables first, then the seats that belong to them, so a group stays together and other pieces make room
-    const priority = { sofa: 0, bed: 0, dining_table: 0, stool_bench: .5, dining_chair: .5, desk: .7, coffee_table: 1,
+    // storage against the walls goes first (it can only stand there), then the tables and seats that belong to them
+    const priority = { wardrobe: -1, cabinet: -1, shelving: -1, dresser: -1, tv_stand: -1, sofa: 0, bed: 0, dining_table: 0, stool_bench: .5, dining_chair: .5, desk: .7, coffee_table: 1,
       rug: 3, table_lamp: 4, pendant_lamp: 4 };
     entries.sort((a, b) => (priority[a.item.cat] ?? 2) - (priority[b.item.cat] ?? 2));
     const first = cat => entries.find(row => row.item.cat === cat)?.pieces[0];
 
-    function openSpot(x, y, rw, rd, id, cat) {
+    // uv: this piece's spot in the photo. A spot that would put it on the wrong side of a piece already placed
+    // (left/right or front/back, compared with the photo) costs extra, so moving aside keeps the picture's order.
+    function openSpot(x, y, rw, rd, id, cat, uv) {
+      const flips = (px, py) => uv ? occupied.reduce((n, p) => n + (!p.uv ? 0
+        : (Math.abs(uv[0] - p.uv[0]) > .1 && Math.sign(uv[0] - p.uv[0]) !== Math.sign(px - p.x) ? 1 : 0)
+        + (Math.abs(uv[1] - p.uv[1]) > .1 && Math.sign(uv[1] - p.uv[1]) !== Math.sign(py - p.y) ? 1 : 0)), 0) : 0;
       const x0 = rw / 2 + 3, x1 = width - x0, y0 = rd / 2 + 3, y1 = depth - y0;
       if (x1 < x0 || y1 < y0) return null;
       const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -208,7 +213,7 @@ function shopSceneLayout(items, space, room, ref) {
       let choice = null, score = Infinity;
       for (const px of xs) for (const py of ys) {
         if (px < x0 || px > x1 || py < y0 || py > y1) continue;
-        const cost = ((px - x) / width) ** 2 + ((py - y) / depth) ** 2;
+        const cost = ((px - x) / width) ** 2 + ((py - y) / depth) ** 2 + .25 * flips(px, py);
         if (cost < score && clear(px, py)) { score = cost; choice = [px, py]; }
       }
       return choice;
@@ -264,7 +269,7 @@ function shopSceneLayout(items, space, room, ref) {
           y += Math.floor(i / 3) * (d + 6);
         }
 
-        const hint = item.sketched && ref?.profile ? null : sample?.positions?.[i];
+        const hint = ref?.demoExact && !item.sketched ? sample?.positions?.[i] : null;   // hand-measured spots fit only the baked demo render
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
         const rw = turn % 2 ? d : w, rd = turn % 2 ? w : d;
         const piece = { x, y, z, turn, w, d, h, rw, rd, id: row.id, cat };
@@ -273,7 +278,11 @@ function shopSceneLayout(items, space, room, ref) {
           piece.y = Math.min(depth - rd / 2, Math.max(rd / 2, y));
           if (rw > width || rd > depth) return null;
         } else {
-          const spot = openSpot(x, y, rw, rd, row.id, cat);
+          const ruled = (cat === "nightstand" && bed) || (cat === "coffee_table" && sofa) || (cat === "office_chair" && desk)
+            || ((cat === "dining_chair" || cat === "stool_bench") && table);   // placed by its partner, not by the photo
+          const uv = ruled ? null : fromPhoto.get(`${item.slotId}:${i}`) || seen;
+          const spot = openSpot(x, y, rw, rd, row.id, cat, uv);
+          piece.uv = uv;
           if (!spot) return null;
           [piece.x, piece.y] = spot;
           occupied.push(piece);
