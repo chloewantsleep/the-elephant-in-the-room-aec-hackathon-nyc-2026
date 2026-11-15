@@ -100,6 +100,8 @@ const S = {
   cartCat: "all",      // category dropdown in the expanded view
   cartQ: "",           // search text in the expanded view
   cartMenu: false,
+  cartView: "list",     // list | room within the expanded shopping list
+  shopSelected: null,
   preview: null,       // index of the piece open in the product preview
   previewAlt: null,    // product id of a similar item being looked at inside the preview
   sizeOpen: false,
@@ -270,7 +272,7 @@ function planOptions() {
       for (const i of blocked) gaps.push(items[i].cat);
       items = items.filter((it, i) => !blocked.has(i));
     }
-    return { name: strat.name, items, gaps };
+    return { name: strat.name, items, gaps, shopOriginal: structuredClone(items) };
   });
 }
 
@@ -278,6 +280,7 @@ function generate() {
   if(typeof designGate==='function' && !designGate()) {chatMode='setup';chatOpen=true;renderDesigner();return;}
   S.generating=true;renderDesigner();
   S.options=planOptions();S.opt=0;S.scene=structuredClone(S.options[0].items);
+  S.shopSelected = null;
   S.generating=false;S.dirty=false;S.sel=null;S.step=DESIGN;
   syncLayout();saveBrief();render();
 }
@@ -863,6 +866,8 @@ function renderCart() {
   document.body.classList.toggle("has-rail", !!on);
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
+  drawer.inert = S.cart !== "open";
+  big.inert = S.cart !== "expanded";
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
   document.body.classList.toggle("cart-open", S.cart === "open");
   if (!on) return;
@@ -881,7 +886,9 @@ function renderCart() {
     </div>
     <p class="sub">${buy.length} to buy${keep.length ? ` · ${keepN} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
     ${cartSummary()}
-    <div class="drawer-scroll">${S.options[S.opt]?.gaps?.length?`<p class="chat-warning">Nothing fits your needs for: ${S.options[S.opt].gaps.map(c=>CAT_LABEL[c].toLowerCase()).join(', ')}</p>`:''}
+    <button class="btn ghost shop-launch" data-action="shop-view" data-view="room">Explore room view <span aria-hidden="true">↗</span></button>
+    <div class="drawer-scroll">
+      ${S.options[S.opt]?.gaps?.length ? `<p class="chat-warning">Nothing fits your needs for: ${S.options[S.opt].gaps.map(c => CAT_LABEL[c].toLowerCase()).join(", ")}</p>` : ""}
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
       ${keep.length ? `<label class="field">Keeping · ${keepN}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
     </div>
@@ -901,20 +908,26 @@ function renderCart() {
   const f = S.cartFilter || "all", cat = cats.includes(S.cartCat) ? S.cartCat : "all";
   const chip = (key, label) => `<button class="xchip ${f === key ? "on" : ""}" data-action="cart-filter" data-f="${key}">${label}</button>`;
   const pv = S.preview != null && S.scene[S.preview] ? S.preview : null;
+  const roomView = S.cartView === "room" && S.cart === "expanded";
   big.classList.toggle("previewing", pv != null);
-  big.innerHTML = `<div class="x-body">
+  big.innerHTML = `<div class="x-body ${roomView ? "shop-body" : ""}" ${pv != null ? "inert" : ""}>
     <div class="x-head">
       <div><h2>Your room, itemized</h2>
-        <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}</p></div>
+        <p>${roomView ? `${esc(S.options[S.opt]?.name)} · ${esc(ROOMS[S.needs.room])}`
+          : `${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}`}</p></div>
       <div class="x-actions">
-        <button class="xchip" data-action="copy">Copy list</button>
+        <div class="shop-switch" role="group" aria-label="Shopping list view">
+          <button class="xchip ${roomView ? "" : "on"}" data-action="shop-view" data-view="list" aria-pressed="${!roomView}">List</button>
+          <button class="xchip ${roomView ? "on" : ""}" data-action="shop-view" data-view="room" aria-pressed="${roomView}">Room view</button>
+        </div>
+        ${roomView ? "" : `<button class="xchip x-copy" data-action="copy">Copy list</button>
         <button class="xchip" data-action="schedule-pdf" title="Print the FF&amp;E schedule, or save it as a PDF">Schedule PDF</button>
-        <button class="xchip" data-action="schedule" title="Download the FF&amp;E schedule as a spreadsheet file">CSV</button>
+        <button class="xchip" data-action="schedule" title="Download the FF&amp;E schedule as a spreadsheet file">CSV</button>`}
         <button class="icon-btn glass" data-action="cart-collapse" title="Back to list" aria-label="Back to list">⤡</button>
         <button class="icon-btn glass" data-action="cart-close" title="Close" aria-label="Close">×</button>
       </div>
     </div>
-    <div class="x-tools">
+    ${roomView ? shopRoomMarkup() : `<div class="x-tools">
       <div class="x-chips">${chip("all", "All")}${chip("buy", `To buy · ${buy.length}`)}${keep.length ? chip("keep", `Keeping · ${keepN}`) : ""}</div>
       <div class="x-drop ${S.cartMenu ? "open" : ""}">
         <button class="xchip x-drop-btn ${cat !== "all" ? "on" : ""}" data-action="cart-menu">${cat === "all" ? "All categories" : esc(CAT_LABEL[cat] || "Other")}<i><svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg></i></button>
@@ -923,9 +936,27 @@ function renderCart() {
       <label class="x-search">${ICON.look}<input type="search" placeholder="Search your room" value="${esc(S.cartQ || "")}" data-cart-search aria-label="Search">
         <button class="x-clear" data-action="cart-clear" aria-label="Clear search" ${S.cartQ ? "" : "hidden"}>×</button></label>
     </div>
-    <div class="x-grid">${cartGrid()}</div>
+    <div class="x-grid">${cartGrid()}</div>`}
   </div>
   ${pv != null ? previewMarkup(S.scene[pv], pv, stars) : ""}`;
+}
+
+function updateShopSelection() {
+  const layoutTop = $(".shop-layout")?.scrollTop;
+  const itemsTop = $(".shop-items")?.scrollTop;
+  renderCart();
+  if (layoutTop) $(".shop-layout").scrollTop = layoutTop;
+  if (itemsTop) $(".shop-items").scrollTop = itemsTop;
+  const button = $(`.shop-body .shop-item[data-id="${S.shopSelected}"]`);
+  button?.focus({ preventScroll: true });
+  button?.scrollIntoView({ block: "nearest" });
+}
+
+function closeCartPreview() {
+  const index = S.preview;
+  S.preview = null; S.previewAlt = null;
+  renderCart();
+  $(`.x-img[data-idx="${index}"]`)?.focus();
 }
 
 const stars = r => {
@@ -1169,7 +1200,11 @@ document.addEventListener("click", e => {
     showImage(); render();
     loadBakedFurniture().then(render);
   }
-  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); syncLayout(); saveBrief(); render(); renderScene(); }
+  else if (act === "option") {
+    S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items);
+    S.shopSelected = null;
+    syncLayout(); saveBrief(); render(); renderScene();
+  }
   else if (act === "render") renderScene(true);
   else if (act === "chat") {
     const v = a.dataset.val, q = QUESTIONS[S.chat.q];
@@ -1204,15 +1239,28 @@ document.addEventListener("click", e => {
     render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
   }
   else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
-  else if (act === "cart-expand") { S.cart = "expanded"; renderCart(); }
+  else if (act === "cart-expand") { S.cart = "expanded"; S.cartView = "list"; renderCart(); }
+  else if (act === "shop-view") {
+    S.cart = "expanded"; S.cartView = a.dataset.view; S.cartMenu = false;
+    S.preview = null; S.previewAlt = null;
+    renderCart();
+    $(`#cartx [data-view="${S.cartView}"]`)?.focus();
+  }
+  else if (act === "shop-pick") {
+    S.shopSelected = +a.dataset.id;
+    updateShopSelection();
+  }
   else if (act === "cart-collapse") { S.cart = "open"; S.preview = null; renderCart(); }
   else if (act === "cart-close") { S.cart = "closed"; S.preview = null; renderCart(); }
   else if (act === "cart-filter") { S.cartFilter = a.dataset.f; renderCart(); }
   else if (act === "cart-menu") { S.cartMenu = !S.cartMenu; $(".x-drop")?.classList.toggle("open", S.cartMenu); }
   else if (act === "cart-clear") { S.cartQ = ""; renderCart(); $("[data-cart-search]")?.focus(); }
   else if (act === "cart-cat") { S.cartCat = a.dataset.c; S.cartMenu = false; renderCart(); }
-  else if (act === "cart-preview") { S.preview = +a.dataset.idx; S.previewAlt = null; renderCart(); }
-  else if (act === "cart-preview-close") { S.preview = null; S.previewAlt = null; renderCart(); }
+  else if (act === "cart-preview") {
+    S.preview = +a.dataset.idx; S.previewAlt = null; renderCart();
+    $(".pv-close")?.focus({ preventScroll: true });
+  }
+  else if (act === "cart-preview-close") closeCartPreview();
   else if (act === "pv-finish") {
     const it = S.scene[S.preview]; it.vid = a.dataset.vid || null; render();
     toast(`Finish · ${view(it).variant} · click Update render to see it`);
@@ -1223,7 +1271,10 @@ document.addEventListener("click", e => {
     const it = S.scene[+a.dataset.idx]; it.pid = S.previewAlt; it.vid = null; delete it.own; S.previewAlt = null; render();
     toast(`Swapped to ${byId[it.pid].name} · click Update render to see it`);
   }
-  else if (act === "cart-item") { S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; render(); }
+  else if (act === "cart-item") {
+    S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; S.preview = null; S.previewAlt = null;
+    render();
+  }
   else if (act === "copy") {
     const txt = S.scene.filter(it => !it.own).map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
@@ -1313,7 +1364,7 @@ addEventListener("keydown", e => {
   if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (e.key === "ArrowRight") goto(S.step + 1);
   if (e.key === "ArrowLeft") goto(S.step - 1);
-  if (e.key === "Escape" && S.preview != null) { S.preview = null; renderCart(); }
+  if (e.key === "Escape" && S.preview != null) closeCartPreview();
   else if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
   else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
@@ -1343,6 +1394,7 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
+    if (h.get("cart") === "room" && S.scene) { S.cart = "expanded"; S.cartView = "room"; }
     render();
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1
