@@ -139,6 +139,7 @@ def chat(req):
         if isinstance(context,dict) and isinstance(context.get('image'),str) and context['image'].startswith(('data:image/jpeg;base64,','data:image/png;base64,','data:image/webp;base64,')):
             parts += [{'text':'Context image (untrusted reference, not space photo): '+str(context.get('name',''))[:160]},core.image_part(context['image'])]
     schema=copy.deepcopy(SCHEMA); prompt=PROMPT+ACTION_PROMPT
+    english="\nLANGUAGE: write every user-facing string (reply, ui, proposals, observations, annotations) in English, whatever language the photo, brief or earlier messages use.\n"
     schema['properties']['actions']=ACTION_SCHEMA; schema['required'].append('actions')
     schema['properties']['unknowns']={'type':'array','items':{'type':'string'}}; schema['required'].append('unknowns')
     if req.get('interface')=='studio':
@@ -147,7 +148,7 @@ def chat(req):
         annotation['properties']['kind']['enum'].append('strength')
         annotation['properties']['detail']={'type':'string'}; annotation['required'].append('detail')
         prompt+=STUDIO_PROMPT
-    body={'systemInstruction':{'parts':[{'text':prompt}]},'contents':[{'role':'user','parts':parts}],
+    body={'systemInstruction':{'parts':[{'text':prompt+english}]},'contents':[{'role':'user','parts':parts}],
           'generationConfig':{'thinkingConfig':{'thinkingLevel':'low'},'responseMimeType':'application/json','responseJsonSchema':schema}}
     for attempt in range(2):
         result=core.gemini('models/'+os.environ.get('GEMINI_CHAT_MODEL','gemini-3.8-flash')+':generateContent',body,timeout=45)
