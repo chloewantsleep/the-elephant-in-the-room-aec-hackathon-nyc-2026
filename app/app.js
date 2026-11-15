@@ -859,6 +859,11 @@ function renderCart() {
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
       ${keep.length ? `<label class="field">Keeping · ${keepN}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
     </div>
+    <div class="btn-row sched-row">
+      <span>FF&amp;E schedule</span>
+      <button class="btn" data-action="schedule-pdf" title="Print the schedule, or save it as a PDF">PDF</button>
+      <button class="btn ghost" data-action="schedule" title="Download the schedule as a spreadsheet file">CSV</button>
+    </div>
     <div class="btn-row">
       <button class="btn ghost" data-action="copy">Copy list</button>
       <button class="btn" data-action="download">scene.json</button>
@@ -877,6 +882,8 @@ function renderCart() {
         <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}</p></div>
       <div class="x-actions">
         <button class="xchip" data-action="copy">Copy list</button>
+        <button class="xchip" data-action="schedule-pdf" title="Print the FF&amp;E schedule, or save it as a PDF">Schedule PDF</button>
+        <button class="xchip" data-action="schedule" title="Download the FF&amp;E schedule as a spreadsheet file">CSV</button>
         <button class="icon-btn glass" data-action="cart-collapse" title="Back to list" aria-label="Back to list">⤡</button>
         <button class="icon-btn glass" data-action="cart-close" title="Close" aria-label="Close">×</button>
       </div>
@@ -1015,6 +1022,98 @@ function exportScene() {
   };
 }
 
+// FF&E schedule: the room as the list a designer hands on. The 13 columns are those of a real FF&E schedule sheet;
+// "Room #" stays empty (a photo has no room number) and "Drawing Ref" names the photo the design was made on.
+const SCHEDULE_COLS = ["Space", "Room #", "Item #", "Item Description", "Category", "Qty", "Unit", "Spec / Notes",
+                       "Vendor", "Unit Cost", "Total Cost", "Drawing Ref", "Status"];
+// One list, two files: every schedule line as an object. The CSV and the printed sheet (PDF) both read it.
+function scheduleItems() {
+  const space = ROOMS[S.needs.room] || S.needs.room;
+  const ref = S.space.photo === "demo" ? example().src.split("/").pop() : "Uploaded room photo";
+  return S.scene.map((it, i) => {
+    const p = view(it), q = it.qty || 1, d = p.dims_in;
+    const dims = [["W", d.width], ["D", d.depth], ["H", d.height]].filter(x => x[1] != null)
+      .map(x => `${x[0]} ${+(+x[1]).toFixed(1)} in`).join(" x ");
+    return { space, ref, no: "FFE-" + String(i + 1).padStart(3, "0"), name: p.name, variant: p.owned ? "" : p.variant || "",
+             category: CAT_LABEL[it.cat], qty: q, dims: (p.estimated && dims ? "approx. " : "") + dims,
+             materials: (p.materials || []).join(", "), sku: p.owned ? "" : String(p.id).split(":").pop(),
+             note: p.owned ? p.description || "" : "", url: p.url || "", vendor: p.owned ? "Existing" : p.brand,
+             unit: p.owned ? null : p.price.amount, total: p.owned ? null : p.price.amount * q,
+             status: p.owned ? "Existing, keep" : "Selected", owned: !!p.owned, img: imgOf(p), priced: p.scraped_at || "" };
+  });
+}
+function scheduleRows() {
+  const rows = scheduleItems().map(x => [x.space, "", x.no, x.variant ? `${x.name}, ${x.variant}` : x.name, x.category, x.qty, "EA",
+    [x.dims, x.materials, x.sku && "SKU " + x.sku, x.note, x.url].filter(Boolean).join("; "), x.vendor,
+    x.unit == null ? "" : x.unit.toFixed(2), x.total == null ? "" : x.total.toFixed(2), x.ref, x.status]);
+  rows.push(["", "", "", "TOTAL TO BUY", "", "", "", "", "", "", sceneTotal(S.scene).toFixed(2), "", ""]);
+  return rows;
+}
+
+// The same list as a page for paper: the picture, the facts, one row per piece with its photo. It is printed, and the
+// browser's "Save as PDF" makes the file, so the app needs no PDF library. Styles: the print block in style.css.
+const usd = n => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function scheduleSheet() {
+  const items = scheduleItems(), tot = sceneTotal(S.scene), b = S.needs.budget, over = tot > b;
+  const buy = items.filter(x => !x.owned), keepN = items.filter(x => x.owned).reduce((n, x) => n + x.qty, 0);
+  const priced = buy.map(x => x.priced).sort().pop();
+  const day = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const fact = (k, v, cls = "") => `<div class="${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
+  const row = x => `<tr>
+      <td><img src="${esc(x.img)}" alt=""></td>
+      <td class="no">${x.no}</td>
+      <td class="name"><b>${esc(x.name)}</b>${x.variant ? `<small>${esc(x.variant)}</small>` : ""}</td>
+      <td>${esc(x.category)}</td>
+      <td class="n">${x.qty}</td>
+      <td class="spec">${esc([x.dims, x.materials, x.note].filter(Boolean).join(" · "))}${x.sku ? `<small>SKU ${esc(x.sku)}</small>` : ""}</td>
+      <td>${x.url ? `<a href="${esc(x.url)}">${esc(x.vendor)}</a>` : esc(x.vendor)}</td>
+      <td class="n">${x.unit == null ? "" : usd(x.unit)}</td>
+      <td class="n">${x.total == null ? "" : usd(x.total)}</td>
+      <td><span class="sh-pill ${x.owned ? "keep" : ""}">${x.status}</span></td>
+    </tr>`;
+  return `<header class="sh-head">
+      <div>
+        <div class="sh-brand">The Elephant in the Room</div>
+        <h1>FF&amp;E schedule</h1>
+        <p class="sh-meta">${esc(items[0]?.space || "")} · ${esc(S.needs.style.toLowerCase())} · ${day}</p>
+        <dl class="sh-facts">
+          ${fact("To buy", `${buy.length} piece${buy.length === 1 ? "" : "s"}`)}
+          ${fact("Keeping", keepN)}
+          ${fact("Total", usd(tot))}
+          ${fact("Budget", `${money(b)} · ${over ? money(tot - b) + " over" : money(b - tot) + " left"}`, over ? "over" : "")}
+        </dl>
+      </div>
+      <img class="sh-room" src="${esc(room.currentSrc || room.src)}" alt="">
+    </header>
+    <table class="sh-table">
+      <thead><tr><th></th><th>Item #</th><th>Item</th><th>Category</th><th class="n">Qty</th><th>Spec / notes</th><th>Vendor</th>
+        <th class="n">Unit cost</th><th class="n">Total</th><th>Status</th></tr></thead>
+      <tbody>${items.map(row).join("")}</tbody>
+      <tfoot><tr><td colspan="8">Total to buy</td><td class="n">${usd(tot)}</td><td></td></tr></tfoot>
+    </table>
+    <p class="sh-foot">${priced ? `Prices and sizes as listed by the retailer on ${esc(priced)}. ` : ""}Sizes of kept pieces are estimates from the photo. Drawing ref: ${esc(items[0]?.ref || "")}.</p>`;
+}
+async function printSchedule() {
+  const sheet = $("#sheet"), title = document.title;
+  sheet.innerHTML = scheduleSheet();
+  await Promise.all([...sheet.querySelectorAll("img")].map(im => im.decode().catch(() => {})));   // photos in before the dialog opens
+  document.title = `FF&E schedule - ${ROOMS[S.needs.room] || S.needs.room}`;                      // the PDF's default file name
+  addEventListener("afterprint", () => { document.title = title; sheet.innerHTML = ""; }, { once: true });
+  print();
+}
+// A cell that starts like a formula gets a leading quote, so a spreadsheet shows it as text instead of running it.
+const csvCell = v => {
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const toCsv = rows => "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n") + "\r\n";   // BOM: Excel reads UTF-8
+
+function saveFile(name, text, type) {
+  const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([text], { type })), download: name });
+  link.click(); URL.revokeObjectURL(link.href);
+}
+
 // click on empty room / empty space around a window -> hide every open window
 const EMPTY_SPOTS = "#room, #shade, #view, #backdrop, #stage, .frame, .x-preview, .cartx.previewing";
 function dismissAll() {
@@ -1103,10 +1202,11 @@ document.addEventListener("click", e => {
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
     navigator.clipboard.writeText(txt).then(() => toast("Shopping list copied"), () => toast("Copy failed"));
   } else if (act === "download") {
-    const blob = new Blob([JSON.stringify(exportScene(), null, 2)], { type: "application/json" });
-    const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "scene.json" });
-    link.click(); URL.revokeObjectURL(link.href);
-  }
+    saveFile("scene.json", JSON.stringify(exportScene(), null, 2), "application/json");
+  } else if (act === "schedule") {
+    saveFile("ffe-schedule.csv", toCsv([SCHEDULE_COLS, ...scheduleRows()]), "text/csv;charset=utf-8");
+    toast("FF&E schedule downloaded");
+  } else if (act === "schedule-pdf") printSchedule();
 });
 
 document.addEventListener("input", e => {

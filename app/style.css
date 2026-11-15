@@ -332,6 +332,9 @@ textarea:focus, input[type=number]:focus { border-color: rgba(20,20,20,.35); }
 .btn.block { width: 100%; margin-top: 18px; }
 .btn-row { display: flex; gap: 8px; margin-top: 18px; }
 .btn-row .btn { flex: 1; }
+.sched-row { align-items: center; }
+.sched-row span { flex: 2; font-size: 13px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+.sched-row + .btn-row { margin-top: 8px; }
 
 .drop {
   display: grid; place-items: center; gap: 4px; text-align: center;
@@ -784,3 +787,39 @@ button:disabled {opacity:.5;cursor:wait}
 .sofa-product {position:relative}.sofa-product img{width:100%;height:150px;object-fit:contain}.sofa-product span{position:absolute;top:0;left:0;font-size:11px;background:var(--brief-wash);padding:4px 8px;border-radius:8px}
 .sofa-evidence {font-size:12px;line-height:1.6}.sofa-goal {font-weight:500}.sofa-fact{border-top:1px solid var(--line);padding:10px 0}.sofa-fact>b{display:block}.sofa-fact>span{font-size:10px;text-transform:uppercase;letter-spacing:.08em}.support{color:var(--brief-moss)}.tradeoff{color:var(--warn)}.sofa-evidence details{margin-top:4px;color:var(--brief-muted)}.sofa-evidence summary{cursor:pointer}.sofa-fact a{color:var(--brief-moss)}.sofa-unknown,.sofa-caution,.sofa-footer{font-size:11px;color:var(--brief-muted)}.sofa-result>.btn{margin-top:auto}
 @media(max-width:820px){#sofa-explorer{inset:75px 16px 75px;padding:18px}.sofa-results{grid-template-columns:1fr}#sofa-habit-form{flex-direction:column}.sofa-browse{top:105px}.sofa-explorer-head h2{font-size:22px}}
+
+/* ---------- FF&E schedule sheet: empty and hidden on screen, the only thing on paper (print, or Save as PDF) ---------- */
+#sheet { display: none; }
+@media print {
+  @page { size: landscape; margin: 11mm; }
+  html, body { height: auto; overflow: visible; background: #fff; color: var(--ink); }
+  body > *:not(#sheet) { display: none !important; }
+  #sheet { display: block; font-size: 9.5pt; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sh-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10mm; padding-bottom: 5mm; border-bottom: 1.5pt solid var(--ink); }
+  .sh-brand { font-size: 9pt; font-weight: 500; letter-spacing: .01em; color: var(--ink-soft); }
+  #sheet h1 { margin: 1.5mm 0 1mm; font-size: 27pt; font-weight: 600; letter-spacing: -.015em; line-height: 1.1; }
+  .sh-meta { margin: 0; color: var(--ink-soft); }
+  .sh-facts { display: flex; gap: 10mm; margin: 5mm 0 0; }
+  .sh-facts dt { font-size: 7pt; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
+  .sh-facts dd { margin: .5mm 0 0; font-size: 13pt; font-weight: 600; white-space: nowrap; }
+  .sh-facts .over dd { color: var(--warn); }
+  .sh-room { width: 68mm; height: 38mm; object-fit: cover; border-radius: 5mm; }
+  .sh-table { width: 100%; border-collapse: collapse; margin-top: 3mm; }
+  .sh-table thead { display: table-header-group; }   /* the column names repeat on every page */
+  .sh-table tfoot { display: table-row-group; break-before: avoid; }   /* the total does not: once, after the last row, never alone on a page */
+  .sh-table tr { break-inside: avoid; }
+  .sh-table th { padding: 2mm 2mm; text-align: left; font-size: 7pt; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); border-bottom: .75pt solid var(--ink); }
+  .sh-table td { padding: 1.7mm 2mm; vertical-align: middle; border-bottom: .5pt solid var(--line); }
+  .sh-table .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sh-table .no { white-space: nowrap; color: var(--ink-soft); }
+  .sh-table .name { width: 16%; }
+  .sh-table .spec { width: 31%; font-size: 8.5pt; }   /* the two text columns share the width the fixed ones leave */
+  .sh-table img { display: block; width: 13mm; height: 13mm; object-fit: contain; border-radius: 3mm; background: #f4f2ee; }
+  .sh-table b { display: block; font-weight: 600; }
+  .sh-table small { display: block; font-size: 8pt; color: var(--ink-soft); }
+  .sh-table a { color: inherit; }
+  .sh-pill { display: inline-block; padding: .8mm 2.8mm; border-radius: 999px; font-size: 7.5pt; white-space: nowrap; background: var(--ink); color: #fff; border: .75pt solid var(--ink); }
+  .sh-pill.keep { background: none; color: var(--ink); }
+  .sh-table tfoot td { padding-top: 3mm; border-bottom: 0; border-top: 1.5pt solid var(--ink); font-size: 11pt; font-weight: 600; }
+  .sh-foot { margin: 4mm 0 0; font-size: 7.5pt; color: var(--ink-soft); break-before: avoid; }
+}
