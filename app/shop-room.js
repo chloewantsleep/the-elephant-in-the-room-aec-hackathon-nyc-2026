@@ -233,7 +233,7 @@ function shopDiagram(layout, ref, selected) {
   const contactShadows = solids.filter(({ item, z }) => item.cat !== "rug" && z === 0)
     .map(({ x, y, rw, rd }) =>
       face("shop-contact-shadow", ...atHeight(ellipse(x + 4, y + 5, rw * .50, rd * .48), 0))).join("");
-  const style = row => `${row.item.own ? "owned" : "buy"}${row.id === selected ? " selected" : ""}`;
+  const style = row => `${row.item.inPicture ? "scene" : row.item.own ? "owned" : "buy"}${row.id === selected ? " selected" : ""}`;
   const drawItem = row => {
     const { item, x, y, z, w, d, h, id, finish, turn } = row;
     const form = row.form || SHOP_FORM[item.cat] || "box";
@@ -291,13 +291,34 @@ function shopDiagram(layout, ref, selected) {
   </svg>`;
 }
 
-function shopRoomMarkup() {
+// the design's plan: the pieces of the chosen option as first designed, where the render (or the plan) has them
+function shopPlanNow() {
   const option = S.options[S.opt];
   if (option) option.shopOriginal ??= structuredClone(option.items);
-  const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
-  const ref = shopReference(original);
-  readRenderBoxes(original, ref.image);
-  const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
+  const original = (option?.shopOriginal || S.scene || []).map((item, slotId) => ({ ...item, slotId }));
+  const read = shopReference(original);
+  readRenderBoxes(original, read.image);
+  // furniture the render also shows (background chairs, tables...) that isn't in the list: drawn in gray
+  const extra = read.others.map((o, k) => ({ cat: o.category, qty: o.boxes.length, inPicture: true, pos: null,
+    slotId: original.length + k,
+    extra: { id: `picture-${k}`, name: o.label, family: o.label, owned: true, inPicture: true, variant: "", url: null,
+      price: { amount: 0, currency: "USD" }, dims_in: o.dims_in || {}, images: { main: null, main_local: null },
+      colors: [], materials: [] } }));
+  const ref = { ...read, boxes: { ...read.boxes, ...Object.fromEntries(extra.map((it, k) => [it.slotId, read.others[k].boxes])) } };
+  return { original, ref, extra, plan: shopSceneLayout([...original, ...extra], S.space, S.needs.room, ref) };
+}
+
+// small picture of the room for the shopping list's "Explore room view" button
+function shopRoomPreview() {
+  if (!(S.options[S.opt]?.items || S.scene)?.length) return "";
+  try {
+    const { ref, plan } = shopPlanNow();
+    return `<span class="shop-plan shop-preview" aria-hidden="true">${shopDiagram(plan, ref, null)}</span>`;
+  } catch { return ""; }   // a preview must never break the list
+}
+
+function shopRoomMarkup() {
+  const { original, ref, extra, plan } = shopPlanNow();
   const demo = S.space.photo === "demo";
   let refSrc = ref.image || (demo ? example().render : photoSrc());
   // a saved demo render only shows the example's own design; for any other design show the room photo instead
@@ -316,7 +337,7 @@ function shopRoomMarkup() {
         <p class="shop-note" aria-live="polite">${planLabel} · ${inch(plan.width)} × ${inch(plan.depth)}</p>
       </div>
       <div class="shop-legend" aria-label="Diagram legend">
-        <span><i class="buy"></i>To buy</span><span><i class="owned"></i>Keeping</span>
+        <span><i class="buy"></i>To buy</span><span><i class="owned"></i>Keeping</span>${extra.length ? '<span><i class="scene"></i>In the picture</span>' : ""}
       </div>
     </section>
     <aside class="shop-side" aria-label="Reference and furniture">
@@ -343,7 +364,7 @@ function shopPieceRow({ item, id, number }, selected) {
       <span class="shop-index">${number}</span>
       <span class="shop-thumb">${image ? `<img src="${esc(image)}" alt="">` : ""}</span>
       <span class="shop-piece-name"><strong>${esc(p.owned ? p.name : p.family || p.name)}</strong>
-        <small>${esc(category)}${item.qty > 1 ? ` × ${item.qty}` : ""} · ${p.owned ? "Keeping" : money(p.price.amount * item.qty)}</small>
+        <small>${esc(category)}${item.qty > 1 ? ` × ${item.qty}` : ""} · ${item.inPicture ? "In the picture" : p.owned ? "Keeping" : money(p.price.amount * item.qty)}</small>
       </span>
     </button>
     ${selected ? `<div class="shop-piece-detail">

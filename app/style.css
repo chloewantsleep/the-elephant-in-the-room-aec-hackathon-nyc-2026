@@ -636,9 +636,15 @@ button.mock-tag:hover { opacity: 1; }
 
 /* ---------- Shop room view ---------- */
 .drawer .shop-launch {
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  margin-top: 16px; padding-inline: 16px; text-align: left;
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  margin-top: 16px; padding: 10px 12px 12px; height: auto; text-align: left;
 }
+.shop-launch-label { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-inline: 4px; }
+/* the room's isometric plan in miniature: no numbers, no hover, just the picture */
+.drawer .shop-launch .shop-preview { display: block; height: 170px; padding: 0; overflow: hidden; border-radius: 12px; pointer-events: none;
+  border: 0; box-shadow: none; backdrop-filter: none; background: radial-gradient(ellipse at 48% 34%, #fffdf7 0%, #f0e6d6 100%); }
+.shop-preview .shop-iso { width: 100%; height: 100%; }
+.shop-preview .shop-marker { display: none; }
 .shop-switch {
   display: flex; gap: 2px; padding: 3px;
   border-radius: 999px; background: rgba(255,255,255,.15); white-space: nowrap;
@@ -701,6 +707,7 @@ button.mock-tag:hover { opacity: 1; }
 
 .shop-plan .buy { --shop-top: #f6dba1; --shop-left: #ddb46e; --shop-right: #c5995b; --shop-edge: #765235; }
 .shop-plan .owned { --shop-top: #c7e4d4; --shop-left: #99c1ad; --shop-right: #79ad96; --shop-edge: #3d6658; }
+.shop-plan .scene { --shop-top: #e2e0dc; --shop-left: #c4c1bb; --shop-right: #aeaba5; --shop-edge: #6d6a65; }   /* in the render, not in the list */
 .shop-plan .shop-solid, .shop-solid > g {
   --shop-surface: var(--shop-body);
   --shop-top: var(--shop-surface);

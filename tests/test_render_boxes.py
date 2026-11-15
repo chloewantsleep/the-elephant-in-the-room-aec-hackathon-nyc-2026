@@ -20,3 +20,16 @@ class RenderBoxes(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RenderOthers(unittest.TestCase):
+    def test_keeps_other_furniture_with_known_categories(self):
+        raw = {'others': [{'category': 'stool_bench', 'label': 'black stool', 'boxes': [[400, 100, 600, 150], [400, 200, 600, 250]],
+                           'dims_in': {'width': 16, 'depth': 16, 'height': 30, 'weight': 9}},
+                          {'category': 'spaceship', 'label': 'thing', 'boxes': [[1, 1, 50, 50]], 'dims_in': {'width': -3}},
+                          {'category': 'sofa', 'boxes': []}]}
+        out = core.clean_others(raw)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0]['dims_in'], {'width': 16.0, 'depth': 16.0, 'height': 30.0})
+        self.assertEqual(len(out[0]['boxes']), 2)
+        self.assertEqual((out[1]['category'], out[1]['dims_in']), ('other', {}))

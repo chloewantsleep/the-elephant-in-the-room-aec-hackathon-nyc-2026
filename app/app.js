@@ -146,6 +146,7 @@ function ownedProduct(e) {
 
 // Product as displayed: the base record, optionally with a colorway applied.
 function view(item) {
+  if (item.extra) return item.extra;   // furniture the render shows that isn't in the list (Shop room view)
   if (item.own) {
     const e = exById(item.own);
     return e ? ownedProduct(e) : ownedProduct({ id: item.own, label: "your piece", category: item.cat });
@@ -1537,7 +1538,8 @@ function renderCart() {
     </div>
     <p class="sub">${buy.length} to buy${keep.length ? ` · ${keepN} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
     ${cartSummary()}
-    <button class="btn ghost shop-launch" data-action="shop-view" data-view="room">Explore room view <span aria-hidden="true">↗</span></button>
+    <button class="btn ghost shop-launch" data-action="shop-view" data-view="room">${typeof shopRoomPreview === "function" ? shopRoomPreview() : ""}
+      <span class="shop-launch-label">Explore room view <span aria-hidden="true">↗</span></span></button>
     <div class="drawer-scroll">
       ${S.options[S.opt]?.gaps?.length ? `<p class="chat-warning">Nothing fits your needs for: ${S.options[S.opt].gaps.map(c => CAT_LABEL[c].toLowerCase()).join(", ")}</p>` : ""}
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}

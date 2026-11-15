@@ -60,6 +60,20 @@ const SHOP_COLORS = {
   yellow: "#c4a055", red: "#a56054", orange: "#bc8157", glass: "#c2d2d3",
 };
 const SHOP_HEX = /^#[\da-f]{6}$/i;
+
+// typical size (inches: width, depth, height) when a product or a piece in the picture has no measurement
+const SHOP_TYPICAL = {
+  sofa: [84, 36, 33], armchair: [30, 32, 32], coffee_table: [40, 24, 17], side_table: [18, 18, 22], rug: [96, 60, 1],
+  bed: [64, 84, 40], nightstand: [18, 16, 24], dresser: [48, 18, 32], wardrobe: [40, 24, 78], desk: [48, 24, 30],
+  office_chair: [26, 26, 40], dining_table: [60, 36, 30], dining_chair: [18, 20, 32], stool_bench: [16, 16, 30],
+  shelving: [32, 14, 72], cabinet: [36, 18, 34], tv_stand: [60, 16, 20], floor_lamp: [14, 14, 60], table_lamp: [8, 8, 18],
+  pendant_lamp: [18, 18, 14], mirror: [24, 2, 60], other: [24, 20, 24],
+};
+function shopDims(item) {
+  const dims = view(item)?.dims_in || {}, [tw, td, th] = SHOP_TYPICAL[item.cat] || SHOP_TYPICAL.other;
+  const w = shopPositive(dims.width, tw);
+  return { w, d: shopPositive(dims.depth, dims.width > 0 ? Math.min(w, td) : td), h: shopPositive(dims.height, th) };
+}
 const shopPositive = (n, fallback) => Number.isFinite(n) && n > 0 ? n : fallback;
 const shopColorText = text => String(text || "").toLowerCase().match(/[a-z]+(?:-[a-z]+)*/g)
   ?.map(word => SHOP_COLORS[word]).filter(Boolean) || [];
@@ -91,32 +105,30 @@ const SHOP_HORIZON = .42, SHOP_FAR = .1;
 // -> Map: slotId -> [u, v] (first copy) and "slotId:i" -> [u, v] for every copy with its own spot in the photo
 const shopBottom = b => [(b[1] + b[3]) / 20, b[2] / 10];   // box 0-1000 -> bottom middle, image %
 function shopPhotoAnchors(items, renderBoxes = null) {
-  const photo = document.getElementById("room");
-  const aspect = photo?.naturalWidth && photo?.naturalHeight ? photo.naturalWidth / photo.naturalHeight : 4 / 3;
   const spots = [];   // [key, x, near]
   items.forEach((item, k) => {
     const id = item.slotId ?? k;
     // a piece found in the photo has a box per copy; anything else has one spot
     const seen = renderBoxes?.[id];
     const boxes = seen?.length ? seen : item.own && typeof exById === "function" ? exById(item.own)?.boxes : null;
-    const pts = boxes?.length ? boxes.map(shopBottom)
+    // a rug lies flat: its middle is where it is; anything else stands on the bottom of its box
+    const pts = boxes?.length ? boxes.map(b => item.cat === "rug" ? [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20] : shopBottom(b))
       : Array.isArray(item.pos) ? [[item.pos[0], Math.min(100, item.pos[1] + 6)]] : [];   // center -> about where it stands
     pts.forEach((pos, i) => {
       const u = pos[0] / 100, v = pos[1] / 100;
       const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
       // left/right widens a little with distance (not the full 1/near, which would fling far pieces to the walls
       // and squeeze everything near the camera into the middle)
-      spots.push([`${id}:${i}`, (u - .5) * aspect * (1 + .6 * (1 - near)), near]);
+      spots.push([`${id}:${i}`, (u - .5) * (1 + .6 * (1 - near)), near]);
     });
   });
   const out = new Map();
   if (!spots.length) return out;
-  const xs = spots.map(s => s[1]), ns = spots.map(s => s[2]);
-  const span = (lo, hi) => Math.max(hi - lo, 1e-6);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs), n0 = Math.min(...ns), n1 = Math.max(...ns);
   for (const [key, x, n] of spots) {
-    // spread over the whole floor, wall to wall and back to front (evenly by how low it sits in the picture)
-    const uv = [spots.length > 1 ? .08 + .84 * (x - x0) / span(x0, x1) : .5, spots.length > 1 ? .1 + .82 * (n - n0) / span(n0, n1) : .5];
+    // the picture's frame is the room: its left and right edges are the side walls far away (closer to the
+    // middle near the camera), the horizon is the back wall and the bottom edge the front. Fixed, not stretched
+    // to the pieces, so a room whose right half is empty in the picture stays empty here too.
+    const uv = [.04 + .92 * (.5 + x / 1.6), .06 + .88 * (n - SHOP_FAR) / (1 - SHOP_FAR)];
     out.set(key, uv);
     if (key.endsWith(":0")) out.set(+key.slice(0, -2), uv);
   }
@@ -145,14 +157,14 @@ function shopSceneLayout(items, space, room, ref) {
     let area = 0;
     items.forEach(item => {
       if (NO_ROOM.has(item.cat)) return;
-      const dims = view(item).dims_in, w = shopPositive(dims.width, 22), d = shopPositive(dims.depth, shopPositive(dims.width, 18));
+      const { w, d } = shopDims(item);
       area += w * d * (item.qty || 1);
       for (let i = 0; i < (item.qty || 1); i++) {
         const uv = fromPhoto.get(`${item.slotId}:${i}`);
         if (uv) spots.push({ id: item.slotId, cat: item.cat, uv, w, d });
       }
     });
-    const byArea = Math.sqrt(area * 5 / (width * depth));   // pieces cover at most ~20% of the floor
+    const byArea = Math.sqrt(area * 3 / (width * depth));   // pieces cover at most about a third of the floor
     const needs = [];
     for (let a = 0; a < spots.length; a++) for (let b = a + 1; b < spots.length; b++) {
       const p = spots[a], q = spots[b], gap = gapBetween(p, q);
@@ -170,11 +182,9 @@ function shopSceneLayout(items, space, room, ref) {
   function arrange() {
     const entries = items.map((item, index) => {
       const sample = shopSample(ref, item);
-      const dimensions = view(item).dims_in;
       const useColor = !ref?.profile || item.own || ref.demoExact;
       return { id: item.slotId, number: index + 1, item, sample, finish: shopFinish(item, useColor ? sample : null),
-        form: sample?.form, w: shopPositive(dimensions.width, 22), d: shopPositive(dimensions.depth, shopPositive(dimensions.width, 18)),
-        h: shopPositive(dimensions.height, 20), pieces: [] };
+        form: sample?.form, ...shopDims(item), pieces: [] };
     });
     const measured = space.confirmed ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
     const fixed = new Map();
@@ -227,7 +237,12 @@ function shopSceneLayout(items, space, room, ref) {
 
     for (const row of entries) {
       const { item, sample, w, d, h } = row, cat = item.cat;
-      const parent = cat === "table_lamp" ? first(room === "office" ? "desk" : "nightstand") : null;
+      // what the render shows wins over the usual arrangement: a lamp the render puts beside the desk stays on
+      // the floor, and a rug the render shows goes where it is
+      const box = ref?.boxes?.[item.slotId]?.[0], boxOf = cat2 => ref?.boxes?.[entries.find(r => r.item.cat === cat2)?.id]?.[0];
+      const host = cat === "table_lamp" ? (room === "office" ? "desk" : "nightstand") : null;
+      const onHost = !box || !boxOf(host) || (box[1] < boxOf(host)[3] && box[3] > boxOf(host)[1] && box[2] < boxOf(host)[2]);
+      const parent = host && onHost ? first(host) : null;
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
       let main = null;
@@ -261,7 +276,7 @@ function shopSceneLayout(items, space, room, ref) {
           x = table.x + (order.indexOf(i) - (qty - 1) / 2) * step;
           y = table.y + table.rd / 2 + d / 2 + 4;
           turn = 2;
-        } else if (cat === "rug" && (main = { living: sofa, bedroom: bed, dining: table, office: desk }[room] || sofa || bed || table || desk)) {
+        } else if (cat === "rug" && !box && (main = { living: sofa, bedroom: bed, dining: table, office: desk }[room] || sofa || bed || table || desk)) {
           // the rug lies under the room's main piece, reaching a little in front of it
           x = main.x; y = main.y + Math.max(0, d / 2 - main.rd / 2 - 6);
         } else if (parent || support) {
@@ -322,7 +337,7 @@ function shopReference(items) {
   const demoExact = profile && S.opt === 0 && S.existing?.baked &&
     S.existing.items.every(piece => items.some(item => item.own === piece.id));
   const read = image && shopRenderBoxes.get(image);
-  return { image, profile, demoExact, boxes: read?.boxes || null, reading: read?.status === "pending" };
+  return { image, profile, demoExact, boxes: read?.boxes || null, others: read?.others || [], reading: read?.status === "pending" };
 }
 
 // Gemini reads where each piece landed in this design's AI render (boxes only; cached on the server too).
@@ -348,9 +363,9 @@ async function readRenderBoxes(items, image) {
       { width: Math.round(pic.naturalWidth * scale), height: Math.round(pic.naturalHeight * scale) });
     canvas.getContext("2d").drawImage(pic, 0, 0, canvas.width, canvas.height);
     const res = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), locate });
-    shopRenderBoxes.set(image, { status: "ready", boxes: res.boxes || {} });
+    shopRenderBoxes.set(image, { status: "ready", boxes: res.boxes || {}, others: res.others || [] });
   } catch {
     shopRenderBoxes.set(image, { status: "failed" });
   }
-  if (S.cart === "expanded" && S.cartView === "room" && S.preview == null) renderCart();
+  if (S.cart !== "closed" && S.preview == null) renderCart();   // the room view, or the list's small preview
 }
