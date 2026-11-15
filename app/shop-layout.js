@@ -349,5 +349,5 @@ async function readRenderBoxes(items, image) {
   } catch {
     shopRenderBoxes.set(image, { status: "failed" });
   }
-  if (S.cart === "expanded" && S.cartView === "room" && S.preview == null) renderCart();
+  if (S.cart !== "closed" && S.preview == null) renderCart();   // the room view, or the list's small preview
 }

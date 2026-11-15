@@ -291,13 +291,27 @@ function shopDiagram(layout, ref, selected) {
   </svg>`;
 }
 
-function shopRoomMarkup() {
+// the design's plan: the pieces of the chosen option as first designed, where the render (or the plan) has them
+function shopPlanNow() {
   const option = S.options[S.opt];
   if (option) option.shopOriginal ??= structuredClone(option.items);
-  const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
+  const original = (option?.shopOriginal || S.scene || []).map((item, slotId) => ({ ...item, slotId }));
   const ref = shopReference(original);
   readRenderBoxes(original, ref.image);
-  const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
+  return { original, ref, plan: shopSceneLayout(original, S.space, S.needs.room, ref) };
+}
+
+// small picture of the room for the shopping list's "Explore room view" button
+function shopRoomPreview() {
+  if (!(S.options[S.opt]?.items || S.scene)?.length) return "";
+  try {
+    const { ref, plan } = shopPlanNow();
+    return `<span class="shop-plan shop-preview" aria-hidden="true">${shopDiagram(plan, ref, null)}</span>`;
+  } catch { return ""; }   // a preview must never break the list
+}
+
+function shopRoomMarkup() {
+  const { original, ref, plan } = shopPlanNow();
   const demo = S.space.photo === "demo";
   let refSrc = ref.image || (demo ? example().render : photoSrc());
   // a saved demo render only shows the example's own design; for any other design show the room photo instead
