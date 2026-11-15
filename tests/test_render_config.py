@@ -32,3 +32,35 @@ class RenderConfigTests(unittest.TestCase):
         self.assertEqual(set(config), {"aiEnabled", "demoCacheOnly", "models"})
         self.assertEqual(set(config["models"]), {"render", "recolor", "swap", "place"})
         self.assertNotIn("never-public", str(config))
+
+
+class SketchOnlyTests(unittest.TestCase):
+    def test_default_on_only_when_deployed(self):
+        env = {k: v for k, v in os.environ.items() if k not in ("AI_SKETCH_ONLY", "VERCEL")}
+        with patch.dict(os.environ, env, clear=True):
+            self.assertFalse(core.sketch_only())
+        with patch.dict(os.environ, {**env, "VERCEL": "1"}, clear=True):
+            self.assertTrue(core.sketch_only())
+            self.assertFalse(core.render_config()["aiEnabled"])
+        with patch.dict(os.environ, {**env, "VERCEL": "1", "AI_SKETCH_ONLY": "false"}, clear=True):
+            self.assertFalse(core.sketch_only())
+
+    def test_only_sketch_kinds_may_call_the_model(self):
+        calls = []
+        def run():
+            calls.append(1)
+            return {"ok": True}
+        with patch.dict(os.environ, {"AI_SKETCH_ONLY": "true"}), \
+                patch.object(core, "saved", return_value=None), patch.object(core, "from_index", return_value=None), \
+                patch.object(core, "save_result", create=True):
+            for kind in ("recolor", "swap", "track", "detect"):
+                with self.subTest(kind=kind):
+                    with self.assertRaises(Exception):
+                        core.cached(kind, {"x": kind + "-unsaved-test"}, run)
+            self.assertEqual(calls, [])
+            for kind in core.SKETCH_KINDS:
+                try:
+                    core.cached(kind, {"x": kind + "-unsaved-test"}, run)
+                except Exception:
+                    pass
+            self.assertEqual(len(calls), len(core.SKETCH_KINDS))

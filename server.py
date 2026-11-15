@@ -108,11 +108,14 @@ class Handler(SimpleHTTPRequestHandler):
         if not fn:
             return self._json(404, {"error": "not found"})
         try:
-            if not core.passcode_ok(self.headers):
-                return self._json(401, {"error": "Passcode required", "passcode": True})
             length = int(self.headers.get("Content-Length", 0))
             if not 0 < length <= 5000000: return self._json(413, {"error": "Request too large"})
             req = json.loads(self.rfile.read(length))
+            # saved results only (the demo's pictures and looks) never call the model, so need no passcode
+            free = (self.path == "/api/cached_render" or (isinstance(req, dict) and req.get("cache_only") is True)
+                    or (core.sketch_only() and self.path not in ("/api/sketch", "/api/place", "/api/chat")))
+            if not free and not core.passcode_ok(self.headers):
+                return self._json(401, {"error": "Passcode required", "passcode": True})
             return self._json(200, fn(req))
         except Exception as e:  # surface the reason to the UI (and log it here)
             print(f"{self.path} failed: {type(e).__name__}: {str(e)[:500]}", file=sys.stderr, flush=True)

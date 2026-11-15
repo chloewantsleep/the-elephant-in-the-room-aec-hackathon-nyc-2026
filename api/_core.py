@@ -49,10 +49,20 @@ SWAP_MODEL = os.environ.get("GEMINI_SWAP_MODEL", MODEL)
 PLACE_MODEL = os.environ.get("GEMINI_PLACE_MODEL", MODEL)
 
 
+def sketch_only():
+    """AI only for the sketch feature (reading a sketch, placing the drawn piece); every other request uses saved
+    results. AI_SKETCH_ONLY=true/false; unset: on for the deployed site (Vercel sets VERCEL=1), off locally."""
+    v = os.environ.get("AI_SKETCH_ONLY")
+    return v.lower() in ("true", "1", "yes") if v is not None else bool(os.environ.get("VERCEL"))
+
+
+SKETCH_KINDS = ("sketch", "place")   # the only model calls allowed when sketch_only()
+
+
 def render_config():
     """Public render settings only; never expose API keys or other environment values."""
     return {
-        "aiEnabled": os.environ.get("AI_RENDER_ENABLED", "true").lower() in ("true", "1", "yes"),
+        "aiEnabled": os.environ.get("AI_RENDER_ENABLED", "true").lower() in ("true", "1", "yes") and not sketch_only(),
         "demoCacheOnly": os.environ.get("AI_RENDER_DEMO_CACHE_ONLY", "true").lower() in ("true", "1", "yes"),
         "models": {"render": MODEL, "recolor": RECOLOR_MODEL, "swap": SWAP_MODEL, "place": PLACE_MODEL},
     }
@@ -229,7 +239,7 @@ def render(req):
         raise RuntimeError("No GEMINI_API_KEY. Put it in .env (local) or the Vercel project env vars.")
     # identical request (same photo, products, positions, model) -> reuse the earlier render instead of paying again
     # + code version: edit a render prompt and the next request renders again; otherwise the saved one is reused
-    cache_only = req.pop("cache_only", False)   # not part of the cache key
+    cache_only = req.pop("cache_only", False) or sketch_only()   # not part of the cache key
     key = hashlib.sha1((MODEL + code_version(build_prompt, build_edit_prompt) + json.dumps(req, sort_keys=True)).encode()).hexdigest()[:16]
     cache = os.path.join(RENDERS, "cache", key + ".json")
     hit = saved(key + ".json")
@@ -365,6 +375,8 @@ def add_to_index(ikey, name):
 
 def cached(kind, payload, fn, cache_only=False):
     """Same input -> same answer, without paying again. cache_only: never call the model, only return a saved answer."""
+    if sketch_only() and kind not in SKETCH_KINDS:
+        cache_only = True
     key = hashlib.sha1((kind + json.dumps(payload, sort_keys=True)).encode()).hexdigest()[:16]
     path = os.path.join(RENDERS, "cache", f"{kind}-{key}.json")
     hit = saved(f"{kind}-{key}.json")
@@ -624,10 +636,17 @@ def make_handler(fn):
                              "renderConfig": render_config()})
 
         def do_POST(self):
-            if not passcode_ok(self.headers):
+            try:
+                req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            except Exception as e:
+                return self._json(400, {"error": str(e)})
+            # saved results only (the demo's pictures and looks) never call the model, so need no passcode
+            free = (fn is cached_render or (isinstance(req, dict) and req.get("cache_only") is True)
+                    or (sketch_only() and fn.__name__ not in ("read_sketch", "place")))   # forced to saved results anyway
+            if not free and not passcode_ok(self.headers):
                 return self._json(401, {"error": "Passcode required", "passcode": True})
             try:
-                self._json(200, fn(json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))))
+                self._json(200, fn(req))
             except Exception as e:  # surface the reason to the UI
                 self._json(500, {"error": str(e)})
 
