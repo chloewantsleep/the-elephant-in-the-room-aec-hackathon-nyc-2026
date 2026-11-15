@@ -677,9 +677,17 @@ const DEMO_SPACE = { x: 0.3306, y: 0, w: 0.6695, h: 1 };
 const rsOf = new Map(), shownOf = new Map();   // shown picture <-> picture in the render's own space
 const renderSpace = img => rsOf.get(img) || img;
 const toShown = ([x, y]) => [DEMO_SPACE.x * 100 + DEMO_SPACE.w * x, DEMO_SPACE.y * 100 + DEMO_SPACE.h * y];
+// The render's sofa and rug run off its left edge, so on the plain photo they faded out at the seam. DEMO_SEAM is the
+// photo with that strip finished by Gemini (sofa arm, rug, floor; the lounge chair gone) and identical to the render
+// right of the seam, so the paste blends invisibly. It only fits the render's own beige sectional: any other sofa
+// look is pasted onto the plain photo, so no beige arm sticks out of it.
+const DEMO_SEAM = "assets/example-lounge-wide-seam.jpg";
+const baseSofaShown = scene => { const s = (scene || []).find(it => it.cat === "sofa"), t = TEST_SET.find(t => t.cat === "sofa");
+  return !s || !t || (s.pid === t.pid && !s.vid); };
 async function showOnPhoto(rsImg) {   // render-space picture -> the same picture on the full photo
   if (shownOf.has(rsImg)) return shownOf.get(rsImg);
-  const shown = await Variants.pasteInto(photoSrc(), rsImg, DEMO_SPACE);
+  const under = rsImg === demoBaseRs || baseSofaShown(S.scene) ? DEMO_SEAM : photoSrc();
+  const shown = await Variants.pasteInto(under, rsImg, DEMO_SPACE);
   shownOf.set(rsImg, shown); rsOf.set(shown, rsImg);
   return shown;
 }
@@ -1138,7 +1146,7 @@ function previewPicked(it) {
 }
 const colorPicked = previewPicked;
 
-// TEST ONLY (shown on localhost): swap the base room photo for any image, then jump straight to a rendered design
+// TEST ONLY (open the app with #testbase): swap the base room photo for any image, then jump straight to a rendered design
 // (option 1, no chat/brief), to try the color variants on different rooms. Not part of the product flow.
 function testBaseImage(file) {
   const r = new FileReader();
@@ -1160,7 +1168,7 @@ function testBaseImage(file) {
   };
   r.readAsDataURL(file);
 }
-if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+if (/(^|[#&])testbase\b/.test(location.hash)) {   // hidden test tool: open with #testbase
   const input = Object.assign(document.createElement("input"), { type: "file", accept: "image/*", hidden: true });
   const btn = Object.assign(document.createElement("button"), { className: "pill", textContent: "Test · change base image",
     title: "Test only: use another room photo as the base image" });
@@ -1330,7 +1338,10 @@ function renderHotspots() {
   // labels only for new products; pieces you keep ("yours") stay unlabeled (they're still in the shopping list)
   const g0 = geom(), onScreen = ([px, py]) => [Math.min(Math.max(g0.ox + px / 100 * g0.dw, 24), g0.W - 24),
                                                 Math.min(Math.max(g0.oy + py / 100 * g0.dh, 24), g0.H - 24)];
-  const order = S.scene.map((it, i) => ({ it, i, xy: onScreen(it.at || it.pos) })).filter(x => !x.it.own && !(V?.missing?.has(x.it.pid) && variantsCover())).sort((a, b) => b.xy[1] - a.xy[1]);
+  // label spot: where the render shows it (it.at); before that's known, the slot's usual spot rather than the shared default
+  const spot = it => it.at || (it.pos[0] === 50 && it.pos[1] === 50
+    && (TEMPLATES[S.needs.room] || TEMPLATES.living).concat(TEMPLATES.living).find(t => t.cat === it.cat)?.pos) || it.pos;
+  const order = S.scene.map((it, i) => ({ it, i, xy: onScreen(spot(it)) })).filter(x => !x.it.own && !(V?.missing?.has(x.it.pid) && variantsCover())).sort((a, b) => b.xy[1] - a.xy[1]);
   const html = [];
   for (const { it, i, xy: [x, y] } of order) {
     const p = view(it);

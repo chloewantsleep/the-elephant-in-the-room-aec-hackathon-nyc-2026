@@ -12,6 +12,9 @@
   // the sample lounge demo (app.js demoRoom): swap to its prepared similar products and show them instantly, no baked picture
   const DEMO_SWAPS = { sofa: "ikea:20245049", armchair: "ikea:30533493", coffee_table: "ikea:70497582" };   // STOCKHOLM, EKENÄSET, FRÖTORP
   const demo = () => typeof demoRoom === "function" && demoRoom();
+  // swapping pieces + re-rendering stays in the app, but is left out of the walkthrough (its saved results only
+  // match on the machine that made them); #swaps puts those two steps back
+  const SHOW_SWAPS = /(^|[#&])swaps\b/.test(location.hash);
   // one runner at a time: skip/back bump `gen` and queue `pending`; the runner's waits see gen !== live and unwind
   let on = false, beat = 0, fast = false, paused = false, gen = 0, live = 0, running = false, pending = null;
   const $ = s => document.querySelector(s);
@@ -132,12 +135,12 @@
       } },
     { t: "The whole picture", s: "labels off: this is the render",
       run: async () => { await fullView(2600); } },
-    { t: "Swap anything", s: "click a piece, pick another that fits: sofa, armchair, coffee table",
+    { t: "Swap anything", hidden: !SHOW_SWAPS, s: "click a piece, pick another that fits: sofa, armchair, coffee table",
       run: async () => {
         for (const [cat, pid] of Object.entries(demo() ? DEMO_SWAPS : SWAPS)) await swap(cat, pid);
         await tap('[data-action="close"]', 300);
       } },
-    { t: "Re-render just what changed", s: "the AI edits only the swapped pieces, everything else stays put",
+    { t: "Re-render just what changed", hidden: !SHOW_SWAPS, s: "the AI edits only the swapped pieces, everything else stays put",
       run: async () => {
         // the baked edit stands in for the live Gemini call (same request, rendered ahead of time)
         const b = find('[data-action="render"]');
@@ -153,7 +156,7 @@
       } },
     { t: "Shop the list", s: "every piece with a link to buy, the budget left, an FF&E schedule",
       run: async () => {
-        await tap(".next-arrow", 1400);
+        await tap('#rail [data-action="cart"]', 1400);   // the list beside the room (works from Design or Edit)
         await hover("#drawer .amt a", 1000);
         await hover('#drawer [data-action="schedule-pdf"]', 900);
       } },
@@ -161,7 +164,7 @@
       run: async () => { await tap('[data-action="shop-view"][data-view="room"]', 1400); await hover("#cartx .shop-marker", 1000); await hover("#cartx .shop-item", 800); } },
     { t: "Photo → brief → design → render → shop", s: "The Elephant in the Room", end: true,
       run: async () => { cursor.classList.remove("show"); await tap('[data-action="cart-close"]', 300); cursor.classList.remove("show"); } },
-  ];
+  ].filter(b => !b.hidden);
 
   function caption() {
     const b = BEATS[beat];

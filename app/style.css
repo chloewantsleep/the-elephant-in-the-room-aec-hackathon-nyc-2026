@@ -1098,3 +1098,38 @@ body.walkthrough #toast { display: none !important; }   /* the subtitle does the
 }
 .swipe-btns .round.like { color: var(--ok); }
 .swipe-btns .round:hover { transform: scale(1.08); }
+
+/* ---------- first screen: upload your room (landing.js) ---------- */
+#landing {
+  position: fixed; inset: 0; z-index: 70; overflow: hidden; color: #141414; background: #ececec;
+  transition: opacity .55s ease, transform .55s ease;
+}
+#landing.out { opacity: 0; pointer-events: none; }
+body.landing-on #wt-btn { display: none; }
+.ld-field img { position: absolute; left: 0; top: 0; aspect-ratio: 1; object-fit: contain; transform-origin: 50% 50%;
+  opacity: 0; will-change: transform, opacity; mix-blend-mode: multiply; pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,.08)); }
+.ld-brand { position: absolute; top: calc(var(--frame-inset-y) + 22px); left: calc(var(--frame-inset-x) + 28px); width: 34px; height: 34px; z-index: 200; }
+.ld-brand svg { display: block; width: 100%; height: 100%; }
+.ld-card {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 200; width: min(440px, calc(100vw - 32px));
+  padding: 22px; border-radius: var(--r-card); background: rgba(255,255,255,.72);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); box-shadow: 0 20px 60px rgba(0,0,0,.12);
+  animation: ld-in .7s cubic-bezier(.2,.7,.2,1) both .15s;
+}
+@keyframes ld-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(.97); } }
+.ld-msg { display: flex; gap: 12px; align-items: flex-start; }
+.ld-ava { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #141414; color: #fff; }
+.ld-ava svg { width: 24px; height: 24px; }
+.ld-msg p { margin: 0; font-size: 14.5px; line-height: 1.5; color: #4a4a4a; }
+.ld-msg p b { font-size: 17px; font-weight: 500; color: #141414; }
+.ld-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; margin-top: 18px; padding: 26px 16px;
+  border-radius: 18px; border: 1.5px dashed rgba(20,20,20,.25); background: rgba(255,255,255,.55); transition: background .2s, border-color .2s;
+}
+.ld-drop b { display: inline-block; padding: 11px 22px; border-radius: 999px; background: #141414; color: #fff; font-weight: 500; font-size: 14px; }
+.ld-drop small { font-size: 12px; color: #6e6e6e; }
+.ld-drop:hover, .ld-drop.over { background: #fff; border-color: #141414; }
+.ld-alt { display: flex; justify-content: center; gap: 8px; margin: 14px 0 0; font-size: 12.5px; color: #6e6e6e; }
+.ld-alt button { color: #6e6e6e; text-decoration: underline; text-underline-offset: 3px; }
+.ld-alt button:hover { color: #141414; }
