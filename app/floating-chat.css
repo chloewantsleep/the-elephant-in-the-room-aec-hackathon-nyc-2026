@@ -122,13 +122,12 @@ button:disabled { opacity:.45; cursor:wait; }
 .conversation-workspace.cart-expanded #view { transform:none; }
 
 /* Merged with main's UI: steps, rail and the Needs window stay on screen.
-   The dock is a launcher at the bottom-left; opened, it sits above the step pills. */
-#designer-drawer { left:calc(var(--frame-inset-x) + 56px); transform:none; width:min(420px,calc(100vw - 2*var(--frame-inset-x) - 80px)); bottom:calc(var(--frame-inset-y) + 84px); }
-#designer-drawer:not(.dock-shown) { width:auto; bottom:calc(var(--frame-inset-y) + 22px); }
-.dock-launch { pointer-events:auto; }
+   Closed, the dock is nothing (the ↗ at the end of the step bar opens it); open, it sits centered above the step bar. */
+#designer-drawer { left:50%; transform:translateX(-50%); width:min(680px,calc(100vw - 2*var(--frame-inset-x) - 80px)); bottom:calc(var(--frame-inset-y) + 88px); }
+#designer-drawer:not(.dock-shown) { display:none; }
 @media(max-width:820px) {
- #designer-drawer { left:16px; width:calc(100vw - 32px); bottom:calc(var(--frame-inset-y) + 76px); }
- #designer-drawer:not(.dock-shown) { left:16px; bottom:calc(var(--frame-inset-y) + 76px); }
+ #designer-drawer { width:calc(100vw - 32px); bottom:calc(var(--frame-inset-y) + 76px); }
 }
-/* the list pushes the room view aside: tuck the closed launcher away so it doesn't cover the step pills */
-body.cart-open #designer-drawer:not(.dock-shown), body.cart-expanded #designer-drawer:not(.dock-shown) { display:none; }
+/* the list pushes the room view aside: the open dock follows the room; the full grid has no room view */
+body.cart-open #designer-drawer { left:calc((100vw - var(--drawer-w)) / 2); width:min(560px,calc(100vw - var(--drawer-w) - 64px)); }
+body.cart-expanded #designer-drawer { display:none; }
