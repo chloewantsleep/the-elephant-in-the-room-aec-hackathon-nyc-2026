@@ -28,7 +28,7 @@ renderDesigner=function(){
  let host=document.getElementById('designer-drawer');if(!host){host=document.createElement('aside');host.id='designer-drawer';document.body.append(host);}
  // main's steps and rail stay on screen, so the dock waits behind a small launcher until you open it
  if(chatOpen)dockShown=true;host.classList.toggle('dock-shown',dockShown);
- if(!dockShown){host.innerHTML='';return;}   // closed: nothing on screen; the ↗ at the end of the step bar opens it
+ if(!dockShown){host.innerHTML='';return;}   // closed: nothing on screen; the chat button in the right rail opens it
  if(!host.querySelector('#dock-content'))host.innerHTML=`<div id="dock-content"></div><div class="composer-top"><span id="composer-start"></span><button class="icon-btn" data-action="dock-expand" aria-label="Expand chat" title="Expand chat">↗</button><button class="icon-btn" data-action="dock-hide" aria-label="Hide the designer" title="Hide">–</button></div>${dockForm()}`;
  host.classList.toggle('dock-expanded',chatOpen);host.classList.remove('dock-collapsed');
  const content=host.querySelector('#dock-content'),contextDraft=host.querySelector('#context-input')?.value;
@@ -52,8 +52,8 @@ function host_focus(){document.getElementById('designer-message')?.focus();}
 function renderObjectSelection(){document.getElementById('selected-object')?.remove();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;
  if(['context','upload','context-image','scan'].includes(a))document.querySelector('.composer-add')?.removeAttribute('open');
- if(a==='dock-show'){dockShown=true;renderDesigner();renderSteps();host_focus();}
- if(a==='dock-hide'){dockShown=false;chatOpen=false;renderDesigner();renderSteps();}
+ if(a==='dock-show'){dockShown=true;renderDesigner();renderCart();host_focus();}
+ if(a==='dock-hide'){dockShown=false;chatOpen=false;renderDesigner();renderCart();}
  if(a==='dock-expand'){chatOpen=!chatOpen;chatMode='conversation';renderDesigner();}
  if(a==='object-clear'){selectedObject=null;S.sel=null;objectNotice='';renderObjectSelection();render();}
  if(['select','cart-item'].includes(a)){selectedObject=null;objectNotice='';renderObjectSelection();renderDesigner();}

@@ -534,12 +534,17 @@ function renderBoxes() {
   })).join("");
 }
 
-// the steps as one long bar, like a chat input; ↗ at the end opens the designer (docked-chat.js)
+// the bottom of the screen: on Needs, the chat's input (no step pills; each step has its own next button)
 function renderSteps() {
-  const open = typeof dockShown !== "undefined" && dockShown;
-  $("#steps").innerHTML = `<div class="step-bar">${STEPS.map((s, i) =>
-    `<button class="step-seg ${i === S.step ? "active" : ""}" data-action="goto" data-step="${i}"><span class="num">0${i + 1}</span>${s}</button>`).join("")}</div>
-    ${open ? "" : `<button class="step-ask" data-action="dock-show" title="Ask the designer" aria-label="Ask the designer">↗</button>`}`;
+  const el = $("#steps");
+  if (S.step !== NEEDS) { el.innerHTML = ""; return; }
+  const q = S.chat ? QUESTIONS[S.chat.q] : QUESTIONS[0];
+  const ph = q ? "Or just type: budget 2500, seats 4…" : "Add anything else…";
+  const input = el.querySelector("input");
+  if (input) { input.placeholder = ph; return; }   // keep what's being typed across re-renders
+  el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
+    <input type="text" placeholder="${ph}" aria-label="Message">
+    <button class="send" aria-label="Send">↑</button></form>`;
 }
 function renderSides() {
   const b = $("#back"), n = $("#next");
@@ -614,7 +619,7 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); }
+  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); renderSteps(); }
   else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = "";   // shop lives in the left drawer
@@ -741,6 +746,7 @@ function needsCard() {
       <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
           · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
+      ${S.chat.log.length > 2 ? `<button class="icon-btn" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
       <button class="icon-btn" data-action="needs-min" title="Minimize" aria-label="Minimize">–</button>
     </div>
     ${S.sizeOpen ? `<div class="size-row">
@@ -752,12 +758,7 @@ function needsCard() {
       ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       ${brief}
     </div>
-    <form class="chat-input" data-chat>
-      <input type="text" placeholder="${q ? "Or just type: budget 2500, seats 4…" : "Add anything else…"}" aria-label="Message">
-      <button class="send" aria-label="Send">↑</button>
-      ${S.chat.log.length > 2 ? `<button type="button" class="restart" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
-    </form>
-  </div>`;
+  </div>`;   // its input sits at the bottom of the screen (renderSteps)
 }
 function afterChatRender() {
   const log = $(".chat-log");
@@ -789,7 +790,7 @@ function optionsView() {
 }
 
 /* edit */
-function editHint() { return ""; }
+function editHint() { return `<button class="btn options-cta" data-action="next">Done · shop the list →</button>`; }
 function detailCard() {
   const it = S.scene[S.sel], base = it.own ? null : byId[it.pid], p = view(it);
   const ok = fits(p, it);
@@ -864,6 +865,7 @@ function renderCart() {
   rail.innerHTML = `
     <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
     <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
+    <button class="rail-btn ${typeof dockShown !== "undefined" && dockShown ? "on" : ""}" data-action="${typeof dockShown !== "undefined" && dockShown ? "dock-hide" : "dock-show"}" title="Ask the designer" aria-label="Ask the designer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
 `;   // "see everything" lives behind the list's expand button
 
   drawer.innerHTML = `<div class="drawer-head">
@@ -1262,6 +1264,15 @@ function loadPhoto(file) {
   };
   r.readAsDataURL(file);
 }
+document.addEventListener("submit", e => {   // the Needs chat input at the bottom
+  if (!e.target.matches("[data-chat]")) return;
+  e.preventDefault();
+  const input = e.target.querySelector("input"), text = input.value.trim();
+  if (!text) return;
+  input.value = ""; S.needsMin = false;
+  chatFree(text); render();
+  $(".bottom-chat input")?.focus();
+});
 $("#file").addEventListener("change", e => { const file=e.target.files[0]; e.target.value=""; loadPhoto(file); });
 addEventListener("dragover", e => { if (S.step === NEEDS) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
