@@ -785,7 +785,7 @@ function progressCard() {
   </div>`;
 }
 function optionsView() {
-  return `<button class="btn sofa-browse" data-action="sofa-browse">Find your sofa ↗</button><div class="options">${S.options.map((o, i) => {
+  return `<div class="options">${S.options.map((o, i) => {
     // sketched pieces first, so what you drew is visible on the card
     const shown = o.items.filter(it => it.sketched).concat(o.items.filter(it => !it.sketched)).slice(0, 4);
     const imgs = shown.map(it => `<img src="${esc(imgOf(view(it)))}" alt="" class="${it.sketched ? "sk-thumb" : ""}">`).join("");
@@ -859,10 +859,11 @@ function cartRow({ it, i }) {
 }
 
 function renderCart() {
+  const pen = document.getElementById("skfab");   // grab the sketch pen before the rail is rebuilt, then put it back
   const on = S.step >= DESIGN && S.scene && !S.generating;
   const rail = $("#rail"), drawer = $("#drawer"), big = $("#cartx");
   if (!on) S.cart = "closed";
-  rail.hidden = !on;
+  rail.hidden = !on && S.step !== NEEDS;   // on Needs the rail holds only the sketch button
   document.body.classList.toggle("has-rail", !!on);
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
@@ -870,14 +871,14 @@ function renderCart() {
   big.inert = S.cart !== "expanded";
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
   document.body.classList.toggle("cart-open", S.cart === "open");
-  if (!on) return;
+  if (!on) { rail.innerHTML = ""; if (pen) rail.append(pen); return; }
   const buy = toBuy(), keep = keeping();
   const keepN = keep.reduce((n, x) => n + (x.it.qty || 1), 0);
   rail.innerHTML = `
     <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
     <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
-    <button class="rail-btn ${typeof dockShown !== "undefined" && dockShown ? "on" : ""}" data-action="${typeof dockShown !== "undefined" && dockShown ? "dock-hide" : "dock-show"}" title="Ask the designer" aria-label="Ask the designer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><i class="badge designer-badge" ${typeof B !== "undefined" && B.proposals?.length ? "" : "hidden"}>${typeof B !== "undefined" ? B.proposals?.length || "" : ""}</i></button>
 `;   // "see everything" lives behind the list's expand button
+  if (pen) rail.append(pen);   // the sketch pen lives in the rail, under the list (sketch.js keeps it up to date)
 
   drawer.innerHTML = `<div class="drawer-head">
       <h2>Shopping list</h2>

@@ -996,3 +996,15 @@ button:disabled {opacity:.5;cursor:wait}
   .sh-table tfoot td { padding-top: 3mm; border-bottom: 0; border-top: 1.5pt solid var(--ink); font-size: 11pt; font-weight: 600; }
   .sh-foot { margin: 4mm 0 0; font-size: 7.5pt; color: var(--ink-soft); break-before: avoid; }
 }
+
+/* the sketch pen sits in the rail, like the other rail buttons: no glow */
+.rail .sk-fab { position: relative; top: auto; left: auto; transform: none; width: 40px; height: 40px; z-index: auto;
+  background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.rail .sk-fab svg { filter: none; }
+.rail .sk-fab:hover, .rail .sk-fab:focus-visible { background: rgba(255,255,255,.2); box-shadow: none; }
+.rail .sk-fab.on { background: #fff; color: var(--ink); box-shadow: none; }
+.rail .sk-fab .sk-fab-label { left: auto; right: 52px; }   /* tooltip opens to the left, away from the edge */
+.rail .sk-fab b { top: 0; right: 0; }
+/* while drawing, only the pen stays (to close the sketch) */
+body.sketching #rail.rail { display: flex; }
+body.sketching #rail .rail-btn { display: none; }
