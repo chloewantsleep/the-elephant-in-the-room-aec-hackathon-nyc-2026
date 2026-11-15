@@ -922,6 +922,19 @@ async function demoCompose() {
   if (!(await showColors())) toast("This combination isn't in the demo set");
 }
 
+// where each piece is on the shown demo picture (from the tracking), for the Shop room plan: {slotId: [box 0-1000]}
+function demoBoxes(items) {
+  if (!demoRoom() || !V?.mapped) return null;
+  const m = b => [b[0], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * b[1]), b[2], Math.round(DEMO_SPACE.x * 1000 + DEMO_SPACE.w * b[3])];
+  const out = {};
+  items.forEach((it, k) => {
+    const i = V.scene.findIndex(x => x.cat === it.cat && !!x.own === !!it.own && !!x.sketched === !!it.sketched);
+    const box = i >= 0 && V.items[i]?.crop?.box;
+    if (box) out[it.slotId ?? k] = [m(box)];
+  });
+  return Object.keys(out).length ? out : null;
+}
+
 // same pieces, products and colors (order doesn't matter)
 const sameItems = (a, b) => a.length === b.length && b.every(x => a.some(y => y.cat === x.cat && y.pid === x.pid
   && (y.vid || null) === (x.vid || null) && (y.own || null) === (x.own || null)));
@@ -1228,7 +1241,9 @@ function renderHotspots() {
   const placed = [];   // label rectangles already used, to keep labels from covering each other
   const hit = r => placed.some(q => r.l < q.r + 8 && r.r > q.l - 8 && r.t < q.b + 6 && r.b > q.t - 6);
   // labels only for new products; pieces you keep ("yours") stay unlabeled (they're still in the shopping list)
-  const order = S.scene.map((it, i) => ({ it, i, xy: toScreen(it.at || it.pos) })).filter(x => !x.it.own && !(V?.missing?.has(x.it.pid) && variantsCover())).sort((a, b) => b.xy[1] - a.xy[1]);
+  const g0 = geom(), onScreen = ([px, py]) => [Math.min(Math.max(g0.ox + px / 100 * g0.dw, 24), g0.W - 24),
+                                                Math.min(Math.max(g0.oy + py / 100 * g0.dh, 24), g0.H - 24)];
+  const order = S.scene.map((it, i) => ({ it, i, xy: onScreen(it.at || it.pos) })).filter(x => !x.it.own && !(V?.missing?.has(x.it.pid) && variantsCover())).sort((a, b) => b.xy[1] - a.xy[1]);
   const html = [];
   for (const { it, i, xy: [x, y] } of order) {
     const p = view(it);

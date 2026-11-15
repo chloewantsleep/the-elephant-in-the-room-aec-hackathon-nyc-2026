@@ -9,6 +9,9 @@
   const SWAP_RENDER = "assets/walkthrough-swap.jpg";   // the baked AI edit for these swaps (scripts/bake_walkthrough.js)
   let SWAPS = { sofa: "ikea:s29318319", armchair: "ikea:30533493", rug: "ikea:20595698" };
   fetch("walkthrough-swaps.json").then(r => r.json()).then(j => { SWAPS = j; }).catch(() => {});
+  // the sample lounge demo (app.js demoRoom): swap to its prepared similar products and show them instantly, no baked picture
+  const DEMO_SWAPS = { sofa: "ikea:20245049", armchair: "ikea:30533493", coffee_table: "ikea:70497582" };   // STOCKHOLM, EKENÄSET, FRÖTORP
+  const demo = () => typeof demoRoom === "function" && demoRoom();
   // one runner at a time: skip/back bump `gen` and queue `pending`; the runner's waits see gen !== live and unwind
   let on = false, beat = 0, fast = false, paused = false, gen = 0, live = 0, running = false, pending = null;
   const $ = s => document.querySelector(s);
@@ -124,9 +127,9 @@
       } },
     { t: "The whole picture", s: "labels off: this is the render",
       run: async () => { await fullView(2600); } },
-    { t: "Swap anything", s: "click a piece, pick another that fits: sofa, armchair, rug",
+    { t: "Swap anything", s: "click a piece, pick another that fits: sofa, armchair, coffee table",
       run: async () => {
-        for (const [cat, pid] of Object.entries(SWAPS)) await swap(cat, pid);
+        for (const [cat, pid] of Object.entries(demo() ? DEMO_SWAPS : SWAPS)) await swap(cat, pid);
         await tap('[data-action="close"]', 300);
       } },
     { t: "Re-render just what changed", s: "the AI edits only the swapped pieces, everything else stays put",
@@ -134,9 +137,12 @@
         // the baked edit stands in for the live Gemini call (same request, rendered ahead of time)
         const b = find('[data-action="render"]');
         if (b) { await moveTo(b); cursor.classList.remove("press"); void cursor.offsetWidth; cursor.classList.add("press"); }
-        S.rendering = true; S.before = false; render();
-        await wait(fast ? 0 : 2200);
-        S.rendering = false; rememberRender(sceneSig(), SWAP_RENDER, true); render();
+        if (demo()) { await renderScene(); await until(() => !S.rendering && currentRender(), 4000); }   // already prepared: shown at once
+        else {
+          S.rendering = true; S.before = false; render();
+          await wait(fast ? 0 : 2200);
+          S.rendering = false; rememberRender(sceneSig(), SWAP_RENDER, true); render();
+        }
         await wait(900);
         await fullView(2600);
       } },

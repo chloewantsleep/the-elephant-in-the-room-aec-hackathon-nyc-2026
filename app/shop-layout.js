@@ -332,6 +332,9 @@ async function readRenderBoxes(items, image) {
   // an AI render of this design, or the baked demo render when this is exactly its design
   const demoRender = typeof example === "function" && image === example().render && shopReference(items).demoExact;
   if (!image || image === photoSrc() || (!image.startsWith("data:image/") && !demoRender) || shopRenderBoxes.has(image)) return;
+  // the sample-lounge demo already knows where every piece is (app.js demoBoxes): no Gemini call
+  const known = typeof demoBoxes === "function" && demoBoxes(items);
+  if (known) { shopRenderBoxes.set(image, { status: "ready", boxes: known }); return; }
   shopRenderBoxes.set(image, { status: "pending" });
   try {
     const locate = items.filter(it => !it.own || exById(it.own)).map(it => {
