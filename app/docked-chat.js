@@ -1,5 +1,5 @@
 /* Main app conversation dock. Shares the existing brief, scene and image APIs. */
-let dockShown=false,selectedObject=null,objectNotice='',voice=null,voiceActive=false;
+let historyOpen=false,dockShown=false,selectedObject=null,objectNotice='',voice=null,voiceActive=false;
 chatOpen=false;
 const baseWorkStatus=workStatus;
 workStatus=function(){return S.rendering?'Rendering the current picks and colors into your photo…':baseWorkStatus();};
@@ -22,13 +22,16 @@ function dockProgress(){
  const latest=B.history.filter(m=>!m.hidden).at(-1),last=latest?.role==='assistant'&&!latest.event?latest:null;
  const changes=(B.events||[]).filter(e=>e.time>=dockTurnStart).slice(-2);
  if(!busy&&!changes.length&&!objectNotice&&!last&&!B.proposals.length&&!chatError&&!S.renderError)return '';
- return `<div class="dock-progress" role="status">${busy?`<p class="chat-status busy"><i></i>${esc(workStatus())}</p>`:''}${changes.map(e=>`<p>✓ ${esc(e.text)}</p>`).join('')}${!busy&&objectNotice?`<p>${esc(objectNotice)}</p>`:!busy&&last?`<p class="dock-reply">${esc(last.text)}</p>`:''}${!busy&&B.proposals.length?`<button class="chip" data-action="dock-expand">Confirm ${B.proposals.length} need${B.proposals.length>1?'s':''} →</button>`:''}${S.renderError?`<p class="chat-warning">Render failed <button data-action="render">Try again</button></p>`:''}${chatError?`<p class="chat-warning">${esc(chatError)} <button data-action="chat-retry">Retry</button></p>`:''}</div>`;
+ // what changed: kept, but folded into one small line; tap it to read
+ const notes=[...changes.map(e=>`<p>✓ ${esc(e.text)}</p>`),...(!busy&&objectNotice?[`<p>${esc(objectNotice)}</p>`]:!busy&&last?[`<p class="dock-reply">${esc(last.text)}</p>`]:[])];
+ const history=notes.length?`<details class="dock-history" ${historyOpen?'open':''}><summary>✓ ${changes.length?`${changes.length} update${changes.length>1?'s':''}`:'Reply'}</summary>${notes.join('')}</details>`:'';
+ return `<div class="dock-progress" role="status">${busy?`<p class="chat-status busy"><i></i>${esc(workStatus())}</p>`:''}${history}${!busy&&B.proposals.length?`<button class="chip" data-action="dock-expand">Confirm ${B.proposals.length} need${B.proposals.length>1?'s':''} →</button>`:''}${S.renderError?`<p class="chat-warning">Render failed <button data-action="render">Try again</button></p>`:''}${chatError?`<p class="chat-warning">${esc(chatError)} <button data-action="chat-retry">Retry</button></p>`:''}</div>`;
 }
 renderDesigner=function(){
  let host=document.getElementById('designer-drawer');if(!host){host=document.createElement('aside');host.id='designer-drawer';document.body.append(host);}
  // main's steps and rail stay on screen, so the dock waits behind a small launcher until you open it
  if(chatOpen)dockShown=true;host.classList.toggle('dock-shown',dockShown);
- if(!dockShown){host.innerHTML='';return;}   // closed: nothing on screen; the ↗ at the end of the step bar opens it
+ if(!dockShown){host.innerHTML='';return;}   // closed: nothing on screen; the chat button in the right rail opens it
  if(!host.querySelector('#dock-content'))host.innerHTML=`<div id="dock-content"></div><div class="composer-top"><span id="composer-start"></span><button class="icon-btn" data-action="dock-expand" aria-label="Expand chat" title="Expand chat">↗</button><button class="icon-btn" data-action="dock-hide" aria-label="Hide the designer" title="Hide">–</button></div>${dockForm()}`;
  host.classList.toggle('dock-expanded',chatOpen);host.classList.remove('dock-collapsed');
  const content=host.querySelector('#dock-content'),contextDraft=host.querySelector('#context-input')?.value;
@@ -52,8 +55,8 @@ function host_focus(){document.getElementById('designer-message')?.focus();}
 function renderObjectSelection(){document.getElementById('selected-object')?.remove();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;
  if(['context','upload','context-image','scan'].includes(a))document.querySelector('.composer-add')?.removeAttribute('open');
- if(a==='dock-show'){dockShown=true;renderDesigner();renderSteps();host_focus();}
- if(a==='dock-hide'){dockShown=false;chatOpen=false;renderDesigner();renderSteps();}
+ if(a==='dock-show'){dockShown=true;renderDesigner();renderCart();host_focus();}
+ if(a==='dock-hide'){dockShown=false;chatOpen=false;renderDesigner();renderCart();}
  if(a==='dock-expand'){chatOpen=!chatOpen;chatMode='conversation';renderDesigner();}
  if(a==='object-clear'){selectedObject=null;S.sel=null;objectNotice='';renderObjectSelection();render();}
  if(['select','cart-item'].includes(a)){selectedObject=null;objectNotice='';renderObjectSelection();renderDesigner();}
@@ -72,3 +75,5 @@ generate=function(){baseGenerate();if(S.scene&&designReady()){logTransition('Use
 
 // Reuse the repository's detected-furniture cards as conversation context.
 document.addEventListener('click',e=>{const card=e.target.closest('[data-ex]');if(!card)return;selectedObject=exById(card.dataset.ex);renderDesigner();});
+
+document.addEventListener('toggle',e=>{if(e.target.classList?.contains('dock-history'))historyOpen=e.target.open;},true);

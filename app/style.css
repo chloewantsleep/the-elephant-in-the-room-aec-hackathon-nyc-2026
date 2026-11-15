@@ -84,22 +84,10 @@ button.pill:hover { background: var(--glass-hover); }
   display: flex; gap: 10px; align-items: center;
 }
 .pill-row .num { font-size: 11px; opacity: .65; }
-/* 01–04 as one long bar, shaped like a chat input */
-.step-bar {
-  display: flex; align-items: center; gap: 4px; padding: 5px; width: min(620px, calc(100vw - 2*var(--frame-inset-x) - 140px));
-  border-radius: 999px; background: rgba(255,255,255,.72); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-}
-.step-seg {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 999px;
-  color: rgba(31,30,28,.55); font-size: 14px; white-space: nowrap; transition: background .2s, color .2s;
-}
-.step-seg:hover { color: var(--ink); }
-.step-seg.active { background: #fff; color: var(--ink); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-.step-ask {
-  width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center;
-  background: rgba(255,255,255,.72); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); color: var(--ink); font-size: 20px;
-}
-.step-ask:hover { background: #fff; }
+/* the Needs chat input, at the bottom where the step pills were */
+.bottom-chat { width: min(620px, calc(100vw - 2*var(--frame-inset-x) - 80px)); margin: 0; gap: 10px; align-items: center; }
+.bottom-chat input { height: 52px; padding: 0 24px; font-size: 15px; background: rgba(255,255,255,.85); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
+.bottom-chat .send { width: 52px; height: 52px; flex: none; font-size: 20px; }
 
 .topbar {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
@@ -168,6 +156,11 @@ body.rendering #room { filter: brightness(.75) blur(3px); transition: filter .4s
 .hs.sel .hs-pill { background: #fff; color: var(--ink); }
 .hs.sel .hs-pill small { color: var(--ink-soft); opacity: 1; }
 body.no-labels .hs-pill, body.no-labels .hs-line { display: none; }
+/* the same button also shrinks the three option cards (and their next button) out of the way, to see the room */
+#panel .options, #panel .options-cta { transition: opacity .35s var(--push, ease), transform .35s var(--push, ease); }
+body.no-labels #panel .options, body.no-labels #panel .options-cta { opacity: 0; pointer-events: none; }
+body.no-labels #panel .options { transform: translateX(-50%) translateY(40px) scale(.85); }
+body.no-labels #panel .options-cta { transform: translateY(40px) scale(.85); }
 .hs.fade { opacity: 0; transform: translateY(6px); }
 .hs { transition: opacity .35s ease, transform .35s ease; }
 
@@ -778,9 +771,9 @@ button.mock-tag:hover { opacity: 1; }
   .card.needs-win { left: 12px; right: 12px; width: auto; transform: none; top: 16px; height: auto; bottom: 76px; animation: none; }
   .card-center { left: 12px; right: 12px; top: auto; bottom: 76px; transform: none; }
   .pill-row { gap: 6px; bottom: 14px; width: calc(100% - 24px); justify-content: center; }
-  .step-bar { width: auto; flex: 1; }
-  .step-seg { height: 38px; font-size: 12px; }
-  .step-ask { width: 48px; height: 48px; }
+  .bottom-chat { width: 100%; }
+  .bottom-chat input, .bottom-chat .send { height: 46px; }
+  .bottom-chat .send { width: 46px; }
   .pill-row .num { display: none; }
   .round-btn { display: none; }
   .options { bottom: 70px; gap: 8px; width: calc(100% - 24px); }

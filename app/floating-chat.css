@@ -131,3 +131,13 @@ button:disabled { opacity:.45; cursor:wait; }
 /* the list pushes the room view aside: the open dock follows the room; the full grid has no room view */
 body.cart-open #designer-drawer { left:calc((100vw - var(--drawer-w)) / 2); width:min(560px,calc(100vw - var(--drawer-w) - 64px)); }
 body.cart-expanded #designer-drawer { display:none; }
+
+/* activity history: one small folded line above the input; open it to read */
+.dock-progress:has(> .dock-history:only-child) { padding:0; background:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+.dock-history > summary { display:inline-flex; align-items:center; padding:6px 14px; border-radius:999px; list-style:none; cursor:pointer; font-size:12px; color:var(--ink-soft);
+  background:var(--card); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); }
+.dock-history > summary::-webkit-details-marker { display:none; }
+.dock-history[open] { padding:10px 14px; border-radius:var(--r-card); background:var(--card); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); }
+.dock-history[open] > summary { padding:0 0 6px; background:none; backdrop-filter:none; }
+/* no step bar after Needs: the open designer drops into the empty bottom row */
+body:has(#steps:empty) #designer-drawer { bottom:calc(var(--frame-inset-y) + 22px); }
