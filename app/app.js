@@ -178,11 +178,11 @@ function toast(msg) {
   clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), Math.max(2200, Math.min(7000, msg.length * 45)));
 }
 
-/* ---------------- image <-> screen mapping (object-fit: cover, position 50% 40%) ---------------- */
+/* ---------------- image <-> screen mapping (object-fit: cover, position 50% 75%) ---------------- */
 function geom() {
   const W = innerWidth, H = innerHeight, nw = room.naturalWidth || 1, nh = room.naturalHeight || 1;
   const sc = Math.max(W / nw, H / nh), dw = nw * sc, dh = nh * sc;
-  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.4, W, H };
+  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.75, W, H };
 }
 function toScreen([px, py]) {
   const g = geom();
@@ -943,7 +943,7 @@ function renderCart() {
   const on = S.step >= DESIGN && S.scene && !S.generating;
   const rail = $("#rail"), drawer = $("#drawer"), big = $("#cartx");
   if (!on) S.cart = "closed";
-  rail.hidden = !on && S.step !== NEEDS;   // on Needs the rail holds only the sketch button
+  rail.hidden = false;   // the rail is always on the right: shopping list (+ home once there's a design) and the sketch pen
   document.body.classList.toggle("has-rail", !!on);
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
@@ -951,7 +951,10 @@ function renderCart() {
   big.inert = S.cart !== "expanded";
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
   document.body.classList.toggle("cart-open", S.cart === "open");
-  if (!on) { rail.innerHTML = ""; if (pen) rail.append(pen); return; }
+  if (!on) {   // no design yet: the list button is there, it just explains it's empty
+    rail.innerHTML = `<button class="rail-btn" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}</button>`;
+    if (pen) rail.append(pen); return;
+  }
   const buy = toBuy(), keep = keeping();
   const keepN = keep.reduce((n, x) => n + (x.it.qty || 1), 0);
   rail.innerHTML = `
@@ -1316,7 +1319,10 @@ document.addEventListener("click", e => {
     setLive(!S.live);
     render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
   }
-  else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
+  else if (act === "cart") {
+    if (!(S.step >= DESIGN && S.scene && !S.generating)) { toast(S.generating ? "Your list is on its way: the designs are almost ready." : "Your shopping list fills up once you pick a design. Press → to design your room."); return; }
+    S.cart = S.cart === "open" ? "closed" : "open"; renderCart();
+  }
   else if (act === "cart-expand") { S.cart = "expanded"; S.cartView = "list"; renderCart(); }
   else if (act === "shop-view") {
     S.cart = "expanded"; S.cartView = a.dataset.view; S.cartMenu = false;
