@@ -539,9 +539,12 @@ function renderBoxes() {
   })).join("");
 }
 
+// the steps as one long bar, like a chat input; ↗ at the end opens the designer (docked-chat.js)
 function renderSteps() {
-  $("#steps").innerHTML = STEPS.map((s, i) =>
-    `<button class="pill ${i === S.step ? "active" : ""}" data-action="goto" data-step="${i}"><span class="num">0${i + 1}</span>${s}</button>`).join("");
+  const open = typeof dockShown !== "undefined" && dockShown;
+  $("#steps").innerHTML = `<div class="step-bar">${STEPS.map((s, i) =>
+    `<button class="step-seg ${i === S.step ? "active" : ""}" data-action="goto" data-step="${i}"><span class="num">0${i + 1}</span>${s}</button>`).join("")}</div>
+    ${open ? "" : `<button class="step-ask" data-action="dock-show" title="Ask the designer" aria-label="Ask the designer">↗</button>`}`;
 }
 function renderSides() {
   const b = $("#back"), n = $("#next");

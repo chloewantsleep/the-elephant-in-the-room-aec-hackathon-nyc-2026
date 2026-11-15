@@ -81,9 +81,25 @@ button.pill:hover { background: var(--glass-hover); }
 
 .pill-row {
   position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 10px;
+  display: flex; gap: 10px; align-items: center;
 }
 .pill-row .num { font-size: 11px; opacity: .65; }
+/* 01–04 as one long bar, shaped like a chat input */
+.step-bar {
+  display: flex; align-items: center; gap: 4px; padding: 5px; width: min(620px, calc(100vw - 2*var(--frame-inset-x) - 140px));
+  border-radius: 999px; background: rgba(255,255,255,.72); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+}
+.step-seg {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 999px;
+  color: rgba(31,30,28,.55); font-size: 14px; white-space: nowrap; transition: background .2s, color .2s;
+}
+.step-seg:hover { color: var(--ink); }
+.step-seg.active { background: #fff; color: var(--ink); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.step-ask {
+  width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: rgba(255,255,255,.72); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); color: var(--ink); font-size: 20px;
+}
+.step-ask:hover { background: #fff; }
 
 .topbar {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
@@ -776,8 +792,10 @@ button.mock-tag:hover { opacity: 1; }
   .card, .card-left, .card-right { left: 12px; right: 12px; width: auto; top: auto; bottom: 76px; max-height: 58%; transform: none; }
   .card.needs-win { left: 12px; right: 12px; width: auto; transform: none; top: 16px; height: auto; bottom: 76px; animation: none; }
   .card-center { left: 12px; right: 12px; top: auto; bottom: 76px; transform: none; }
-  .pill-row { gap: 4px; bottom: 14px; width: calc(100% - 24px); justify-content: center; }
-  .pill-row .pill { padding: 9px 11px; font-size: 12px; }
+  .pill-row { gap: 6px; bottom: 14px; width: calc(100% - 24px); justify-content: center; }
+  .step-bar { width: auto; flex: 1; }
+  .step-seg { height: 38px; font-size: 12px; }
+  .step-ask { width: 48px; height: 48px; }
   .pill-row .num { display: none; }
   .round-btn { display: none; }
   .options { bottom: 70px; gap: 8px; width: calc(100% - 24px); }
