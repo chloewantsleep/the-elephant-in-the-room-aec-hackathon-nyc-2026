@@ -91,32 +91,30 @@ const SHOP_HORIZON = .42, SHOP_FAR = .1;
 // -> Map: slotId -> [u, v] (first copy) and "slotId:i" -> [u, v] for every copy with its own spot in the photo
 const shopBottom = b => [(b[1] + b[3]) / 20, b[2] / 10];   // box 0-1000 -> bottom middle, image %
 function shopPhotoAnchors(items, renderBoxes = null) {
-  const photo = document.getElementById("room");
-  const aspect = photo?.naturalWidth && photo?.naturalHeight ? photo.naturalWidth / photo.naturalHeight : 4 / 3;
   const spots = [];   // [key, x, near]
   items.forEach((item, k) => {
     const id = item.slotId ?? k;
     // a piece found in the photo has a box per copy; anything else has one spot
     const seen = renderBoxes?.[id];
     const boxes = seen?.length ? seen : item.own && typeof exById === "function" ? exById(item.own)?.boxes : null;
-    const pts = boxes?.length ? boxes.map(shopBottom)
+    // a rug lies flat: its middle is where it is; anything else stands on the bottom of its box
+    const pts = boxes?.length ? boxes.map(b => item.cat === "rug" ? [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20] : shopBottom(b))
       : Array.isArray(item.pos) ? [[item.pos[0], Math.min(100, item.pos[1] + 6)]] : [];   // center -> about where it stands
     pts.forEach((pos, i) => {
       const u = pos[0] / 100, v = pos[1] / 100;
       const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
       // left/right widens a little with distance (not the full 1/near, which would fling far pieces to the walls
       // and squeeze everything near the camera into the middle)
-      spots.push([`${id}:${i}`, (u - .5) * aspect * (1 + .6 * (1 - near)), near]);
+      spots.push([`${id}:${i}`, (u - .5) * (1 + .6 * (1 - near)), near]);
     });
   });
   const out = new Map();
   if (!spots.length) return out;
-  const xs = spots.map(s => s[1]), ns = spots.map(s => s[2]);
-  const span = (lo, hi) => Math.max(hi - lo, 1e-6);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs), n0 = Math.min(...ns), n1 = Math.max(...ns);
   for (const [key, x, n] of spots) {
-    // spread over the whole floor, wall to wall and back to front (evenly by how low it sits in the picture)
-    const uv = [spots.length > 1 ? .08 + .84 * (x - x0) / span(x0, x1) : .5, spots.length > 1 ? .1 + .82 * (n - n0) / span(n0, n1) : .5];
+    // the picture's frame is the room: its left and right edges are the side walls far away (closer to the
+    // middle near the camera), the horizon is the back wall and the bottom edge the front. Fixed, not stretched
+    // to the pieces, so a room whose right half is empty in the picture stays empty here too.
+    const uv = [.04 + .92 * (.5 + x / 1.6), .06 + .88 * (n - SHOP_FAR) / (1 - SHOP_FAR)];
     out.set(key, uv);
     if (key.endsWith(":0")) out.set(+key.slice(0, -2), uv);
   }
@@ -152,7 +150,7 @@ function shopSceneLayout(items, space, room, ref) {
         if (uv) spots.push({ id: item.slotId, cat: item.cat, uv, w, d });
       }
     });
-    const byArea = Math.sqrt(area * 5 / (width * depth));   // pieces cover at most ~20% of the floor
+    const byArea = Math.sqrt(area * 3 / (width * depth));   // pieces cover at most about a third of the floor
     const needs = [];
     for (let a = 0; a < spots.length; a++) for (let b = a + 1; b < spots.length; b++) {
       const p = spots[a], q = spots[b], gap = gapBetween(p, q);
@@ -227,7 +225,12 @@ function shopSceneLayout(items, space, room, ref) {
 
     for (const row of entries) {
       const { item, sample, w, d, h } = row, cat = item.cat;
-      const parent = cat === "table_lamp" ? first(room === "office" ? "desk" : "nightstand") : null;
+      // what the render shows wins over the usual arrangement: a lamp the render puts beside the desk stays on
+      // the floor, and a rug the render shows goes where it is
+      const box = ref?.boxes?.[item.slotId]?.[0], boxOf = cat2 => ref?.boxes?.[entries.find(r => r.item.cat === cat2)?.id]?.[0];
+      const host = cat === "table_lamp" ? (room === "office" ? "desk" : "nightstand") : null;
+      const onHost = !box || !boxOf(host) || (box[1] < boxOf(host)[3] && box[3] > boxOf(host)[1] && box[2] < boxOf(host)[2]);
+      const parent = host && onHost ? first(host) : null;
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
       let main = null;
@@ -261,7 +264,7 @@ function shopSceneLayout(items, space, room, ref) {
           x = table.x + (order.indexOf(i) - (qty - 1) / 2) * step;
           y = table.y + table.rd / 2 + d / 2 + 4;
           turn = 2;
-        } else if (cat === "rug" && (main = { living: sofa, bedroom: bed, dining: table, office: desk }[room] || sofa || bed || table || desk)) {
+        } else if (cat === "rug" && !box && (main = { living: sofa, bedroom: bed, dining: table, office: desk }[room] || sofa || bed || table || desk)) {
           // the rug lies under the room's main piece, reaching a little in front of it
           x = main.x; y = main.y + Math.max(0, d / 2 - main.rd / 2 - 6);
         } else if (parent || support) {
