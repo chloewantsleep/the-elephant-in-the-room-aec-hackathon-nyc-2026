@@ -643,8 +643,23 @@ function renderTopbar() {
     action = `<button class="pill pill-cta" data-action="render">✦ ${label}</button>`;
   }
   else action = `<button class="pill" data-action="before">${S.before ? "Show render" : "Before"}</button>`;
+  if (!S.rendering) action += `<button class="pill" data-action="download-image" title="Download this image" aria-label="Download this image">↓ Download</button>`;
   t.hidden = false;
   t.innerHTML = `<span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
+}
+
+// save what's on screen (the render, or the photo when there's none yet) as a file
+async function downloadImage() {
+  const src = $("#room").src;
+  if (!src) return;
+  try {
+    const blob = await (await fetch(src)).blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `elephant-room-${S.before || !currentRender() ? "photo" : "design"}.${(blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch { window.open(src, "_blank"); }
 }
 
 function renderMeasure() {
@@ -818,7 +833,7 @@ function needsCard() {
   return `<div class="card needs-win">
     <div class="nw-head">
       <button class="photo-mini" data-action="upload" id="drop" title="Upload or drop a photo of your room"><img src="${esc(photoSrc())}" alt=""><i>↑</i></button>
-      <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
+      <div class="nw-title"><button class="nw-upload" data-action="upload" title="Upload or drop a photo of your room"><b>${demo ? "Upload your room ↑" : "Your room · change photo ↑"}</b></button>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
           · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
       ${S.chat.log.length > 2 ? `<button class="icon-btn" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
@@ -1258,6 +1273,7 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
+  else if (act === "download-image") downloadImage();
   else if (act === "demo") {
     if (S.space.photo === "demo") S.space.ex = (S.space.ex + 1) % EXAMPLES.length;
     B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null;

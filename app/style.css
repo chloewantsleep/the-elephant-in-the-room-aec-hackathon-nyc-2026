@@ -201,6 +201,8 @@ body.no-labels #panel .options-cta { transform: translateY(40px) scale(.85); }
 .photo-mini:hover i, .photo-mini.over i { opacity: 1; }
 .nw-title { flex: 1; min-width: 0; }
 .nw-title b { display: block; font-size: 15px; font-weight: 600; }
+.nw-upload { display: block; padding: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.nw-upload:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .nw-title span { font-size: 12px; color: var(--ink-soft); }
 .nw-title .link-btn { font-size: 12px; color: var(--ink-soft); }
 .nw-fx { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; }
