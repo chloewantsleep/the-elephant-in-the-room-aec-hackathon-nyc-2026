@@ -183,7 +183,8 @@ function shopSceneLayout(items, space, room, ref) {
         if (!rect.layer) occupied.push(piece);
       }
     }
-    const priority = { sofa: 0, bed: 0, dining_table: 0, desk: 0, coffee_table: 1,
+    // tables first, then the seats that belong to them, so a group stays together and other pieces make room
+    const priority = { sofa: 0, bed: 0, dining_table: 0, stool_bench: .5, dining_chair: .5, desk: .7, coffee_table: 1,
       rug: 3, table_lamp: 4, pendant_lamp: 4 };
     entries.sort((a, b) => (priority[a.item.cat] ?? 2) - (priority[b.item.cat] ?? 2));
     const first = cat => entries.find(row => row.item.cat === cat)?.pieces[0];
@@ -218,6 +219,7 @@ function shopSceneLayout(items, space, room, ref) {
       const parent = cat === "table_lamp" ? first(room === "office" ? "desk" : "nightstand") : null;
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
+      let main = null;
       const z = parent?.h || (cat === "mirror" ? 32 : cat === "pendant_lamp" ? 80 : 0);
       const seen = fromPhoto.get(item.slotId);   // where the picture has it; the room-type default only if it has no spot
       const [u, v] = seen || anchors[cat] || [.5, .5], direction = anchors[cat]?.[2] || 0;
@@ -230,7 +232,7 @@ function shopSceneLayout(items, space, room, ref) {
         }
         let x = u * width, y = v * depth, turn = direction;
         if (cat === "nightstand" && bed) {
-          x = bed.x + (i % 2 ? 1 : -1) * (bed.rw / 2 + w / 2 + distance);
+          x = bed.x + (i % 2 ? 1 : -1) * (bed.rw / 2 + w / 2 + 4);
           y = bed.y - bed.rd * .32;
         } else if (cat === "coffee_table" && sofa) {
           x = sofa.x; y = sofa.y + sofa.rd / 2 + d / 2 + 18;
@@ -240,6 +242,17 @@ function shopSceneLayout(items, space, room, ref) {
           x = table.x + (Math.floor(i / 2) - (Math.ceil(qty / 2) - 1) / 2) * (w + 10);
           y = table.y + (i % 2 ? 1 : -1) * (table.rd / 2 + d / 2 + 9);
           turn = i % 2 ? 2 : 0;
+        } else if (cat === "stool_bench" && table) {
+          // counter stools in a row along the table's front, in the order the photo shows them left to right
+          const order = Array.from({ length: qty }, (_, k) => k)
+            .sort((a, b) => (fromPhoto.get(`${item.slotId}:${a}`)?.[0] ?? a) - (fromPhoto.get(`${item.slotId}:${b}`)?.[0] ?? b));
+          const step = Math.max(w + 4, Math.min(w * 1.8, table.rw / qty));
+          x = table.x + (order.indexOf(i) - (qty - 1) / 2) * step;
+          y = table.y + table.rd / 2 + d / 2 + 4;
+          turn = 2;
+        } else if (cat === "rug" && (main = { living: sofa, bedroom: bed, dining: table, office: desk }[room] || sofa || bed || table || desk)) {
+          // the rug lies under the room's main piece, reaching a little in front of it
+          x = main.x; y = main.y + Math.max(0, d / 2 - main.rd / 2 - 6);
         } else if (parent || support) {
           x = parent ? parent.x + parent.rw * .25 : support.x;
           y = parent ? parent.y - parent.rd * .18 : support.y;
@@ -273,7 +286,14 @@ function shopSceneLayout(items, space, room, ref) {
 
   for (;;) {
     const placed = arrange();
-    if (placed) return { width, depth, items: placed };
+    if (placed) {
+      if (!space.confirmed) {   // no measured room: trim the open front and right side to the furniture plus a walkway
+        const pieces = placed.flatMap(row => row.pieces);
+        width = Math.round(Math.min(width, Math.max(96, ...pieces.map(p => p.x + p.rw / 2 + 30))));
+        depth = Math.round(Math.min(depth, Math.max(96, ...pieces.map(p => p.y + p.rd / 2 + 30))));
+      }
+      return { width, depth, items: placed };
+    }
     width = Math.ceil(width * 1.16);
     depth = Math.ceil(depth * 1.16);
   }
