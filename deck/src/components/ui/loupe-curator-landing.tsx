@@ -223,7 +223,7 @@ const HST_SOFA = { u: 0.3, v: 0.62, ru: 0.27, rv: 0.11 } as const
 const IMG_RATIO = 1250 / 1400
 
 // 3 · the talk track opens on the problem alone; it lifts away over this window, then the talk plays
-const TALK_PROB = [0.45, 1]
+const TALK_PROB = [0.55, 1]
 // a chat line: who, what they said, and what Elephant turned it into
 type Line = [string, string, string[]?]
 // 4 · the comparison: the sofa you have, then real candidates; the last one flies into the room's list
@@ -275,7 +275,8 @@ const HOW = { quote: [0.03, 0.14], mark: [0.13, 0.2], toDecision: [0.22, 0.36], 
 const HOW_LABELS: [attr: string, value: string, status: "documented" | "derived" | "unknown", hit?: boolean][] = [
   ["seat_depth", "36⅝″", "documented", true],
   ["seat_width", "84¼″", "documented", true],
-  ["seat_height", "15¾″", "documented"],
+  ["arm_above_seat", "11⅜″", "derived", true],
+  ["bed (pulls out)", "61⅜ × 76¾″", "documented", true],
   ["washable_cover", "yes", "documented"],
   ["firmness", "?", "unknown"],
 ]
@@ -723,7 +724,7 @@ const THEME =
   // 3 · the talk: spoken lines in pills (as in the app's chat), decisions pinned on the room
   ".lcl-say{display:inline}.lcl-chat li:not([data-el]) .lcl-say{padding:.3em .85em;border-radius:999px;background:var(--ink);color:var(--paper)}" +
   ".lcl-pb{position:relative;z-index:2;margin-top:calc(var(--h) * -1);background:var(--paper)}" +
-  ".lcl-talk{position:relative;height:calc(var(--h) * 2)}" +
+  ".lcl-talk{position:relative;height:calc(var(--h) * 1.35)}" +
   ".lcl-probbig{position:sticky;top:0;z-index:1;height:var(--h);margin:0 0 calc(var(--h) * -1);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 clamp(16px,4vw,64px);font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:1.02;letter-spacing:-.045em;text-wrap:balance;pointer-events:none;opacity:calc(1 - var(--pq,0));transform:translateY(calc(var(--pq,0) * -14vh))}" +
   ".lcl-talk-in{opacity:var(--pq,0);transform:translateY(calc((1 - var(--pq,0)) * 10vh))}" +
   ".lcl-talk-in{position:sticky;top:0;height:var(--h);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:clamp(20px,4vw,64px);max-width:1240px;margin:0 auto;padding:0 clamp(0px,2vw,24px)}" +
@@ -788,8 +789,8 @@ const THEME =
   ".lcl-stack{position:relative;z-index:3;max-width:1240px;margin:0 auto;padding:8vh clamp(16px,2vw,32px) 22vh;background:var(--paper)}" +
   ".lcl-stack .lcl-sh{margin:0;font-weight:400;font-size:clamp(30px,3.4vw,56px);letter-spacing:-.035em;line-height:1.04}" +
   // how it understands you: sticky stage; --h-* are phase progresses (0..1) set by the frame loop
-  ".lcl-how{position:relative;z-index:3;height:calc(var(--h) * 5);background:var(--paper)}" +
-  ".lcl-how-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,5vh,56px);max-width:1240px;margin:0 auto;padding:0 clamp(16px,2vw,32px)}" +
+  ".lcl-how{position:relative;z-index:3;height:calc(var(--h) * 5);margin-top:calc(var(--h) * -.55);background:var(--paper)}" +
+  ".lcl-how-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:flex-start;padding-top:7vh!important;gap:clamp(24px,5vh,56px);max-width:1240px;margin:0 auto;padding:0 clamp(16px,2vw,32px)}" +
   ".lcl-how-head{text-align:center}.lcl-how-head .lcl-sh{margin:8px 0 0;font-size:clamp(30px,3.4vw,56px)}" +
   ".lcl-how-cols{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,2vw,28px);align-items:start}" +
   ".lcl-hc{display:flex;flex-direction:column;gap:10px;min-height:340px;padding-top:14px;border-top:2px solid rgba(0,0,0,.1)}" +
@@ -819,7 +820,7 @@ const THEME =
   ".lcl-hst-in{position:absolute;left:0;width:100%;aspect-ratio:976/1093;top:50%;transform:translateY(-62%)}" +
   ".lcl-hst-in>img{position:absolute;inset:0;width:100%;height:100%}.lcl-hst-after{opacity:var(--h-buy,0)}" +
   ".lcl-hst-ring{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:3px solid var(--lime);box-shadow:0 0 0 999px rgba(0,0,0,calc(var(--h-mark,0) * .35 * (1 - var(--h-buy,0))));opacity:calc(var(--h-mark,0) * (1 - var(--h-buy,0)))}" +
-  ".lcl-hst-tag{position:absolute;left:30%;top:14%;transform:translate(-50%,0);padding:8px 16px;border-radius:999px;white-space:nowrap;font-size:clamp(13px,1.1vw,16px);box-shadow:0 10px 30px rgba(0,0,0,.2)}" +
+  ".lcl-hst-tag{position:absolute;left:50%;top:12%;transform:translate(-50%,0);padding:8px 16px;border-radius:999px;white-space:nowrap;font-size:clamp(13px,1.1vw,16px);box-shadow:0 10px 30px rgba(0,0,0,.2)}" +
   ".lcl-hst-say{background:var(--ink);color:var(--paper);opacity:calc(var(--h-quote,0) - var(--h-decision,0))}" +
   ".lcl-hst-pin{background:var(--lime);color:#141414;opacity:calc(var(--h-decision,0) - var(--h-labels,0))}" +
   ".lcl-hst-lab{background:#fff;color:#141414;box-shadow:inset 0 0 0 2px #d9534f,0 10px 30px rgba(0,0,0,.2);opacity:calc(var(--h-labels,0) - var(--h-buy,0))}" +
@@ -827,10 +828,9 @@ const THEME =
   "@media (max-width:860px){.lcl-hst{display:none}.lcl-hst-tag{font-size:11px;padding:6px 10px;white-space:normal;width:max-content;max-width:70vw}}" +
   // the travelling chips: column centres sit at 12.5% / 37.5% / 62.5% of the row
   ".lcl-hfly{position:absolute;top:120px;z-index:5;padding:8px 16px;border-radius:999px;background:var(--lime);color:#141414;font-size:13px;font-weight:500;white-space:nowrap;pointer-events:none;box-shadow:0 10px 26px rgba(0,0,0,.12);transform:translate(-50%,-50%)}" +
-  ".lcl-hfly1{left:calc(12.5% + var(--h-toDecision,0) * 25%);top:calc(110px - sin(calc(var(--h-toDecision,0) * 180deg)) * 60px);opacity:calc(clamp(0, var(--h-toDecision,0) * 12, 1) * clamp(0, (1 - var(--h-toDecision,0)) * 12, 1))}" +
+  ".lcl-hfly{--t:0;left:calc(var(--x0,0px) + (var(--x1,0px) - var(--x0,0px)) * var(--t));top:calc(var(--y0,0px) + (var(--y1,0px) - var(--y0,0px)) * var(--t) - sin(calc(var(--t) * 180deg)) * var(--arc,60px))}" +
+  ".lcl-hfly1{--t:var(--h-toDecision,0);opacity:calc(clamp(0, var(--h-toDecision,0) * 12, 1) * clamp(0, (1 - var(--h-toDecision,0)) * 12, 1))}.lcl-hfly2{--t:var(--h-toLabels,0);--arc:70px}.lcl-hfly3{--t:var(--h-toLabels,0);--arc:40px}" +
   ".lcl-hfly2,.lcl-hfly3{background:var(--ink);color:var(--paper);opacity:calc(clamp(0, var(--h-toLabels,0) * 12, 1) * clamp(0, (1 - var(--h-toLabels,0)) * 12, 1))}" +
-  ".lcl-hfly2{left:calc(32% + var(--h-toLabels,0) * 30%);top:calc(250px - var(--h-toLabels,0) * 10px - sin(calc(var(--h-toLabels,0) * 180deg)) * 70px)}" +
-  ".lcl-hfly3{left:calc(42% + var(--h-toLabels,0) * 20%);top:calc(250px + var(--h-toLabels,0) * 18px - sin(calc(var(--h-toLabels,0) * 180deg)) * 50px)}" +
   "@media (max-width:860px){.lcl-how{height:calc(var(--h) * 4)}.lcl-how-cols{grid-template-columns:1fr 1fr;gap:14px}.lcl-hc{min-height:0}.lcl-hfly{display:none}.lcl-how-in{justify-content:flex-start;padding-top:12vh;gap:20px}.lcl-hrec-pic{display:none}}" +
   // zoom-out: one sticky stage; the grid scales from the brief tile to the whole wall
   ".lcl-zo{position:relative;z-index:3;height:calc(var(--h) * 4);background:var(--paper)}" +
@@ -1396,6 +1396,36 @@ export default function LoupeCuratorLanding({
       const gap = Math.min(st.W * 0.012, 16)
       const x0 = (st.W - (n * rw + (n - 1) * gap)) / 2
       st.row = COLLECTIONS.map((_, i) => ({ x: x0 + i * (rw + gap), y: st.H / 2 - rw * 0.62, w: rw, h: rw * 1.12, r: 12 }))
+      // the travelling chips start on the words they come from and land on the label they light up
+      const hcols = root.querySelector(".lcl-how-cols") as HTMLElement | null
+      if (hcols) {
+        const at0 = (sel: string) => {
+          let el = hcols.querySelector(sel) as HTMLElement | null
+          if (!el) return null
+          const w = el.offsetWidth, h = el.offsetHeight
+          let x = 0, y = 0
+          while (el && el !== hcols) {
+            x += el.offsetLeft
+            y += el.offsetTop
+            el = el.offsetParent as HTMLElement | null
+          }
+          return { x: x + w / 2, y: y + h / 2 }
+        }
+        const legs: [string, string, string][] = [
+          [".lcl-hfly1", ".lcl-hq2 mark", ".lcl-htag"],
+          [".lcl-hfly2", ".lcl-hw b:nth-child(1)", ".lcl-hrec li:nth-child(1)"],
+          [".lcl-hfly3", ".lcl-hw b:nth-child(2)", ".lcl-hrec li:nth-child(2)"],
+        ]
+        for (const [chip, from, to] of legs) {
+          const c = hcols.querySelector(chip) as HTMLElement | null
+          const a = at0(from), b = at0(to)
+          if (!c || !a || !b) continue
+          c.style.setProperty("--x0", a.x + "px")
+          c.style.setProperty("--y0", a.y + "px")
+          c.style.setProperty("--x1", b.x + "px")
+          c.style.setProperty("--y1", b.y + "px")
+        }
+      }
       Array.from(root.querySelectorAll("[data-rt]")).forEach((el, i) => {
         const b = st.row[i]
         const h = el as HTMLElement
@@ -1829,10 +1859,12 @@ export default function LoupeCuratorLanding({
             <div className="lcl-hc lcl-hc2">
               <span className="lcl-mono lcl-cmeta">02 · Design decision</span>
               <b className="lcl-mono lcl-htag">habit: cross_legged</b>
-              <p className="lcl-hdec">Usable seat depth first, then seat width. Not the sofa’s outside depth.</p>
+              <p className="lcl-hdec">A deep seat to tuck your legs in, an arm to lean on, room to stretch out.</p>
               <span className="lcl-hw lcl-mono">
                 <b>seat_depth ×3</b>
                 <b>seat_width ×1</b>
+                <b>arm_above_seat</b>
+                <b>lie-down length</b>
               </span>
             </div>
             <div className="lcl-hc lcl-hc3">
@@ -1878,10 +1910,10 @@ export default function LoupeCuratorLanding({
               <i className="lcl-hst-ring" style={{ left: HST_SOFA.u * 100 + "%", top: HST_SOFA.v * 100 + "%", width: HST_SOFA.ru * 200 + "%", height: HST_SOFA.rv * 200 + "%" } as CSSProperties} />
             </div>
             <span className="lcl-hst-tag lcl-hst-say">“I curl up with a book.”</span>
-            <span className="lcl-hst-tag lcl-hst-pin lcl-mono">Seat depth first, then width</span>
-            <span className="lcl-hst-tag lcl-hst-lab lcl-mono">Your sofa · seat_depth 23⅝″ · too shallow to tuck up</span>
+            <span className="lcl-hst-tag lcl-hst-pin lcl-mono">Deep seat · an arm to lean on · room to stretch</span>
+            <span className="lcl-hst-tag lcl-hst-lab lcl-mono">Your corner sofa · seat_depth 23⅝″ · too shallow to tuck up</span>
             <span className="lcl-hst-tag lcl-hst-buy lcl-mono">
-              ✓ {SODERHAMN.name} · seat 36⅝″ · {usd(SODERHAMN.price)}, within {usd(BUDGET)}
+              ✓ SÖDERHAMN · 36⅝″ deep seat · pulls out to a bed · {usd(SODERHAMN.price)}
             </span>
           </div>
         </div>
