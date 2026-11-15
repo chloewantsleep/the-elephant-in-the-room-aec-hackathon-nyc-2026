@@ -174,7 +174,7 @@ const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * 
 function toast(msg) {
   const t = $("#toast");
   t.textContent = msg; t.hidden = false;
-  clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2200);
+  clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), Math.max(2200, Math.min(7000, msg.length * 45)));
 }
 
 /* ---------------- image <-> screen mapping (object-fit: cover, position 50% 40%) ---------------- */
@@ -876,7 +876,7 @@ function renderCart() {
   rail.innerHTML = `
     <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
     <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
-    <button class="rail-btn ${typeof dockShown !== "undefined" && dockShown ? "on" : ""}" data-action="${typeof dockShown !== "undefined" && dockShown ? "dock-hide" : "dock-show"}" title="Ask the designer" aria-label="Ask the designer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
+    <button class="rail-btn ${typeof dockShown !== "undefined" && dockShown ? "on" : ""}" data-action="${typeof dockShown !== "undefined" && dockShown ? "dock-hide" : "dock-show"}" title="Ask the designer" aria-label="Ask the designer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><i class="badge designer-badge" ${typeof B !== "undefined" && B.proposals?.length ? "" : "hidden"}>${typeof B !== "undefined" ? B.proposals?.length || "" : ""}</i></button>
 `;   // "see everything" lives behind the list's expand button
 
   drawer.innerHTML = `<div class="drawer-head">

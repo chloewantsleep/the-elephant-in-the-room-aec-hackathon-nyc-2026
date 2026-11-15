@@ -31,7 +31,9 @@ renderDesigner=function(){
  let host=document.getElementById('designer-drawer');if(!host){host=document.createElement('aside');host.id='designer-drawer';document.body.append(host);}
  // main's steps and rail stay on screen, so the dock waits behind a small launcher until you open it
  if(chatOpen)dockShown=true;host.classList.toggle('dock-shown',dockShown);
- if(!dockShown){host.innerHTML=dockProgress();return;}   // closed: only its status / folded history, above the bottom input; the rail's chat button opens it
+ if(!dockShown){host.innerHTML='';   // closed: nothing above the bottom input; needs waiting to be confirmed show as a badge on the rail's chat button
+  const badge=document.querySelector('.designer-badge');if(badge){badge.textContent=B.proposals.length||'';badge.hidden=!B.proposals.length;}
+  return;}
  if(!host.querySelector('#dock-content'))host.innerHTML=`<div id="dock-content"></div><div class="composer-top"><span id="composer-start"></span><button class="icon-btn" data-action="dock-expand" aria-label="Expand chat" title="Expand chat">↗</button><button class="icon-btn" data-action="dock-hide" aria-label="Hide the designer" title="Hide">–</button></div>${dockForm()}`;
  host.classList.toggle('dock-expanded',chatOpen);host.classList.remove('dock-collapsed');
  const content=host.querySelector('#dock-content'),contextDraft=host.querySelector('#context-input')?.value;
@@ -49,13 +51,13 @@ renderDesigner=function(){
  if(chatOpen){const body=content.querySelector('.chat-body');if(body&&(B.contexts||[]).length)body.insertAdjacentHTML('afterbegin',`<details class="context-thumbs"><summary>Reference images · ${B.contexts.length}</summary>${B.contexts.map(c=>`<figure><img src="${esc(c.image)}" alt="${esc(c.name)}"><figcaption>${esc(c.name)} <button data-action="context-remove" data-id="${esc(c.id)}">Remove</button></figcaption></figure>`).join('')}</details>`);if(body)body.scrollTop=body.scrollHeight;}
 };
 const originalSendDesigner=sendDesigner;
-sendDesigner=async function(retry=false){if(chatBusy||(!retry&&!chatDraft.trim()))return;dockActivity=true;dockTurnStart=Date.now();const o=composerObject();logTransition(o?`Using "${o.label}" and your message as input.`:'Got it.');await originalSendDesigner(retry);if(!chatError&&B.proposals.length)logTransition(`Found ${B.proposals.length} need${B.proposals.length>1?'s':''} to confirm. Once confirmed they guide the picks.`);renderDesigner();};
+sendDesigner=async function(retry=false){if(chatBusy||(!retry&&!chatDraft.trim()))return;dockActivity=true;dockTurnStart=Date.now();const o=composerObject();logTransition(o?`Using "${o.label}" and your message as input.`:'Got it.');await originalSendDesigner(retry);if(!dockShown){const r=B.history.filter(m=>m.role==='assistant'&&!m.event).at(-1);toast(chatError||(r?.text||'').slice(0,220));}/* closed: the reply (or the error) as a toast */if(!chatError&&B.proposals.length)logTransition(`Found ${B.proposals.length} need${B.proposals.length>1?'s':''} to confirm. Once confirmed they guide the picks.`);renderDesigner();};
 document.addEventListener('input',e=>{if(e.target.id==='designer-message'){const send=e.target.form.querySelector('[type="submit"]');send.hidden=!e.target.value.trim();}});
 function host_focus(){document.getElementById('designer-message')?.focus();}
 function renderObjectSelection(){document.getElementById('selected-object')?.remove();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;
  if(['context','upload','context-image','scan'].includes(a))document.querySelector('.composer-add')?.removeAttribute('open');
- if(a==='dock-show'){dockShown=true;renderDesigner();renderCart();host_focus();}
+ if(a==='dock-show'){dockShown=true;if(B.proposals.length){chatOpen=true;chatMode='conversation';}renderDesigner();renderCart();host_focus();}
  if(a==='dock-hide'){dockShown=false;chatOpen=false;renderDesigner();renderCart();}
  if(a==='dock-expand'){chatOpen=!chatOpen;chatMode='conversation';renderDesigner();}
  if(a==='object-clear'){selectedObject=null;S.sel=null;objectNotice='';renderObjectSelection();render();}
