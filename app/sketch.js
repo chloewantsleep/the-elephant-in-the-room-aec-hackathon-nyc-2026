@@ -219,6 +219,7 @@ async function skGuess() {   // optional: "Guess with AI"
 
 async function skDone() {
   if (!SK.marks.length || SK.busy) return;
+  if (typeof demoSketch === "function") SK.marks.forEach(demoSketch);   // demo: a shape top-left is the fixed lamp
   if (SK.marks.some(m => !m.cat)) {   // nothing has to be named: unnamed shapes get a quick, free guess
     SK.busy = "done"; SK.error = null; skRenderBar();
     try { await skAsk(true); }
@@ -234,8 +235,27 @@ async function skDone() {
   S.dirty = true;   // the next design plans around these
   SK.on = false; SK.result = null; SK.marks = [];
   toast(`Adding your sketch to the design: ${items.map(it => skTag(it.category, it.widthIn)).join(", ")}`);
-  if (S.step === NEEDS) render();
-  else goto(DESIGN);   // from Design / Edit: re-plan now (goto sees S.dirty)
+  // from any step: re-plan now (goto sees S.dirty) and show it in the picture right away (AI renders on for this)
+  if (!S.live && typeof setLive === "function") { setLive(true); toast("AI renders on to show your sketch"); }
+  // the sketch only ADDS to the design: keep the option, the products and colors already picked, and the label spots
+  const kept = S.scene ? S.scene.filter(it => !it.sketched).map(it => ({ cat: it.cat, own: it.own || null, pid: it.pid, vid: it.vid, at: it.at })) : null;
+  const keptOpt = S.opt;
+  goto(DESIGN);
+  if (kept && S.scene && S.options[keptOpt]) {
+    S.opt = keptOpt; S.scene = structuredClone(S.options[keptOpt].items);
+    const left = kept.slice();
+    S.scene.forEach(it => {
+      if (it.sketched) return;
+      const k = left.findIndex(x => x.cat === it.cat && x.own === (it.own || null));
+      if (k < 0) return;
+      const [x] = left.splice(k, 1);
+      it.pid = x.pid; it.vid = x.vid; if (x.at) it.at = x.at;
+    });
+    S.options[S.opt].items = structuredClone(S.scene);
+    if (typeof syncLayout === "function") syncLayout();
+    render();
+  }
+  if (S.scene && !S.generating && typeof renderScene === "function") renderScene();
 }
 
 function skRemove() {

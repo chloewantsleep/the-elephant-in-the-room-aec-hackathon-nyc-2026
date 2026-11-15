@@ -9,6 +9,7 @@ On Vercel the same logic runs as api/render.py. Python standard library only.
 """
 import json
 import os
+import re
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -17,6 +18,35 @@ import _core as core  # noqa: E402
 import _designer as designer
 
 ROOT = core.ROOT
+
+# Dev convenience: edit api/_core.py or .env, then just refresh the page (no server restart).
+import importlib  # noqa: E402
+import threading  # noqa: E402
+
+_WATCH = [os.path.join(ROOT, "api", "_core.py"), os.path.join(ROOT, ".env")]
+_mtimes = {p: os.path.getmtime(p) if os.path.exists(p) else 0 for p in _WATCH}
+_reload_lock = threading.Lock()
+
+
+def reload_if_changed():
+    with _reload_lock:
+        now = {p: os.path.getmtime(p) if os.path.exists(p) else 0 for p in _WATCH}
+        if now == _mtimes:
+            return
+        env = os.path.join(ROOT, ".env")
+        if now[env] != _mtimes[env] and os.path.exists(env):   # new values in .env win over the old ones
+            for line in open(env, encoding="utf-8"):
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ[k.strip()] = v.strip().strip('"').strip("'")
+        _mtimes.update(now)
+        try:
+            importlib.reload(core)
+            print("reloaded api/_core.py", flush=True)
+        except Exception as e:  # a half-saved file: keep the old code, try again next request
+            _mtimes[_WATCH[0]] = 0
+            print("reload failed:", e, flush=True)
 
 
 def sketch(req):
@@ -34,6 +64,22 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
 
+    def end_headers(self):
+        # a normal refresh always gets the latest html/js/css; images keep the browser cache (no re-download flicker)
+        if re.search(r"(\.(html|js|css|json)|/)$", self.path.split("?")[0]) or self.path.startswith("/api/"):
+            self.send_header("Cache-Control", "no-store")
+        # let the page open in VS Code Live Preview (another local port) call this server
+        origin = self.headers.get("Origin", "")
+        if re.fullmatch(r"https?://(localhost|127\.0\.0\.1)(:\d+)?", origin):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Passcode")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        super().end_headers()
+
+    def do_OPTIONS(self):   # CORS preflight from Live Preview
+        self.send_response(204)
+        self.end_headers()
+
     def _json(self, code, obj):
         body = json.dumps(obj).encode()
         self.send_response(code)
@@ -43,6 +89,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.path.startswith("/api/"):
+            reload_if_changed()
         if self.path == "/api/health":
             return self._json(200, {"key": bool(core.KEY), "model": core.MODEL,
                                     "sketch_engine": sketch_engine()})
@@ -52,8 +100,11 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        reload_if_changed()
         fn = {"/api/chat": designer.chat, "/api/render": core.render, "/api/detect": core.detect, "/api/isolate": core.isolate,
               "/api/sketch": sketch}.get(self.path)
+        if not fn and self.path[5:] in getattr(core, "ENDPOINTS", ()):   # endpoints listed in _core.ENDPOINTS: reloaded with _core,
+            fn = getattr(core, self.path[5:])                       # so a new one needs no server restart
         if not fn:
             return self._json(404, {"error": "not found"})
         try:
