@@ -996,3 +996,26 @@ button:disabled {opacity:.5;cursor:wait}
   .sh-table tfoot td { padding-top: 3mm; border-bottom: 0; border-top: 1.5pt solid var(--ink); font-size: 11pt; font-weight: 600; }
   .sh-foot { margin: 4mm 0 0; font-size: 7.5pt; color: var(--ink-soft); break-before: avoid; }
 }
+
+/* ---------- needs chat: swipe deck for the style question (needs-swipe.js) ---------- */
+.swipe { align-self: stretch; margin: 2px 0 4px; }
+.swipe-card {
+  position: relative; border-radius: 18px; background: #fff; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,.10); cursor: grab; touch-action: none; user-select: none;
+  transition: transform .2s ease;
+}
+.swipe-card:active { cursor: grabbing; transition: none; }
+.swipe-card img { display: block; width: 100%; height: 170px; object-fit: contain; padding: 12px; box-sizing: border-box; pointer-events: none; }
+.swipe-card .meta { padding: 0 14px 12px; }
+.swipe-card .meta b { display: block; font-size: 13.5px; font-weight: 600; }
+.swipe-card .meta small { color: var(--ink-soft); font-size: 12px; }
+.swipe-card .count { position: absolute; top: 10px; right: 12px; font-size: 11px; color: var(--ink-soft); }
+.swipe-card[data-hint="like"] { box-shadow: 0 0 0 3px var(--ok), 0 8px 24px rgba(0,0,0,.10); }
+.swipe-card[data-hint="skip"] { box-shadow: 0 0 0 3px var(--warn), 0 8px 24px rgba(0,0,0,.10); }
+.swipe-btns { display: flex; justify-content: center; gap: 16px; margin-top: 10px; }
+.swipe-btns .round {
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: #fff;
+  font-size: 18px; cursor: pointer; color: var(--warn); transition: transform .15s;
+}
+.swipe-btns .round.like { color: var(--ok); }
+.swipe-btns .round:hover { transform: scale(1.08); }

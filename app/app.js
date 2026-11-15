@@ -660,7 +660,7 @@ const QUESTIONS = [
     ask: () => { const g = guessRoom(); return g ? `From your photo this looks like a ${ROOM_NOUN[g]}. Is that the room we're designing?` : "Which room are we designing?"; },
     chips: () => { const g = guessRoom(); return Object.entries(ROOMS).sort(([a], [b]) => (b === g) - (a === g)).map(([k, v]) => ({ label: k === g ? `Yes, ${v.toLowerCase()}` : v, val: k })); },
     apply: v => { S.needs.room = v; return ROOMS[v]; } },
-  { key: "style", ask: () => "Nice. What style are you going for?",
+  { key: "style", ask: () => "Nice. Swipe a few real pieces: → or ♥ if you'd live with it, ← or ✕ if not. Or just tap a style.",   // swipe deck: needs-swipe.js
     chips: () => STYLES.map(x => ({ label: x, val: x })), apply: v => (S.needs.style = v) },
   { key: "budget", ask: () => "What's your budget for new pieces?",
     chips: () => [1000, 2000, 3000, 5000, 8000].map(n => ({ label: money(n), val: n })),
@@ -765,6 +765,7 @@ function needsCard() {
     </div>` : ""}
     <div class="nw-fx">${strip}</div>
     <div class="chat-log">${S.chat.log.map(m => `<div class="msg ${m.from}">${esc(m.text)}</div>`).join("")}
+      ${q?.key === "style" ? swipeWidget() : ""}
       ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       ${brief}
     </div>
@@ -1209,7 +1210,7 @@ document.addEventListener("click", e => {
   else if (act === "chat") {
     const v = a.dataset.val, q = QUESTIONS[S.chat.q];
     chatAnswer(q?.key === "budget" ? +v : v, v === "__done" ? null : a.dataset.label); renderPanel();
-  } else if (act === "chat-reset") { S.chat = null; renderPanel(); }
+  } else if (act === "chat-reset") { S.chat = null; swipeReset(); renderPanel(); }
   else if (act === "size") { S.sizeOpen = !S.sizeOpen; renderPanel(); renderMeasure(); }
   else if (act === "scan" || act === "scan-again") { if (act === "scan-again") S.existing = null; scanFurniture(); }
   else if (act === "keep-toggle") {
