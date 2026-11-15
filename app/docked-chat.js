@@ -1,5 +1,5 @@
 /* Main app conversation dock. Shares the existing brief, scene and image APIs. */
-let dockShown=true,selectedObject=null,objectNotice='',voice=null,voiceActive=false;
+let dockShown=false,selectedObject=null,objectNotice='',voice=null,voiceActive=false;
 chatOpen=false;
 const baseWorkStatus=workStatus;
 workStatus=function(){return S.rendering?'Rendering the current picks and colors into your photo…':baseWorkStatus();};
@@ -15,7 +15,7 @@ function composerObject(){
  return null;
 }
 function objectCapsule(){const o=composerObject();return o?`<span class="chip object-capsule">${o.crop?`<img src="${esc(o.iso||o.crop)}" alt="">`:''}<span>${esc(o.label)}</span><button type="button" data-action="object-clear" aria-label="Clear the selected object">×</button></span>`:'';}
-function dockForm(){return `<form id="designer-form" class="chat-input"><details class="composer-add"><summary class="icon-btn" aria-label="Add a photo or notes">+</summary><div class="card"><button class="chip" type="button" data-action="upload">Add a photo</button>${S.space.photo==='upload'&&!S.scene?'<button class="chip" type="button" data-action="scan">Find furniture to keep</button>':''}<button class="chip" type="button" data-action="context-image">Add an inspiration image / sketch</button><button class="chip" type="button" data-action="context">Import ChatGPT / Claude memory</button></div></details><span id="composer-object">${objectCapsule()}</span><input id="designer-message" aria-label="Tell the designer" autocomplete="off" maxlength="12000" placeholder="${S.space.photo==='upload'?'What would you like to change…':'Add a photo and tell me about your space…'}" value="${esc(chatDraft)}"><button class="icon-btn voice-input" type="button" data-action="voice" aria-label="Voice input" aria-pressed="${voiceActive}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"/></svg></button><button class="send" type="submit" aria-label="Send message" ${chatBusy?'disabled':''} ${chatDraft.trim()?'':'hidden'}>↑</button><button class="icon-btn dock-expand" type="button" data-action="dock-expand" aria-label="Open the conversation" title="Open the conversation">↗</button></form>`;}
+function dockForm(){return `<form id="designer-form" class="chat-input"><details class="composer-add"><summary class="icon-btn" aria-label="Add a photo or notes">+</summary><div class="card"><button class="chip" type="button" data-action="upload">Add a photo</button>${S.space.photo==='upload'&&!S.scene?'<button class="chip" type="button" data-action="scan">Find furniture to keep</button>':''}<button class="chip" type="button" data-action="context-image">Add an inspiration image / sketch</button><button class="chip" type="button" data-action="context">Import ChatGPT / Claude memory</button></div></details><span id="composer-object">${objectCapsule()}</span><input id="designer-message" aria-label="Tell the designer" autocomplete="off" maxlength="12000" placeholder="${S.space.photo==='upload'?'What would you like to change…':'Add a photo and tell me about your space…'}" value="${esc(chatDraft)}"><button class="icon-btn voice-input" type="button" data-action="voice" aria-label="Voice input" aria-pressed="${voiceActive}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8"/></svg></button><button class="send" type="submit" aria-label="Send message" ${chatBusy?'disabled':''} ${chatDraft.trim()?'':'hidden'}>↑</button></form>`;}
 function dockProgress(){
  if(!dockActivity)return '';
  const busy=chatBusy||S.rendering||S.generating;
@@ -26,9 +26,10 @@ function dockProgress(){
 }
 renderDesigner=function(){
  let host=document.getElementById('designer-drawer');if(!host){host=document.createElement('aside');host.id='designer-drawer';document.body.append(host);}
- // the one bar at the bottom: + · input · mic · ↗ (the step pills are gone; each step's own next button guides you)
- host.classList.add('dock-shown');
- if(!host.querySelector('#dock-content'))host.innerHTML=`<div id="dock-content"></div>${dockForm()}`;
+ // main's steps and rail stay on screen, so the dock waits behind a small launcher until you open it
+ if(chatOpen)dockShown=true;host.classList.toggle('dock-shown',dockShown);
+ if(!dockShown){host.innerHTML=`<button class="pill dock-launch" data-action="dock-show">✳ Ask the designer</button>`;return;}
+ if(!host.querySelector('#dock-content'))host.innerHTML=`<div id="dock-content"></div><div class="composer-top"><span id="composer-start"></span><button class="icon-btn" data-action="dock-expand" aria-label="Expand chat" title="Expand chat">↗</button><button class="icon-btn" data-action="dock-hide" aria-label="Hide the designer" title="Hide">–</button></div>${dockForm()}`;
  host.classList.toggle('dock-expanded',chatOpen);host.classList.remove('dock-collapsed');
  const content=host.querySelector('#dock-content'),contextDraft=host.querySelector('#context-input')?.value;
  if(chatOpen){content.innerHTML=designerCard();content.querySelector('#designer-form')?.remove();}
@@ -37,12 +38,11 @@ renderDesigner=function(){
  if(contextDraft!=null&&host.querySelector('#context-input'))host.querySelector('#context-input').value=contextDraft;
  host.querySelector('#composer-object').innerHTML=objectCapsule();
  const input=host.querySelector('#designer-message');if(input.value!==chatDraft)input.value=chatDraft;
- const needsQ=S.step===NEEDS&&!chatOpen&&S.chat?QUESTIONS[S.chat.q]:undefined;
- input.placeholder=S.step===NEEDS&&!chatOpen?(needsQ?'Or just type: budget 2500, seats 4…':'Add anything else…'):'What would you like to change?';
+ input.placeholder=S.space.photo==='upload'?'What would you like to change…':'Add a photo and tell me about your space…';
  const send=host.querySelector('#designer-form [type="submit"]');send.hidden=!chatDraft.trim();send.disabled=chatBusy;
  host.querySelector('[data-action="voice"]').setAttribute('aria-pressed',String(voiceActive));
-  host.querySelector('.dock-expand').classList.toggle('on',chatOpen);
- 
+ host.querySelector('[data-action="dock-expand"]').hidden=chatOpen;   // minimize (–) stays: it folds the card and the input together
+ host.querySelector('#composer-start').innerHTML=S.space.photo!=='upload'?'<button data-action="upload">Upload photo</button><button data-action="context">Import memory</button>':'';
  if(chatOpen){const body=content.querySelector('.chat-body');if(body&&(B.contexts||[]).length)body.insertAdjacentHTML('afterbegin',`<details class="context-thumbs"><summary>Reference images · ${B.contexts.length}</summary>${B.contexts.map(c=>`<figure><img src="${esc(c.image)}" alt="${esc(c.name)}"><figcaption>${esc(c.name)} <button data-action="context-remove" data-id="${esc(c.id)}">Remove</button></figcaption></figure>`).join('')}</details>`);if(body)body.scrollTop=body.scrollHeight;}
 };
 const originalSendDesigner=sendDesigner;
@@ -52,6 +52,8 @@ function host_focus(){document.getElementById('designer-message')?.focus();}
 function renderObjectSelection(){document.getElementById('selected-object')?.remove();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;
  if(['context','upload','context-image','scan'].includes(a))document.querySelector('.composer-add')?.removeAttribute('open');
+ if(a==='dock-show'){dockShown=true;renderDesigner();host_focus();}
+ if(a==='dock-hide'){dockShown=false;chatOpen=false;renderDesigner();}
  if(a==='dock-expand'){chatOpen=!chatOpen;chatMode='conversation';renderDesigner();}
  if(a==='object-clear'){selectedObject=null;S.sel=null;objectNotice='';renderObjectSelection();render();}
  if(['select','cart-item'].includes(a)){selectedObject=null;objectNotice='';renderObjectSelection();renderDesigner();}
@@ -66,7 +68,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');
 const baseRecordEdit=recordEdit;
 recordEdit=function(text){dockActivity=true;dockTurnStart=Date.now();logTransition('Updated the design: '+text+' The next render uses these picks and colors.');baseRecordEdit(text);};
 const baseGenerate=generate;
-generate=function(){baseGenerate();if(designReady())logTransition('Used your confirmed needs, budget and room limits to pick and place furniture. Starting the render.');};   // app.js renders option 1 itself once the options are ready
+generate=function(){baseGenerate();if(S.scene&&designReady()){logTransition('Used your confirmed needs, budget and room limits to pick and place furniture. Starting the render.');renderScene();}};
 
 // Reuse the repository's detected-furniture cards as conversation context.
 document.addEventListener('click',e=>{const card=e.target.closest('[data-ex]');if(!card)return;selectedObject=exById(card.dataset.ex);renderDesigner();});
