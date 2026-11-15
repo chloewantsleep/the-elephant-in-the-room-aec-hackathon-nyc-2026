@@ -296,16 +296,13 @@ function shopRoomMarkup() {
   if (option) option.shopOriginal ??= structuredClone(option.items);
   const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
   const ref = shopReference(original);
-  loadShopReference(original, ref);
   const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
   const demo = S.space.photo === "demo";
   let refSrc = ref.image || (demo ? example().render : photoSrc());
   if (!demo && refSrc.startsWith("assets/demo-render-")) refSrc = photoSrc();
   const refLabel = refSrc === photoSrc() ? "Original room photo"
     : refSrc.startsWith("assets/demo-render-") ? "Demo reference render" : "Design reference render";
-  const planLabel = ref.status === "pending" ? "Matching render…"
-    : plan.measured ? "Measured from the render's perspective"
-    : ref.status === "ready" || ref.demoExact ? "Estimated from render" : "Estimated layout · Product finishes";
+  const planLabel = ref.demoExact ? "Measured from the demo render" : "Laid out from the design's positions";
 
   return `<div class="shop-layout">
     <section class="shop-plan" aria-label="Isometric room diagram">

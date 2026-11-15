@@ -80,25 +80,44 @@ function shopSample(ref, item) {
   return ref?.items?.[item.slotId] || ref?.profile?.items[item.own ? "own:" + item.own : item.cat];
 }
 
+/* Where each piece sits on the floor, roughly, from where it is in the room photo (item.pos, % of the image).
+ * A level default camera (horizon a little above the middle): lower in the picture = nearer, and the
+ * left/right offset widens with distance. The result is spread over the floor so front/back and
+ * left/right relationships match the picture. Pure geometry, no AI call. */
+const SHOP_HORIZON = .42, SHOP_FAR = .1;
+function shopPhotoAnchors(items) {
+  const photo = document.getElementById("room");
+  const aspect = photo?.naturalWidth && photo?.naturalHeight ? photo.naturalWidth / photo.naturalHeight : 4 / 3;
+  const ground = items.map(item => {
+    if (!Array.isArray(item.pos)) return null;
+    const u = item.pos[0] / 100, v = item.pos[1] / 100;
+    const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
+    const z = 1 / near;                                                          // distance from the camera
+    return [(u - .5) * aspect * z / 1.2, near];                                 // ~ 26 mm lens; near orders front/back
+  });
+  const xs = ground.filter(Boolean).map(g => g[0]), ns = ground.filter(Boolean).map(g => g[1]);
+  if (!xs.length) return new Map();
+  const span = (lo, hi) => Math.max(hi - lo, 1e-6);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), n0 = Math.min(...ns), n1 = Math.max(...ns);
+  const out = new Map();
+  items.forEach((item, k) => {
+    const g = ground[k];
+    if (!g) return;
+    // spread over the floor: left wall .1 .. right wall .9, back wall .15 .. front .9
+    const u = xs.length > 1 ? .1 + .8 * (g[0] - x0) / span(x0, x1) : .5;
+    const v = ns.length > 1 ? .15 + .75 * (g[1] - n0) / span(n0, n1) : .5;   // evenly by how low it sits in the picture
+    out.set(item.slotId ?? k, [u, v]);
+  });
+  return out;
+}
+
 function shopSceneLayout(items, space, room, ref) {
   const anchors = SHOP_ROOM_ANCHORS[room] || SHOP_ROOM_ANCHORS.living;
   const profile = space.confirmed ? null : ref?.profile;
   let width = Math.max(36, shopPositive(space.wallIn, 144), profile?.width || 0);
   let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
   const distance = 5;
-
-  // measured from the render's perspective (floor-geometry.js): these pieces go exactly where the picture has them
-  const rowsFor = () => items.map(item => {
-    const dims = view(item).dims_in;
-    return { key: item.slotId, cat: item.cat, w: shopPositive(dims.width, 22), d: shopPositive(dims.depth, shopPositive(dims.width, 18)),
-      edges: ref?.items?.[item.slotId]?.edges || [] };
-  });
-  const measuredRender = ref?.room && ref.imageW && typeof FloorGeometry !== "undefined"
-    ? FloorGeometry.plan(ref.room, ref.imageW, ref.imageH, rowsFor(), space.confirmed ? space.wallIn : 0) : null;
-  if (measuredRender) {
-    width = Math.max(36, measuredRender.width);
-    depth = Math.max(36, space.confirmed ? Math.max(space.depthIn, measuredRender.depth) : measuredRender.depth);
-  }
+  const fromPhoto = shopPhotoAnchors(items);
 
   function arrange() {
     const entries = items.map((item, index) => {
@@ -109,7 +128,7 @@ function shopSceneLayout(items, space, room, ref) {
         form: sample?.form, w: shopPositive(dimensions.width, 22), d: shopPositive(dimensions.depth, shopPositive(dimensions.width, 18)),
         h: shopPositive(dimensions.height, 20), pieces: [] };
     });
-    const measured = space.confirmed && !measuredRender ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
+    const measured = space.confirmed ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
     const fixed = new Map();
     const occupied = [];
     if (measured?.ready) {
@@ -157,19 +176,10 @@ function shopSceneLayout(items, space, room, ref) {
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
       const z = parent?.h || (cat === "mirror" ? 32 : cat === "pendant_lamp" ? 80 : 0);
-      const imageAnchor = [item.pos[0] / 100, (item.pos[1] - 15) / 95];
-      const [u, v, direction = 0] = item.sketched ? imageAnchor : anchors[cat] || imageAnchor;
+      const seen = fromPhoto.get(item.slotId);   // where the picture has it; the room-type default only if it has no spot
+      const [u, v] = seen || anchors[cat] || [.5, .5], direction = anchors[cat]?.[2] || 0;
       const qty = item.qty || 1;
       for (let i = 0; i < qty; i++) {
-        const seen = measuredRender?.pieces.get(`${row.id}:${i}`);
-        if (seen) {
-          const t = seen.turn, rw = t % 2 ? d : w, rd = t % 2 ? w : d;
-          const piece = { x: Math.min(width - rw / 2, Math.max(rw / 2, seen.x)), y: Math.min(depth - rd / 2, Math.max(rd / 2, seen.y)),
-            z, turn: t, w, d, h, rw, rd };
-          row.pieces.push(piece);
-          if (cat !== "rug" && !(z > 0)) occupied.push(piece);   // other pieces keep clear of it; it is never moved
-          continue;
-        }
         const confirmed = fixed.get(`${row.id}:${i}`);
         if (confirmed) {
           row.pieces.push({ ...confirmed, z, w, d, h });
@@ -196,7 +206,6 @@ function shopSceneLayout(items, space, room, ref) {
         }
 
         const hint = item.sketched && ref?.profile ? null : sample?.positions?.[i];
-        if (item.sketched && !hint) [x, y, turn] = [u * width, v * depth, direction];
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
         const rw = turn % 2 ? d : w, rd = turn % 2 ? w : d;
         const piece = { x, y, z, turn, w, d, h, rw, rd };
@@ -218,46 +227,18 @@ function shopSceneLayout(items, space, room, ref) {
 
   for (;;) {
     const placed = arrange();
-    if (placed) return { width, depth, items: placed, measured: !!measuredRender };
+    if (placed) return { width, depth, items: placed };
     width = Math.ceil(width * 1.16);
     depth = Math.ceil(depth * 1.16);
   }
 }
 
-const shopReferenceCache = new Map();
-
+// the picture shown beside the plan, and the hand-measured demo layouts (no AI call: the plan comes from item.pos)
 function shopReference(items) {
   const image = S.renders[sceneSig(items)];
-  if (image?.startsWith("data:image/") && image !== photoSrc()) {
-    return shopReferenceCache.get(image) || { image, status: "pending" };
-  }
   const profile = S.space.photo === "demo" && example().room === S.needs.room
     ? SHOP_DEMO_LAYOUTS[S.needs.room] : null;
   const demoExact = profile && S.opt === 0 && S.existing?.baked &&
     S.existing.items.every(piece => items.some(item => item.own === piece.id));
   return { image, profile, demoExact };
-}
-
-async function loadShopReference(items, ref) {
-  if (ref.status !== "pending" || shopReferenceCache.has(ref.image)) return;
-  shopReferenceCache.set(ref.image, ref);
-  try {
-    const layout = items.map(item => {
-      const p = view(item);
-      return { id: item.slotId, category: item.cat, name: p.name, finish: p.variant, qty: item.qty };
-    });
-    const image = new Image();
-    image.src = ref.image;
-    await image.decode();
-    const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = Object.assign(document.createElement("canvas"), {
-      width: Math.max(1, Math.round(image.naturalWidth * scale)), height: Math.max(1, Math.round(image.naturalHeight * scale)),
-    });
-    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-    const result = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), layout });
-    shopReferenceCache.set(ref.image, { ...result, image: ref.image, imageW: image.naturalWidth, imageH: image.naturalHeight, status: "ready" });
-  } catch {
-    shopReferenceCache.set(ref.image, { image: ref.image, status: "unavailable" });
-  }
-  if (S.cart === "expanded" && S.cartView === "room" && S.preview == null) renderCart();
 }
