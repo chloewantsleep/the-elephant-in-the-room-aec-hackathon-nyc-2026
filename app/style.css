@@ -92,6 +92,11 @@ button.pill:hover { background: var(--glass-hover); }
 .next-arrow { width: 52px; height: 52px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 22px;
   background: rgba(255,255,255,.85); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); color: var(--ink); transition: background .2s, color .2s; }
 .next-arrow:hover { background: #fff; }
+.needs-plus { position: relative; width: 52px; height: 52px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 26px; font-weight: 300;
+  background: rgba(255,255,255,.85); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); color: var(--ink); transition: transform .25s, background .2s; }
+.needs-plus:hover { background: #fff; }
+.needs-plus.open { transform: rotate(45deg); }   /* the window is open: + reads as × */
+.needs-plus.dot::after { content: ""; position: absolute; right: 4px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px #fff; }
 .next-arrow.ready { background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 4px 18px rgba(0,0,0,.18); }
 
 .topbar {
@@ -636,7 +641,7 @@ button.mock-tag:hover { opacity: 1; }
   .pill-row { gap: 6px; bottom: 14px; width: calc(100% - 24px); justify-content: center; }
   .bottom-chat { width: 100%; }
   .bottom-chat input, .bottom-chat .send { height: 46px; }
-  .bottom-chat .send, .next-arrow { width: 46px; height: 46px; }
+  .bottom-chat .send, .next-arrow, .needs-plus { width: 46px; height: 46px; }
   .pill-row .num { display: none; }
   .round-btn { display: none; }
   .options { bottom: 70px; gap: 8px; width: calc(100% - 24px); }

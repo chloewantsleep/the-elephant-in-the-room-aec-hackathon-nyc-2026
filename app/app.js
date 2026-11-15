@@ -544,11 +544,16 @@ function renderSteps() {
   const next = ["Design my room", "Edit this design", "Shop the list"][S.step];
   const input = el.querySelector("input");
   if (!input) el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
+    <button type="button" class="needs-plus" data-action="needs-toggle">+</button>
     <input type="text" aria-label="Message">
     <button class="send" aria-label="Send">↑</button>
     <button type="button" class="next-arrow" data-action="next">→</button></form>`;
   el.querySelector("input").placeholder = ph;   // keep what's being typed across re-renders
   const arrow = el.querySelector(".next-arrow");
+  const plus = el.querySelector(".needs-plus");   // Needs only: + opens the window, × (rotated +) minimizes it
+  plus.hidden = S.step !== NEEDS; plus.classList.toggle("open", !S.needsMin);
+  plus.classList.toggle("dot", !!(S.needsMin && S.chat && QUESTIONS[S.chat.q]));
+  plus.title = S.needsMin ? "Open the chat" : "Minimize"; plus.setAttribute("aria-label", plus.title);
   arrow.hidden = !next; arrow.title = next || ""; arrow.setAttribute("aria-label", next || "Next");
   arrow.classList.toggle("ready", S.step !== NEEDS || !(S.chat && QUESTIONS[S.chat.q]));   // Needs: lights up once the brief is done
 }
@@ -719,12 +724,9 @@ const ELEPHANT = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" st
   <path d="M3 17v-5c0-3.5 3-6 6.5-6H13c3.9 0 7 3 7 7v3.5c0 1.1.9 2 2 2"/><path d="M3 17h12.5M6 17v3M10 17v3M15 16v4"/>
   <path d="M13 8.5c-1.6.5-2.1 2.6-1 4.2.9 1.2 3 1.1 3.5-.3"/><circle cx="17.2" cy="10.4" r=".6" fill="currentColor"/></svg>`;
 
-// 01 Needs: one centered window (room photo + your furniture + chat), minimizable to an elephant bubble
+// 01 Needs: one centered window (room photo + your furniture + chat); minimized, it's the + left of the bottom input
 function needsCard() {
-  if (S.needsMin) {
-    return `<button class="needs-bubble" data-action="needs-open" title="Open" aria-label="Open the chat">${ELEPHANT}
-      ${S.chat && QUESTIONS[S.chat.q] ? `<i class="dot"></i>` : ""}</button>`;
-  }
+  if (S.needsMin) return "";
   if (!S.chat || (S.chat.q === 0 && S.chat.log.length === 2)) chatStart();   // opening follows the latest photo scan
   const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptCount(), sk = sketched();
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
@@ -1180,6 +1182,7 @@ document.addEventListener("click", e => {
   }
   else if (act === "needs-min") { S.needsMin = true; render(); }
   else if (act === "needs-open") { S.needsMin = false; render(); }
+  else if (act === "needs-toggle") { S.needsMin = !S.needsMin; render(); }
   else if (act === "keep") {
     const e = exById(a.dataset.id); e.keep = a.dataset.keep === "1"; S.dirty = true; renderPanel(); renderBoxes();
   }
