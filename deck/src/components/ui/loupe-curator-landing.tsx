@@ -588,7 +588,7 @@ const CSS =
   "@keyframes lcl-bit{50%{translate:6px -10px}}" +
   /* footer */
   ".lcl-foot{position:relative;z-index:5;margin-top:calc(var(--h) * -.5);padding:12px}" +
-  ".lcl-qrs{display:flex;justify-content:center;gap:clamp(24px,5vw,72px)}.lcl-qr{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--ink);text-decoration:none}.lcl-qr img{width:clamp(120px,12vw,170px);height:auto;padding:10px;border-radius:16px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.08)}.lcl-qr span{font-size:11px}" +
+  ".lcl-fbrand{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(12px,2vw,32px)}.lcl-fbrand .lcl-qr{justify-self:center}.lcl-fbrand .lcl-big2{font-size:clamp(56px,13vw,250px)}@media (max-width:720px){.lcl-fbrand{grid-template-columns:1fr 1fr;row-gap:18px}.lcl-fbrand .lcl-big2{grid-column:1 / -1;grid-row:1;font-size:21vw}.lcl-fbrand .lcl-qr img{width:110px}}.lcl-qr{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--ink);text-decoration:none}.lcl-qr img{width:clamp(120px,12vw,170px);height:auto;padding:10px;border-radius:16px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.08)}.lcl-qr span{font-size:11px}" +
   ".lcl-fcard{display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-height:calc(var(--h) * .62);padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:0 -10px 40px rgba(0,0,0,.06)}" +
   ".lcl-frow{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}" +
   ".lcl-frow a,.lcl-frow span{color:inherit;text-decoration:none}" +
@@ -2260,23 +2260,26 @@ export default function LoupeCuratorLanding({
               <ActionEl a={joinAction} label="Join waitlist" className="lcl-btn lcl-btn-lime lcl-mono" cursor="Join" />
             </span>
           </div>
-          <div className="lcl-qrs">
-            {QRS.map(([label, src, href]) => (
-              <a key={label} className="lcl-qr" href={href} data-cursor="Open">
-                <img src={src} alt={"QR code: " + label} draggable={false} />
-                <span className="lcl-mono">Scan · {label}</span>
-              </a>
-            ))}
+          {/* the wordmark centred, a QR code on each side */}
+          <div className="lcl-fbrand">
+            <a className="lcl-qr" href={QRS[0][2]} data-cursor="Open">
+              <img src={QRS[0][1]} alt={"QR code: " + QRS[0][0]} draggable={false} />
+              <span className="lcl-mono">Scan · {QRS[0][0]}</span>
+            </a>
+            <p className="lcl-big2" aria-label={brand}>
+              {sunAt < 0 ? brand : brand.slice(0, sunAt)}
+              {sunAt >= 0 && (
+                <button type="button" className="lcl-sun" onClick={poke} data-cursor="Poke the sun" aria-label="Poke the sun">
+                  <Sun />
+                </button>
+              )}
+              {sunAt < 0 ? null : brand.slice(sunAt + 1)}
+            </p>
+            <a className="lcl-qr" href={QRS[1][2]} data-cursor="Open">
+              <img src={QRS[1][1]} alt={"QR code: " + QRS[1][0]} draggable={false} />
+              <span className="lcl-mono">Scan · {QRS[1][0]}</span>
+            </a>
           </div>
-          <p className="lcl-big2" aria-label={brand}>
-            {sunAt < 0 ? brand : brand.slice(0, sunAt)}
-            {sunAt >= 0 && (
-              <button type="button" className="lcl-sun" onClick={poke} data-cursor="Poke the sun" aria-label="Poke the sun">
-                <Sun />
-              </button>
-            )}
-            {sunAt < 0 ? null : brand.slice(sunAt + 1)}
-          </p>
           <div className="lcl-frow lcl-mono">
             <span>{launch}</span>
             <span>{"Starts with what you have."}</span>
