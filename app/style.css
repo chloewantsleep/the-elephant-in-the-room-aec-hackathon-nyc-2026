@@ -647,8 +647,7 @@ button.mock-tag:hover { opacity: 1; }
   border-radius: 24px; background: rgba(25,25,25,.43); border: 1px solid rgba(255,255,255,.19);
 }
 .shop-plan { padding: 14px; gap: 10px; }
-.shop-controls, .shop-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.shop-controls .xchip { padding: 6px 12px; }
+.shop-plan-title { margin: 0; padding: 3px 2px; font-size: 14px; font-weight: 500; }
 .shop-canvas {
   position: relative; display: flex; flex-direction: column; flex: 1; min-height: 250px;
   overflow: hidden; border-radius: 16px; color: #4b4a42;
@@ -656,10 +655,9 @@ button.mock-tag:hover { opacity: 1; }
 }
 .shop-iso { flex: 1; display: block; width: 100%; min-height: 0; }
 .shop-note { margin: 0; padding: 4px 10px 10px; text-align: center; font-size: 11px; }
-.shop-legend { column-gap: 14px; padding: 0 2px; font-size: 11px; color: #fff; }
+.shop-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 0 2px; font-size: 11px; color: #fff; }
 .shop-legend span { display: inline-flex; gap: 6px; align-items: center; }
 .shop-legend i { width: 9px; height: 9px; border-radius: 50%; background: var(--shop-top); }
-.shop-legend i.removed { border: 1px dashed #ffb19e; background: transparent; }
 .shop-floor polygon, .shop-walls polygon, .shop-solid polygon {
   stroke: var(--shop-edge); stroke-width: .8; stroke-linejoin: round;
 }
@@ -695,8 +693,6 @@ button.mock-tag:hover { opacity: 1; }
 
 .shop-plan .buy { --shop-top: #f6dba1; --shop-left: #ddb46e; --shop-right: #c5995b; --shop-edge: #765235; }
 .shop-plan .owned { --shop-top: #c7e4d4; --shop-left: #99c1ad; --shop-right: #79ad96; --shop-edge: #3d6658; }
-.shop-plan .changed { --shop-top: #ffc472; --shop-left: #f19345; --shop-right: #d57234; --shop-edge: #8b4920; }
-.shop-plan .removed { --shop-top: #f7e2dc; --shop-left: #efd3ca; --shop-right: #e6c1b7; --shop-edge: #984636; }
 .shop-plan .shop-solid, .shop-solid > g {
   --shop-surface: var(--shop-body);
   --shop-top: var(--shop-surface);
@@ -716,17 +712,9 @@ button.mock-tag:hover { opacity: 1; }
 .shop-solid .shop-round-side { stroke: none; }
 .shop-solid .shop-rug-border { fill: none; stroke: color-mix(in srgb, var(--shop-detail) 70%, #fff9dd); stroke-width: 1.3; opacity: .8; }
 .shop-solid .shop-rug-motif { fill: color-mix(in srgb, var(--shop-detail) 70%, #fff9dd); stroke: none; opacity: .42; }
-.shop-solid.removed .shop-rug-border, .shop-solid.removed .shop-rug-motif { opacity: .18; }
-.shop-cable, .shop-old-position, .shop-marker path { fill: none; }
+.shop-cable, .shop-marker path { fill: none; }
 .shop-cable { stroke: var(--shop-edge); stroke-width: 1.1; }
-.shop-old-position { stroke: #8e4c21; stroke-width: 1.7; stroke-dasharray: 4 3; }
 .shop-solid, .shop-marker { cursor: pointer; }
-.shop-solid.context { opacity: .48; }
-.shop-solid.context, .shop-marker.context { pointer-events: none; }
-.shop-plan .shop-solid.changed { --shop-edge: #b76524; }
-.shop-solid.changed polygon { stroke-width: 1.35; }
-.shop-plan .shop-solid.removed { --shop-edge: #a3493c; opacity: .64; }
-.shop-solid.removed polygon { stroke-dasharray: 3 2; }
 .shop-plan .shop-solid:hover, .shop-plan .shop-solid.selected { --shop-edge: #28231d; }
 .shop-solid.selected polygon { stroke-width: 1.45; }
 .shop-marker path { stroke: var(--shop-edge); stroke-width: 1.2; }
@@ -735,10 +723,8 @@ button.mock-tag:hover { opacity: 1; }
   fill: #27231e; font: 600 11px "Poppins", system-ui, sans-serif;
   text-anchor: middle; dominant-baseline: central; pointer-events: none;
 }
-.shop-marker.removed rect { stroke-dasharray: 3 2; }
 .shop-marker:hover rect, .shop-marker.selected rect { fill: #28231d; stroke: #28231d; }
 .shop-marker:hover text, .shop-marker.selected text { fill: #fff; }
-.shop-marker.context { opacity: .55; }
 .shop-side { overflow: hidden; }
 .shop-reference {
   position: relative; flex: 0 0 clamp(86px, 22vh, 190px);
@@ -773,7 +759,6 @@ button.mock-tag:hover { opacity: 1; }
 .shop-piece-name > * { display: block; }
 .shop-piece-name strong { font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; font-weight: 600; }
 .shop-piece-name small, .shop-piece-detail { color: rgba(255,255,255,.88); font-size: 11px; }
-.shop-piece-name .shop-change { color: #ffe1b6; }
 .shop-piece-detail { padding: 0 8px 8px 84px; }
 .shop-piece-detail p { margin: 0 0 5px; overflow-wrap: anywhere; }
 .shop-piece-detail p:empty { display: none; }
@@ -812,7 +797,6 @@ button.mock-tag:hover { opacity: 1; }
   .x-actions .x-copy { padding-inline: 10px; font-size: 12px; }
   .shop-layout { display: block; overflow: auto; margin-top: 12px; padding-bottom: 16px; }
   .shop-plan { padding: 9px; }
-  .shop-controls .xchip { padding-inline: 9px; font-size: 12px; }
   .shop-side { margin-top: 12px; }
   .shop-reference { flex-basis: clamp(130px, 24vh, 195px); }
   .x-preview { grid-template-columns: 1fr; overflow-y: auto; }

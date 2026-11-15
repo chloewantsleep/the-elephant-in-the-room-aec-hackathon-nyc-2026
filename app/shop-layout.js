@@ -80,23 +80,19 @@ function shopSample(ref, item) {
   return ref?.items?.[item.slotId] || ref?.profile?.items[item.own ? "own:" + item.own : item.cat];
 }
 
-function shopSceneLayout(rows, space, room, originalRef, currentRef) {
+function shopSceneLayout(items, space, room, ref) {
   const anchors = SHOP_ROOM_ANCHORS[room] || SHOP_ROOM_ANCHORS.living;
-  const profiles = space.confirmed ? [] : [originalRef?.profile, currentRef?.profile];
-  let width = Math.max(36, shopPositive(space.wallIn, 144), ...profiles.map(p => p?.width || 0));
-  let depth = Math.max(36, shopPositive(space.depthIn, 132), ...profiles.map(p => p?.depth || 0));
+  const profile = space.confirmed ? null : ref?.profile;
+  let width = Math.max(36, shopPositive(space.wallIn, 144), profile?.width || 0);
+  let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
   const distance = 5;
 
-  function arrange(version, ref, baseline = []) {
-    const entries = rows.filter(row => row[version]).map(row => {
-      const item = row[version], sample = shopSample(ref, item);
-      const original = baseline.find(b => b.id === row.id);
-      const product = view(item);
-      const dimensions = product.dims_in;
-      const isSame = original && original.item.pid === item.pid && original.item.vid === item.vid && original.item.own === item.own;
-      // Demo colors belong to the pictured finish. Edits and other options use the selected product.
-      const useColor = !ref?.profile || item.own || (ref.demoExact && (!original || isSame));
-      return { ...row, item, sample, original, finish: shopFinish(item, useColor ? sample : null),
+  function arrange() {
+    const entries = items.map((item, index) => {
+      const sample = shopSample(ref, item);
+      const dimensions = view(item).dims_in;
+      const useColor = !ref?.profile || item.own || ref.demoExact;
+      return { id: item.slotId, number: index + 1, item, sample, finish: shopFinish(item, useColor ? sample : null),
         form: sample?.form, w: shopPositive(dimensions.width, 22), d: shopPositive(dimensions.depth, shopPositive(dimensions.width, 18)),
         h: shopPositive(dimensions.height, 20), pieces: [] };
     });
@@ -143,7 +139,7 @@ function shopSceneLayout(rows, space, room, originalRef, currentRef) {
     }
 
     for (const row of entries) {
-      const { item, sample, original, w, d, h } = row, cat = item.cat;
+      const { item, sample, w, d, h } = row, cat = item.cat;
       const parent = cat === "table_lamp" ? first(room === "office" ? "desk" : "nightstand") : null;
       const support = cat === "pendant_lamp" ? first(room === "dining" ? "dining_table" : "coffee_table") : null;
       const table = first("dining_table"), bed = first("bed"), sofa = first("sofa"), desk = first("desk");
@@ -180,12 +176,6 @@ function shopSceneLayout(rows, space, room, originalRef, currentRef) {
         const hint = item.sketched && ref?.profile ? null : sample?.positions?.[i];
         if (item.sketched && !hint) [x, y, turn] = [u * width, v * depth, direction];
         if (hint) [x, y, turn] = [hint[0] * width, hint[1] * depth, hint[2] || 0];
-        else if (!item.sketched && original?.pieces[i]) ({ x, y, turn } = original.pieces[i]);
-
-        if (version === "current" && !item.sketched && row.before && row.changes.includes("Moved") && !(ref?.items && hint)) {
-          x += (item.pos[0] - row.before.pos[0]) * width / 100;
-          y += (item.pos[1] - row.before.pos[1]) * depth / 100;
-        }
         const rw = turn % 2 ? d : w, rd = turn % 2 ? w : d;
         const piece = { x, y, z, turn, w, d, h, rw, rd };
         if (cat === "rug" || z > 0) {
@@ -204,11 +194,9 @@ function shopSceneLayout(rows, space, room, originalRef, currentRef) {
     return entries.sort((a, b) => a.number - b.number);
   }
 
-  // A single view uses the same footprint for both plans so switching tabs preserves scale.
   for (;;) {
-    const original = arrange("before", originalRef);
-    const current = original && arrange("current", currentRef, original);
-    if (current) return { width, depth, original, current };
+    const placed = arrange();
+    if (placed) return { width, depth, items: placed };
     width = Math.ceil(width * 1.16);
     depth = Math.ceil(depth * 1.16);
   }

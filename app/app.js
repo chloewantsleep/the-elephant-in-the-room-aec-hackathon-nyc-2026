@@ -101,7 +101,6 @@ const S = {
   cartQ: "",           // search text in the expanded view
   cartMenu: false,
   cartView: "list",     // list | room within the expanded shopping list
-  shopMode: "current",
   shopSelected: null,
   preview: null,       // index of the piece open in the product preview
   previewAlt: null,    // product id of a similar item being looked at inside the preview
@@ -273,7 +272,6 @@ function planOptions() {
       for (const i of blocked) gaps.push(items[i].cat);
       items = items.filter((it, i) => !blocked.has(i));
     }
-    items = items.map((item, slotId) => ({ ...item, slotId }));
     return { name: strat.name, items, gaps, shopOriginal: structuredClone(items) };
   });
 }
@@ -282,7 +280,7 @@ function generate() {
   if(typeof designGate==='function' && !designGate()) {chatMode='setup';chatOpen=true;renderDesigner();return;}
   S.generating=true;renderDesigner();
   S.options=planOptions();S.opt=0;S.scene=structuredClone(S.options[0].items);
-  S.shopMode = "current"; S.shopSelected = null;
+  S.shopSelected = null;
   S.generating=false;S.dirty=false;S.sel=null;S.step=DESIGN;
   syncLayout();saveBrief();render();
 }
@@ -935,23 +933,22 @@ function renderCart() {
   ${pv != null ? previewMarkup(S.scene[pv], pv, stars) : ""}`;
 }
 
-function updateShopRoom(action, value) {
+function updateShopSelection() {
   const layoutTop = $(".shop-layout")?.scrollTop;
   const itemsTop = $(".shop-items")?.scrollTop;
   renderCart();
   if (layoutTop) $(".shop-layout").scrollTop = layoutTop;
   if (itemsTop) $(".shop-items").scrollTop = itemsTop;
-  const button = $(".shop-body button[data-action='" + action + "'][" + value + "]");
+  const button = $(`.shop-body .shop-item[data-id="${S.shopSelected}"]`);
   button?.focus({ preventScroll: true });
-  if (action === "shop-pick") button?.scrollIntoView({ block: "nearest" });
+  button?.scrollIntoView({ block: "nearest" });
 }
 
 function closeCartPreview() {
   const index = S.preview;
   S.preview = null; S.previewAlt = null;
   renderCart();
-  const trigger = S.cartView === "room" ? $(".shop-entry.selected [data-action='cart-preview']") : $(`.x-img[data-idx="${index}"]`);
-  trigger?.focus();
+  $(`.x-img[data-idx="${index}"]`)?.focus();
 }
 
 const stars = r => {
@@ -1197,7 +1194,7 @@ document.addEventListener("click", e => {
   }
   else if (act === "option") {
     S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items);
-    S.shopMode = "current"; S.shopSelected = null;
+    S.shopSelected = null;
     syncLayout(); saveBrief(); render(); renderScene();
   }
   else if (act === "render") renderScene(true);
@@ -1240,13 +1237,9 @@ document.addEventListener("click", e => {
     renderCart();
     $(`#cartx [data-view="${S.cartView}"]`)?.focus();
   }
-  else if (act === "shop-mode") {
-    S.shopMode = a.dataset.mode; S.shopSelected = null;
-    updateShopRoom(act, `data-mode="${S.shopMode}"`);
-  }
   else if (act === "shop-pick") {
     S.shopSelected = +a.dataset.id;
-    updateShopRoom(act, `data-id="${S.shopSelected}"`);
+    updateShopSelection();
   }
   else if (act === "cart-collapse") { S.cart = "open"; S.preview = null; renderCart(); }
   else if (act === "cart-close") { S.cart = "closed"; S.preview = null; renderCart(); }

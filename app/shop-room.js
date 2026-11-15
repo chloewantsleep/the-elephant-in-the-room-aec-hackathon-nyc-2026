@@ -1,47 +1,4 @@
-/* Shop's schematic and comparison, backed by the same items as the shopping list. */
-
-function restoreShopSlots(options, scene, selectedOption) {
-  for (const option of options) {
-    option.items.forEach((item, i) => { item.slotId ??= i; });
-    option.shopOriginal ??= structuredClone(option.items);
-  }
-  if (!scene) return;
-  const original = options[selectedOption]?.shopOriginal || [];
-  const slots = new Map(original.map(item => [item.slotId, item]));
-  const used = new Set();
-  const unmatched = scene.filter(item => {
-    const before = slots.get(item.slotId);
-    if (item.slotId == null || used.has(item.slotId) || (before && before.cat !== item.cat)) return true;
-    used.add(item.slotId);
-    return false;
-  });
-  let next = Math.max(-1, ...used, ...slots.keys()) + 1;
-  for (const item of unmatched) {
-    const candidates = original.filter(before => before.cat === item.cat && !used.has(before.slotId));
-    const match = candidates.find(before => before.own === item.own && before.pid === item.pid) || candidates[0];
-    item.slotId = match?.slotId ?? next++;
-    used.add(item.slotId);
-  }
-}
-
-function shopDiff(original, current) {
-  const before = new Map(original.map(it => [it.slotId, it]));
-  const indices = new Map(current.map((it, index) => [it.slotId, index]));
-  return [...new Set([...before.keys(), ...indices.keys()])].map((id, number) => {
-    const from = before.get(id), index = indices.get(id) ?? -1, to = current[index];
-    const changes = [];
-    if (!from) changes.push("Added");
-    else if (!to) changes.push("Removed");
-    else {
-      if (from.pid !== to.pid || from.own !== to.own) changes.push("Replaced");
-      else if ((from.vid || null) !== (to.vid || null)) changes.push("Finish");
-      if (from.qty !== to.qty) changes.push("Quantity");
-      // Use the same precision as the exported image pins.
-      if (from.pos.some((v, i) => v.toFixed(1) !== to.pos[i].toFixed(1))) changes.push("Moved");
-    }
-    return { id, number: number + 1, index, before: from, current: to, changes };
-  });
-}
+/* Shop's isometric illustration of the original design. */
 
 // Parts use [x, y, z, width, depth, height, material] as fractions of the furniture envelope.
 const shopLegs = height => [[.08, .08], [.83, .08], [.08, .83], [.83, .83]]
@@ -134,8 +91,8 @@ function shopPaintOrder(items) {
   return ordered;
 }
 
-function shopDiagram(layout, ref, mode, selected) {
-  const { width: wallIn, depth: depthIn, original, current } = layout;
+function shopDiagram(layout, ref, selected) {
+  const { width: wallIn, depth: depthIn, items: shown } = layout;
   // The illustration extends beyond the furniture layout on both open sides.
   const extension = Math.min(32, Math.min(wallIn, depthIn) * .14);
   const scale = 594 / (wallIn + depthIn + 2 * extension);
@@ -249,9 +206,6 @@ function shopDiagram(layout, ref, mode, selected) {
     }).join("");
   }
 
-  const shown = mode === "original" ? original : mode === "changes"
-    ? [...current, ...original.filter(row => !row.current)].sort((a, b) => a.number - b.number)
-    : current;
   const solids = shown.flatMap(row => row.pieces.map(piece => ({ ...row, ...measure(piece, row.item.cat === "rug") })));
   const floor = box(back, back, -12, floorW, floorD, 12);
   const palette = ref?.profile || ref;
@@ -276,25 +230,10 @@ function shopDiagram(layout, ref, mode, selected) {
     </g>`;
   const backgroundShade = face("shop-room-shadow", ...atHeight(rectangle(back, back, floorW + 13, floorD + 13), -16));
   const floorClip = face("", ...atHeight(rectangle(back, back, floorW, floorD), 0));
-  const contactShadows = solids.filter(row => row.current || mode === "original").filter(({ item, z }) => item.cat !== "rug" && z === 0)
+  const contactShadows = solids.filter(({ item, z }) => item.cat !== "rug" && z === 0)
     .map(({ x, y, rw, rd }) =>
       face("shop-contact-shadow", ...atHeight(ellipse(x + 4, y + 5, rw * .50, rd * .48), 0))).join("");
-  const movement = mode === "changes" ? shown.filter(row => row.before && row.changes.includes("Moved")).map(row => {
-    const from = original.find(entry => entry.id === row.id);
-    return from.pieces.map((piece, i) => {
-      const prev = measure(piece);
-      const now = row.pieces[i] ? measure(row.pieces[i]) : prev;
-      return face("shop-old-position", ...atHeight(rectangle(prev.x - prev.rw / 2, prev.y - prev.rd / 2, prev.rw, prev.rd), 0))
-        + line("shop-old-position", [prev.x, prev.y], [now.x, now.y]);
-    }).join("");
-  }).join("") : "";
-
-  const tone = row => {
-    if (mode === "changes" && !row.current) return "removed";
-    if (mode === "changes" && row.changes.length) return "changed";
-    return row.item.own ? "owned" : "buy";
-  };
-  const style = row => `${tone(row)}${mode === "changes" && !row.changes.length ? " context" : ""}${row.id === selected ? " selected" : ""}`;
+  const style = row => `${row.item.own ? "owned" : "buy"}${row.id === selected ? " selected" : ""}`;
   const drawItem = row => {
     const { item, x, y, z, w, d, h, id, finish, turn } = row;
     const form = row.form || SHOP_FORM[item.cat] || "box";
@@ -348,48 +287,34 @@ function shopDiagram(layout, ref, mode, selected) {
       <clipPath id="shop-floor-clip">${floorClip}</clipPath>
     </defs>
     ${backgroundShade}<g class="shop-floor">${floor}</g><g class="shop-planks">${planks}</g>${walls}
-    ${rugs}<g clip-path="url(#shop-floor-clip)" filter="url(#shop-contact-blur)">${contactShadows}</g>${movement}${items}${markers}
+    ${rugs}<g clip-path="url(#shop-floor-clip)" filter="url(#shop-contact-blur)">${contactShadows}</g>${items}${markers}
   </svg>`;
 }
 
 function shopRoomMarkup() {
-  restoreShopSlots(S.options, S.scene, S.opt);
-  const original = S.options[S.opt]?.shopOriginal || [], mode = S.shopMode;
-  const rows = shopDiff(original, S.scene);
-  const originalRef = shopReference(original), currentRef = shopReference(S.scene);
-  const ref = mode === "original" ? originalRef : currentRef;
-  loadShopReference(mode === "original" ? original : S.scene, ref);
-  const plan = shopSceneLayout(rows, S.space, S.needs.room, originalRef, currentRef);
-  const changed = rows.filter(row => row.changes.length);
-  const visible = mode === "changes" ? changed : rows.filter(row => mode === "original" ? row.before : row.current);
-  const delta = sceneTotal(S.scene) - sceneTotal(original);
-  const reference = ref.image;
-  const earlier = mode === "original" ? null : lastRender()?.image;
+  const option = S.options[S.opt];
+  if (option) option.shopOriginal ??= structuredClone(option.items);
+  const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
+  const ref = shopReference(original);
+  loadShopReference(original, ref);
+  const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
   const demo = S.space.photo === "demo";
-  let refSrc = reference || (ref.demoExact ? example().render : earlier) || (demo ? example().render : photoSrc());
+  let refSrc = ref.image || (demo ? example().render : photoSrc());
   if (!demo && refSrc.startsWith("assets/demo-render-")) refSrc = photoSrc();
   const refLabel = refSrc === photoSrc() ? "Original room photo"
-    : refSrc.startsWith("assets/demo-render-") ? "Demo reference render"
-    : reference ? "Design reference render" : "Earlier room render";
+    : refSrc.startsWith("assets/demo-render-") ? "Demo reference render" : "Design reference render";
   const planLabel = ref.status === "pending" ? "Matching render…"
     : ref.status === "ready" || ref.demoExact ? "Estimated from render" : "Estimated layout · Product finishes";
-  const tabs = [["current", "Current"], ["original", "Original design"], ["changes", "Changes"]].map(([key, label]) =>
-    `<button class="xchip ${mode === key ? "on" : ""}" data-action="shop-mode" data-mode="${key}" aria-pressed="${mode === key}">${label}${key === "changes" ? ` · ${changed.length}` : ""}</button>`).join("");
-  const total = sceneTotal(mode === "original" ? original : S.scene);
-  const changeCost = new Intl.NumberFormat("en-US", {
-    style: "currency", currency: "USD", signDisplay: "exceptZero", minimumFractionDigits: 0,
-  }).format(delta);
 
   return `<div class="shop-layout">
     <section class="shop-plan" aria-label="Isometric room diagram">
-      <div class="shop-controls" role="group" aria-label="Design comparison">${tabs}</div>
+      <h3 class="shop-plan-title">Original design</h3>
       <div class="shop-canvas">
-        ${shopDiagram(plan, ref, mode, S.shopSelected)}
+        ${shopDiagram(plan, ref, S.shopSelected)}
         <p class="shop-note" aria-live="polite">${planLabel} · ${inch(plan.width)} × ${inch(plan.depth)}</p>
       </div>
       <div class="shop-legend" aria-label="Diagram legend">
         <span><i class="buy"></i>To buy</span><span><i class="owned"></i>Keeping</span>
-        ${mode === "changes" ? '<span><i class="changed"></i>Changed</span><span><i class="removed"></i>Removed</span>' : ""}
       </div>
     </section>
     <aside class="shop-side" aria-label="Reference and furniture">
@@ -397,43 +322,32 @@ function shopRoomMarkup() {
         <figcaption>${refLabel}</figcaption>
       </figure>
       <div class="shop-total">
-        <h3>${mode === "changes" ? "Changed items" : "Room items"} <span>· ${visible.length}</span></h3>
-        <span>${mode === "changes" ? `${changeCost} vs original` : `${money(total)} to buy`}</span>
+        <h3>Room items <span>· ${original.length}</span></h3>
+        <span>${money(sceneTotal(original))} to buy</span>
       </div>
       <div class="shop-items">
-        ${visible.map(row => shopPieceRow(row, mode, S.shopSelected === row.id)).join("")}
-        ${!visible.length ? `<p class="shop-empty">${mode === "changes" ? "No changes from the original design." : "No furniture in this design."}</p>` : ""}
+        ${plan.items.map(row => shopPieceRow(row, S.shopSelected === row.id)).join("")}
+        ${!original.length ? '<p class="shop-empty">No furniture in this design.</p>' : ""}
       </div>
     </aside>
   </div>`;
 }
 
-function shopPieceRow(row, mode, selected) {
-  const item = mode === "original" ? row.before : row.current || row.before;
+function shopPieceRow({ item, id, number }, selected) {
   const p = view(item), image = imgOf(p);
   const category = CAT_LABEL[item.cat] || CAT_LABEL.other;
-  const changes = mode === "changes" ? row.changes : [];
-  const from = changes.length && row.before ? view(row.before) : null;
-  const notes = [];
-  if (changes.includes("Replaced")) notes.push(`${from.name} → ${p.name}`);
-  if (changes.includes("Finish")) notes.push(`${from.variant || "Standard"} → ${p.variant || "Standard"}`);
-  if (changes.includes("Quantity")) notes.push(`Qty ${row.before.qty} → ${item.qty}`);
-  if (changes.includes("Moved")) notes.push("Placement pin moved");
   return `<div class="shop-entry ${selected ? "selected" : ""}">
-    <button class="shop-item" data-action="shop-pick" data-id="${row.id}" aria-pressed="${selected}">
-      <span class="shop-index">${row.number}</span>
+    <button class="shop-item" data-action="shop-pick" data-id="${id}" aria-pressed="${selected}">
+      <span class="shop-index">${number}</span>
       <span class="shop-thumb">${image ? `<img src="${esc(image)}" alt="">` : ""}</span>
       <span class="shop-piece-name"><strong>${esc(p.owned ? p.name : p.family || p.name)}</strong>
         <small>${esc(category)}${item.qty > 1 ? ` × ${item.qty}` : ""} · ${p.owned ? "Keeping" : money(p.price.amount * item.qty)}</small>
-        ${changes.length ? `<small class="shop-change">${changes.join(" · ")}</small>` : ""}
       </span>
     </button>
-    ${notes.length || selected ? `<div class="shop-piece-detail">
-      ${notes.length ? `<p>${esc(notes.join(" · "))}</p>` : ""}
-      ${selected ? `<p>${esc(p.owned ? "" : p.variant)}${p.variant && !p.owned && dimsText(p) ? " · " : ""}${esc(dimsText(p))}</p>
-        ${!p.owned && !shopSkuModel(item) ? "<p>Approximate silhouette</p>" : ""}
-        ${row.index >= 0 && mode !== "original" ? `<button class="xchip" data-action="cart-preview" data-idx="${row.index}">Preview product</button>`
-          : p.url ? `<a class="xchip" href="${esc(p.url)}" target="_blank" rel="noopener">View product ↗</a>` : ""}` : ""}
+    ${selected ? `<div class="shop-piece-detail">
+      <p>${esc(p.owned ? "" : p.variant)}${p.variant && !p.owned && dimsText(p) ? " · " : ""}${esc(dimsText(p))}</p>
+      ${!p.owned && !shopSkuModel(item) ? "<p>Approximate silhouette</p>" : ""}
+      ${p.url ? `<a class="xchip" href="${esc(p.url)}" target="_blank" rel="noopener">View product ↗</a>` : ""}
     </div>` : ""}
   </div>`;
 }
