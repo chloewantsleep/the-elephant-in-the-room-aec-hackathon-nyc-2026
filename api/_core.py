@@ -6,6 +6,7 @@ Python standard library only.
 import base64
 import hashlib
 import json
+import math
 import mimetypes
 import os
 import re
@@ -107,6 +108,13 @@ def where(pos):
     return f"{h}, {v} of the frame (about {x:.0f}% from left, {y:.0f}% from top)"
 
 
+def run_text(run):
+    """A drawn cabinet run is sent as several module products; tell the model they form one run."""
+    return (f" This module is part of ONE continuous run of {run.get('line')} base kitchen cabinets,"
+            f" {run.get('length_in')} in. long ({run.get('modules')}), standing side by side along the drawn line"
+            " against the wall, fronts facing into the room. Render the run as one seamless row of cabinets.")
+
+
 def build_prompt(req):
     room = req.get("room", {})
     needs = req.get("needs", {})
@@ -149,7 +157,8 @@ def build_prompt(req):
             + (f" {it['description']}" if it.get("description") else "")
             + (f" {orientation_rule(it.get('category'), it.get('name'))}" if orientation_rule(it.get("category"), it.get("name")) else "")
             + (f" Place it: {where(it['pos'])}." if it.get("pos") else "")
-            + (" The user sketched this piece at exactly this spot, so it MUST appear there." if it.get("sketched") else ""))
+            + (" The user sketched this piece at exactly this spot, so it MUST appear there." if it.get("sketched") else "")
+            + (run_text(it["run"]) if it.get("run") else ""))
     # pieces the user keeps (req["keep"]) are NOT listed: things that should not change stay out of the prompt
     if req.get("remove_existing"):
         lines += ["", "Existing pieces in IMAGE 1 to REMOVE (fill the area naturally with floor/wall behind them):"]
@@ -293,6 +302,8 @@ def detect(req):
     """req = {photo} -> {items:[{label, category, box (0-1000: ymin,xmin,ymax,xmax), description, dims_in}]}"""
     if not KEY:
         raise RuntimeError("No GEMINI_API_KEY.")
+    if "layout" in req:
+        return inspect_render_layout(req["photo"], req["layout"])
 
     def run():
         prompt = (
@@ -327,6 +338,63 @@ def detect(req):
         return {"items": items, "model": TEXT_MODEL, "ms": int((time.time() - t0) * 1000)}
 
     return cached("detect", {"photo": req["photo"], "m": TEXT_MODEL, "v": 3}, run)   # v2: identical pieces grouped; v3: no entry limit
+
+
+def clean_render_layout(raw, slots):
+    """Keep only valid finishes and floor anchors for items in this render."""
+    hex_color = re.compile(r"#[a-fA-F0-9]{6}").fullmatch
+
+    def colors(record, keys):
+        return {key: record[key] for key in keys
+                if isinstance(record.get(key), str) and hex_color(record[key])}
+
+    raw = raw if isinstance(raw, dict) else {}
+    items = {}
+    candidates = raw.get("items")
+    for item in candidates if isinstance(candidates, list) else []:
+        if not isinstance(item, dict) or type(item.get("id")) is not int or item["id"] not in slots:
+            continue
+        positions = []
+        proposed = item.get("positions")
+        for p in proposed if isinstance(proposed, list) else []:
+            if not isinstance(p, list) or len(p) != 3:
+                continue
+            x, y, turn = p
+            if any(type(n) not in (float, int) or not math.isfinite(n) or not 0 <= n <= 1 for n in (x, y)):
+                continue
+            positions.append([x, y, turn if type(turn) is int and 0 <= turn <= 3 else 0])
+        items[item["id"]] = {**colors(item, ("body", "detail")), "positions": positions[:slots[item["id"]]]}
+    return {**colors(raw, ("floor", "leftWall", "rightWall")), "items": items}
+
+
+def inspect_render_layout(photo, layout):
+    """Estimate a floor layout and representative material colors from a final render."""
+    if not isinstance(photo, str) or not photo.startswith("data:image/"):
+        raise ValueError("Expected a rendered image.")
+    if not isinstance(layout, list) or any(not isinstance(it, dict) or type(it.get("id")) is not int for it in layout):
+        raise ValueError("Expected a list of furniture slots.")
+    slots = {it["id"]: it["qty"] if type(it.get("qty")) is int and it["qty"] > 0 else 1 for it in layout}
+
+    def run():
+        prompt = (
+            "Read the finished room image and match only the furniture in the provided list. "
+            "Return a single JSON object with optional floor, leftWall and rightWall colors as #RRGGBB, "
+            "and items, an array of objects with id (the provided integer), body (main material #RRGGBB), "
+            "detail (secondary material #RRGGBB, optional), and positions (one [x,y,turn] for each visible instance). "
+            "Reconstruct an approximate overhead plan: x from the room's left wall to its right wall, "
+            "y from the back wall to the front. Both are 0 to 1 in room coordinates, not pixel positions. "
+            "Use furniture centers projected onto the floor. Infer depth from perspective and occlusion, "
+            "and preserve front/back and left/right relationships. Estimate orientation as 0 when facing front, "
+            "1 left, 2 back, or 3 right. Use representative midtone colors from the image, excluding highlights and shadows. "
+            "Skip any furniture you cannot identify. No prose.\nFurniture: " + json.dumps(layout)
+        )
+        body = {"contents": [{"role": "user", "parts": [image_part(photo), {"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.15}}
+        res = gemini(f"models/{TEXT_MODEL}:generateContent", body)
+        raw = json.loads("".join(p.get("text", "") for p in res["candidates"][0]["content"]["parts"]))
+        return clean_render_layout(raw, slots)
+
+    return cached("render-layout", {"photo": photo, "items": layout, "m": TEXT_MODEL, "v": 1}, run)
 
 
 def isolate(req):
@@ -406,7 +474,7 @@ def demo_request():
     items = [{"name": p["name"], "variant": p["variant"], "category": cat, "qty": 1, "dims_in": p["dims_in"],
               "description": p.get("description"), "image": p["images"]["main_local"] or p["images"]["main"], "pos": pos}
              for cat, (p, pos) in pick.items()]
-    return {"room_image": "app/assets/example-lounge.jpg", "room": {"width_in": 144, "depth_in": 132},
+    return {"room_image": "app/assets/example-lounge-wide.jpg", "room": {"width_in": 144, "depth_in": 132},
             "needs": {"style": "warm minimal"}, "items": items}
 
 

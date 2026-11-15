@@ -12,6 +12,7 @@ function restoreDesignerProject(){
  if(!savedProject)return;
  for(const k of ['space','needs','scene','options','opt','existing','removedCategories'])if(savedProject[k]!=null)S[k]=savedProject[k];
  S.options=S.options||[];S.removedCategories=S.removedCategories||[];
+ if(S.space.photo==='demo')S.existing=null;   // the demo room's furniture reloads fresh (nothing kept by default)
  if(S.space.photo==='upload'){S.live=true;if(B.history.at(-1)?.role==='user'&&!B.history.at(-1)?.manual)chatError=B.lastError||'Your last message didn’t get a reply. You can retry.';}
  if(S.scene?.some(it=>!it.own&&!byId[it.pid])){S.scene=null;S.options=[];}
  if(S.scene&&!designGate()){S.scene=null;S.options=[];}

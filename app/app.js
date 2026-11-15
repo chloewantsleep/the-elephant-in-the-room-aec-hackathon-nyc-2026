@@ -24,7 +24,8 @@ const CAT_LABEL = {
   side_table: "Side table", desk: "Desk", office_chair: "Office chair", dining_chair: "Dining chair",
   stool_bench: "Bench", dresser: "Dresser", nightstand: "Nightstand", wardrobe: "Wardrobe", shelving: "Shelving",
   tv_stand: "TV stand", cabinet: "Sideboard", floor_lamp: "Floor lamp", table_lamp: "Table lamp",
-  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror", other: "Other",
+  pendant_lamp: "Pendant lamp", rug: "Rug", mirror: "Mirror",
+  base_cabinet: "Base cabinets", other: "Other",
 };
 
 // Slots per room type. share = share of budget, maxW = max width as a fraction of the wall,
@@ -66,7 +67,7 @@ const TEMPLATES = {
 
 // Example rooms: photos taken at the AEC Hackathon NYC venue. Each has a matching demo render (no AI spend).
 const EXAMPLES = [
-  { name: "Lounge", src: "assets/example-lounge.jpg", room: "living", render: "assets/demo-render-lounge.jpg",
+  { name: "Lounge", src: "assets/example-lounge-wide.jpg", room: "living", render: "assets/demo-render-lounge-wide.jpg",
     furniture: "assets/examples/lounge.json" },
   { name: "Bar counter", src: "assets/example-bar.jpg", room: "dining", render: "assets/demo-render-bar.jpg",
     furniture: "assets/examples/bar.json" },
@@ -100,10 +101,12 @@ const S = {
   cartCat: "all",      // category dropdown in the expanded view
   cartQ: "",           // search text in the expanded view
   cartMenu: false,
+  cartView: "list",     // list | room within the expanded shopping list
+  shopSelected: null,
   preview: null,       // index of the piece open in the product preview
   previewAlt: null,    // product id of a similar item being looked at inside the preview
   sizeOpen: false,
-  needsMin: false,     // the Needs window folded into an elephant bubble     // room size inputs are optional and folded away
+  needsMin: true,      // the Needs window folded into an elephant bubble     // room size inputs are optional and folded away
   chat: null,          // needs conversation {q: current question, log: [{from, text}]}
   existing: null,      // furniture found in the user's photo: {photoKey, status, items:[{id,label,category,box,iso,keep,…}]}
   before: false,       // show the original photo instead of the render
@@ -172,14 +175,19 @@ const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * 
 function toast(msg) {
   const t = $("#toast");
   t.textContent = msg; t.hidden = false;
-  clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2200);
+  clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), Math.max(2200, Math.min(7000, msg.length * 45)));
 }
 
-/* ---------------- image <-> screen mapping (object-fit: cover, position 50% 40%) ---------------- */
+/* ---------------- image <-> screen mapping: the photo always spans the window edge to edge ----------------
+   wider window -> cover (trims top/bottom, mostly ceiling: anchored 70% down); taller window -> contain (blur above/below) */
+const FIT_Y = 0.7;
 function geom() {
   const W = innerWidth, H = innerHeight, nw = room.naturalWidth || 1, nh = room.naturalHeight || 1;
-  const sc = Math.max(W / nw, H / nh), dw = nw * sc, dh = nh * sc;
-  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.4, W, H };
+  const sc = W / nw, dw = W, dh = nh * sc, ay = dh > H ? FIT_Y : 0.5;
+  const fit = dh > H ? "cover" : "contain", pos = `50% ${ay * 100}%`;
+  if (room.style.objectFit !== fit) room.style.objectFit = fit;          // keep the <img> in step with this math
+  if (room.style.objectPosition !== pos) room.style.objectPosition = pos;
+  return { dw, dh, ox: 0, oy: (H - dh) * ay, W, H };
 }
 function toScreen([px, py]) {
   const g = geom();
@@ -215,8 +223,10 @@ function slotsWithSketch(tpl = TEMPLATES[S.needs.room]) {
   if (!sk.length) return tpl;
   const slots = tpl.map(s => ({ ...s }));
   sk.forEach((s, n) => {
-    const mine = { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
-                   maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
+    const mine = RUN_CATS.has(s.category)   // a run (base cabinets): priced by its length, not by a budget share
+      ? { cat: s.category, share: 0, pos: s.pos.slice(), sketched: true, sk: n, lengthIn: s.widthIn || 96, ends: s.ends }
+      : { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
+          maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
     slots.push(mine);   // a sketch only ADDS a piece; it replaces something only when drawn over it (sketchCovers)
   });
   const total = slots.reduce((a, s) => a + s.share, 0);
@@ -260,6 +270,57 @@ function testScene() {
           ...TEST_SET.filter(t => byId[t.pid]).map(t => ({ cat: t.cat, qty: 1, pid: t.pid, vid: null, pos: [50, 50], place: t.place }))];
 }
 
+/* ---------------- cabinet runs: a drawn line -> real modules that fill its length ----------------
+ * Base cabinets are sold in modules (12", 15", ... 36" wide). A run of a given length is filled with the fewest
+ * modules of one product line that reach it; up to a few inches are left for a filler strip, as a fitter would. */
+const RUN_CATS = new Set(["base_cabinet"]);
+const RUN_GAP = 3;   // inches a filler strip can close
+// product lines that sell the category, cheapest per inch first: [{family, mods: [{p, w}]}]
+function runLines(cat = "base_cabinet") {
+  const fam = {};
+  for (const p of P) if (p.category === cat && p.dims_in.width) (fam[p.family] = fam[p.family] || []).push({ p, w: Math.round(p.dims_in.width) });
+  const perIn = mods => mods.reduce((a, m) => a + m.p.price.amount / m.w, 0) / mods.length;
+  return Object.entries(fam).map(([family, mods]) => ({ family, mods: mods.sort((a, b) => b.w - a.w) }))
+    .sort((a, b) => perIn(a.mods) - perIn(b.mods));
+}
+function fillRun(lengthIn, mods) {
+  const L = Math.max(0, Math.round(lengthIn)), best = new Array(L + 1).fill(Infinity), from = [];
+  best[0] = 0;
+  for (let l = 1; l <= L; l++) mods.forEach((m, k) => {
+    if (m.w <= l && best[l - m.w] + 1 < best[l]) { best[l] = best[l - m.w] + 1; from[l] = k; }
+  });
+  let l = L; while (l > 0 && best[l] === Infinity) l--;
+  const pieces = [];
+  for (let x = l; x > 0; x -= mods[from[x]].w) pieces.push(mods[from[x]]);
+  pieces.sort((a, b) => b.w - a.w);   // wide ones first, so equal widths sit side by side
+  return { pieces, filled: l, gap: L - l, total: pieces.reduce((a, m) => a + m.p.price.amount, 0) };
+}
+// what a run of this length costs in each line (shown on the sketch chip)
+const runQuote = (lengthIn, cat = "base_cabinet") => runLines(cat).map(line => ({ family: line.family, ...fillRun(lengthIn, line.mods) }))
+  .filter(q => q.pieces.length);
+// scene items for a sketched run: one item per module width (qty = how many), placed along the drawn line
+function runItems(slot, rank) {
+  // the lines ranked by what THIS run costs in each: Essentials gets the cheapest, Statement the priciest
+  const quotes = runLines(slot.cat).map(line => ({ line, run: fillRun(slot.lengthIn, line.mods) }))
+    .filter(q => q.run.pieces.length).sort((a, b) => a.run.total - b.run.total);
+  if (!quotes.length) return [];
+  const { line, run } = quotes[Math.min(quotes.length - 1, Math.round(rank * (quotes.length - 1)))];
+  const [a, b] = slot.ends || [[slot.pos[0] - 10, slot.pos[1]], [slot.pos[0] + 10, slot.pos[1]]];
+  const at = t => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const groups = [];
+  for (const m of run.pieces) {
+    const g = groups[groups.length - 1];
+    if (g && g.m.p.id === m.p.id) g.n++; else groups.push({ m, n: 1 });
+  }
+  const modules = run.pieces.map(m => m.w + '"').join(" + ");
+  let start = 0;
+  return groups.map(({ m, n }) => {
+    const mid = (start + m.w * n / 2) / (run.filled || 1); start += m.w * n;
+    return { cat: slot.cat, qty: n, pid: m.p.id, vid: null, pos: at(mid), sketched: true, sk: slot.sk,
+             run: { family: line.family, lengthIn: Math.round(slot.lengthIn), filled: run.filled, modules } };
+  });
+}
+
 function planOptions() {
   // the brief can drop or add categories; then the sketch goes on top (what the user drew always stays)
   const tpl = slotsWithSketch(BriefEngine.slots(TEMPLATES[S.needs.room], B, TEMPLATES))
@@ -268,7 +329,7 @@ function planOptions() {
   const strict = BriefEngine.active(B).some(r => r.effect === "budget");   // a confirmed budget is never exceeded
   const used = {};
   const kept = keptPieces();
-  const opts = STRATEGIES.map(strat => {
+  const opts = STRATEGIES.map((strat, si) => {
     const usedOwn = new Set(), gaps = [];
     let remaining = cap;
     let items = tpl.map(slot => {
@@ -277,6 +338,12 @@ function planOptions() {
       return null;
     }).map((own, k) => own || tpl[k]).map(slot => {
       if (slot.own) return slot;
+      if (RUN_CATS.has(slot.cat) && slot.sketched) {   // a drawn cabinet run: cheapest line for Essentials ... priciest for Statement
+        const run = runItems(slot, si / (STRATEGIES.length - 1));
+        if (!run.length) gaps.push(slot.cat);
+        remaining -= sceneTotal(run);
+        return run;
+      }
       const qty = slot.qty || 1, budget = cap * slot.share / qty;
       // only products that fit and that the confirmed brief allows (brief-engine.js)
       let scored = P.filter(p => p.category === slot.cat && fits(p, slot))
@@ -300,7 +367,7 @@ function planOptions() {
       remaining -= pick.p.price.amount * qty;
       return { cat: slot.cat, qty, pid: pick.p.id, vid: null, pos: slot.pos.slice(), reasons: pick.a.reasons,
                ...(slot.sketched ? { maxW: slot.maxW, sketched: true, sk: slot.sk } : {}) };
-    }).filter(Boolean);
+    }).flat().filter(Boolean);   // a cabinet run adds several items
     kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
     if (S.space.confirmed) {   // measured room: drop what the layout can't place (layout-engine.js)
       const layout = LayoutEngine.plan(items, S.space, view);
@@ -308,12 +375,13 @@ function planOptions() {
       for (const i of blocked) gaps.push(items[i].cat);
       items = items.filter((it, i) => !blocked.has(i));
     }
-    return { name: strat.name, items, gaps };
+    return { name: strat.name, items, gaps, shopOriginal: structuredClone(items) };
   });
   if (S.space.photo === "demo") {
     // the test set, plus anything the user sketched (a sketched piece takes the test set's slot of that type)
     const drawn = opts[0].items.filter(it => it.sketched);   // the test set plus anything the user sketched
-    opts[0] = { ...opts[0], name: "Test set", items: [...testScene(), ...drawn] };
+    const items = [...testScene(), ...drawn];
+    opts[0] = { ...opts[0], name: "Test set", items, shopOriginal: structuredClone(items) };
     S.needs.budget = Math.max(S.needs.budget, 6000);   // room for color changes / swaps (they must stay within budget)
   }
   opts.forEach(o => {
@@ -346,6 +414,7 @@ function generate() {
   if(typeof designGate==='function' && !designGate()) {chatMode='setup';chatOpen=true;renderDesigner();return;}
   S.generating=true;renderDesigner();
   S.options=planOptions();S.opt=0;S.scene=structuredClone(S.options[0].items);
+  S.shopSelected = null;
   S.generating=false;S.dirty=false;S.sel=null;S.step=DESIGN;
   syncLayout();saveBrief();render();
 }
@@ -377,7 +446,7 @@ const sceneSig = (items = S.scene) => JSON.stringify([photoKey(), S.space.wallIn
   S.space.depthIn, S.space.corridor, S.space.clearanceIn, S.space.obstacles, B.revision,
   items.map(it => [it.pid, it.vid, it.qty, it.own, it.pos])]);
 const currentRender = () => S.scene && S.renders[sceneSig()];
-const photoKey = () => S.space.photo === "demo" ? "demo-" + S.space.ex : String(S.space.data.length);
+const photoKey = () => S.space.photo === "demo" ? "demo2-" + S.space.ex : String(S.space.data.length);
 // the latest render for this photo; kept on screen after edits until the user updates it
 const lastRender = () => S.last && S.last.photoKey === photoKey() ? S.last : null;
 
@@ -391,7 +460,8 @@ function itemPayload(it) {
   const p = view(it);
   return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
            description: (it.place ? `Placement: ${it.place}. ` : "") + (p.description || ""), image: p.images.main_local || p.images.main,
-           ...(it.sketched ? { pos: it.pos.map(Math.round), sketched: true } : {}) };
+           ...(it.sketched ? { pos: it.pos.map(Math.round), sketched: true } : {}),
+           ...(it.run ? { run: { line: it.run.family, length_in: it.run.lengthIn, modules: it.run.modules } } : {}) };
   // no position otherwise: the render AI decides where each piece goes; labels follow where it really is (tracking)
 }
 
@@ -522,6 +592,7 @@ async function renderScene(manual = false) {
     return;
   }
   S.rendering = true; S.before = false; render();
+  let stale = false;
   try {
     // demo: the sample room's test set (option 1, colors as recommended) is the saved render all demo looks were made on
     const isDemoBase = reqObj.mode !== "edit" && S.space.photo === "demo" && S.space.ex === 0
@@ -530,7 +601,7 @@ async function renderScene(manual = false) {
     const j = bigNeeded && ONLY_SKETCH_NEW && isDemoBase ? await apiPost("/api/cached_render", { key: DEMO_BASE })
       : bigNeeded ? await apiPost("/api/render", reqObj)
       : { image: reqObj.mode === "edit" ? lastRender().image : photoSrc(), cached: true, ms: 0 };   // only sketches: add them to what's there
-    if(sig!==sceneSig()){toast('The design changed, so this image doesn’t show it. Render again.');return;}
+    if(sig!==sceneSig()){S.renders[sig]=j.image;stale=true;return;}   // you picked another option meanwhile: keep this one for later, render the new pick next
     if (toPlace.length) {
       toast(`Adding your ${toPlace.length} sketched piece${toPlace.length > 1 ? "s" : ""}…`);
       j.image = await placeSketched(j.image, toPlace);
@@ -545,6 +616,7 @@ async function renderScene(manual = false) {
   } finally {
     S.rendering = false; render();
     if (renderQueued) { renderQueued = false; renderScene(manual); }   // the change asked for meanwhile
+    else if (stale && S.live) renderScene();
   }
 }
 
@@ -907,7 +979,7 @@ async function loadBakedFurniture() {
     const items = (await r.json()).items;
     if (photoKey() !== key) return;   // user switched photos meanwhile
     S.existing = { photoKey: key, status: "done", baked: true,
-                   items: items.map(e => ({ ...e, keep: true, status: e.iso ? "done" : "error" })) };
+                   items: items.map(e => ({ ...e, keep: false, status: e.iso ? "done" : "error" })) };
     S.dirty = true;
   } catch { /* no baked file: the user can still scan */ }
 }
@@ -920,7 +992,7 @@ async function scanFurniture() {
   try {
     const det = await apiPost("/api/detect", { photo: photoForApi() });
     if (!alive()) return;
-    run.items = det.items.map((d, i) => ({ id: "e" + i, ...d, keep: true, status: "loading", iso: null, crop: null }));
+    run.items = det.items.slice(0, 8).map((d, i) => ({ id: "e" + i, ...d, keep: false, status: "loading", iso: null, crop: null }));
     run.status = run.items.length ? "isolating" : "done";
     S.dirty = true; render();
     if (!run.items.length) { toast("No furniture found in this photo"); return; }
@@ -956,15 +1028,34 @@ function renderBoxes() {
   })).join("");
 }
 
+// the bottom of the screen, on every step: on Needs it answers the chat, after that it talks to the designer
+// (no step pills; each step has its own next button)
 function renderSteps() {
-  $("#steps").innerHTML = STEPS.map((s, i) =>
-    `<button class="pill ${i === S.step ? "active" : ""}" data-action="goto" data-step="${i}"><span class="num">0${i + 1}</span>${s}</button>`).join("");
+  const el = $("#steps");
+  const q = S.chat ? QUESTIONS[S.chat.q] : QUESTIONS[0];
+  const ph = S.step !== NEEDS ? "What would you like to change?" : q ? "Or just type: budget 2500, seats 4…" : "Add anything else…";
+  // every step's "next" is the → beside send (none on the last step)
+  const next = ["Design my room", "Edit this design", "Shop the list"][S.step];
+  const input = el.querySelector("input");
+  if (!input) el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
+    <button type="button" class="back-arrow" data-action="back">←</button>
+    <button type="button" class="needs-plus" data-action="needs-toggle">+</button>
+    <input type="text" aria-label="Message">
+    <button class="send" aria-label="Send">↑</button>
+    <button type="button" class="next-arrow" data-action="next">→</button></form>`;
+  el.querySelector("input").placeholder = ph;   // keep what's being typed across re-renders
+  const arrow = el.querySelector(".next-arrow");
+  const plus = el.querySelector(".needs-plus");   // Needs only: + opens the window, × (rotated +) minimizes it
+  plus.hidden = S.step !== NEEDS; plus.classList.toggle("open", !S.needsMin);
+  plus.classList.toggle("dot", !!(S.needsMin && S.chat && QUESTIONS[S.chat.q]));
+  plus.title = S.needsMin ? "Open the chat" : "Minimize"; plus.setAttribute("aria-label", plus.title);
+  const back = el.querySelector(".back-arrow");   // go back a step: left end of the bar (Needs has none)
+  back.hidden = S.step === NEEDS; back.title = STEPS[S.step - 1] ? "Back to " + STEPS[S.step - 1] : ""; back.setAttribute("aria-label", back.title || "Back");
+  arrow.hidden = !next; arrow.title = next || ""; arrow.setAttribute("aria-label", next || "Next");
+  arrow.classList.toggle("ready", S.step !== NEEDS || !(S.chat && QUESTIONS[S.chat.q]));   // Needs: lights up once the brief is done
 }
 function renderSides() {
-  const b = $("#back"), n = $("#next");
-  b.hidden = S.step === 0; n.hidden = S.step === STEPS.length - 1;
-  b.innerHTML = `<span class="chev">‹</span>${STEPS[S.step - 1] || ""}`;
-  n.innerHTML = `${STEPS[S.step + 1] || ""}<span class="chev">›</span>`;
+  // the side Back/Next tabs are gone: back is the ← at the left of the bottom bar, next is the → beside send
 }
 function renderMode() {
   $("#mode").textContent = S.live ? "AI renders on · Gemini" : "Demo renders · AI off";
@@ -982,8 +1073,23 @@ function renderTopbar() {
     action = `<button class="pill pill-cta" data-action="render">✦ ${label}</button>`;
   }
   else action = `<button class="pill" data-action="before">${S.before ? "Show render" : "Before"}</button>`;
+  if (!S.rendering) action += `<button class="pill" data-action="download-image" title="Download this image" aria-label="Download this image">↓ Download</button>`;
   t.hidden = false;
   t.innerHTML = `<span class="pill pill-static ${tot > S.needs.budget ? "over" : ""}">Total <b>${money(tot)}</b> <span style="opacity:.7">/ ${money(S.needs.budget)}</span></span>${action}`;
+}
+
+// save what's on screen (the render, or the photo when there's none yet) as a file
+async function downloadImage() {
+  const src = $("#room").src;
+  if (!src) return;
+  try {
+    const blob = await (await fetch(src)).blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `elephant-room-${S.before || !currentRender() ? "photo" : "design"}.${(blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch { window.open(src, "_blank"); }
 }
 
 function renderMeasure() {
@@ -1007,35 +1113,26 @@ function renderHotspots() {
     const p = view(it);
     const label = p.owned ? `${p.name} · yours` : `${p.family || p.name} · ${money(p.price.amount)}`;
     const w = 86 + label.length * 8.2;
-    let flip = x > innerWidth * 0.62, lh = 92, rect;
-    const rectFor = (lh, flip) => {
+    let flip = x > innerWidth * 0.62, lh = 92, rect, below = false;
+    const top = innerHeight * 0.06 + 72, bottom = innerHeight - 110;   // below the top bar, above the chat bar
+    const rectFor = (lh, flip, dn) => {
       const l = flip ? x + 38 - w : x - 38;
-      return { l, r: l + w, b: y - lh - 8, t: y - lh - 8 - 54 };
+      return dn ? { l, r: l + w, t: y + lh + 8, b: y + lh + 8 + 54 } : { l, r: l + w, b: y - lh - 8, t: y - lh - 8 - 54 };
     };
-    for (const tryFlip of [flip, !flip]) {
-      for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
-        rect = rectFor(lh, tryFlip);
-        if (!hit(rect) && rect.t > innerHeight * 0.06 + 72) break;   // stay below the top bar
-      }
-      if (!hit(rect)) { flip = tryFlip; break; }
+    const ok = r => !hit(r) && r.t >= top && r.b <= bottom;
+    search: for (const dn of [false, true]) for (const tryFlip of [flip, !flip]) for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
+      rect = rectFor(lh, tryFlip, dn);
+      if (ok(rect)) { flip = tryFlip; below = dn; break search; }
     }
-    // everything stays inside the white frame: no room left above? shorten the line instead of pushing the pill out
-    const small = innerWidth < 820, fx = small ? 16 : innerWidth * 0.05, fy = small ? 16 : innerHeight * 0.06;
-    const topLimit = innerHeight * 0.06 + 72;
-    if (rect.t < topLimit) { lh = Math.max(24, y - 62 - topLimit); rect = rectFor(lh, flip); }
-    const sx = rect.l < fx + 8 ? fx + 8 - rect.l : rect.r > innerWidth - fx - 8 ? innerWidth - fx - 8 - rect.r : 0;
-    placed.push({ ...rect, l: rect.l + sx, r: rect.r + sx });
-    // the dot sits on the piece's real spot (kept inside the frame); the pill stays where it was laid out,
-    // and the line stretches to connect them
-    const g = geom();
-    const [ax, ay] = it.at || it.pos;   // where the piece really is in the render (tracked), else its planned spot
-    const rx = Math.min(Math.max(g.ox + ax / 100 * g.dw, fx + 14), g.W - fx - 14);
-    const ry = Math.max(Math.min(g.oy + ay / 100 * g.dh, g.H - fy - 14), y - lh + 24);   // never above the pill
-    const dx = rx - x, lhReal = lh + (ry - y);
-    const pillPos = flip ? `right:${dx - 38 - sx}px` : `left:${-dx - 38 + sx}px`;
-    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""}" data-idx="${i}" style="left:${rx}px;top:${ry}px;--lh:${lhReal}px">
+    if (!ok(rect)) { below = y < top + 160; lh = 92; rect = rectFor(lh, flip, below); }   // nothing fits: pick the side with room
+    // keep the label inside the window: slide it sideways, the line stays on the dot
+    const minL = 16, maxR = innerWidth - 84;   // 84: the right rail
+    const dx = rect.l < minL ? minL - rect.l : rect.r > maxR ? Math.max(minL - rect.l, maxR - rect.r) : 0;
+    rect = { ...rect, l: rect.l + dx, r: rect.r + dx };
+    placed.push(rect);
+    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""} ${below ? "below" : ""}" data-idx="${i}" style="left:${x}px;top:${y}px;--lh:${lh}px;--dx:${Math.round(dx)}px">
       <div class="hs-line"></div>
-      <button class="hs-pill" data-action="select" data-idx="${i}" style="${pillPos}">
+      <button class="hs-pill" data-action="select" data-idx="${i}">
         <img src="${esc(imgOf(p))}" alt="">
         <span><small>${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}${it.sketched ? " · ✎ sketched" : ""}</small><b>${esc(label)}</b></span>
       </button>
@@ -1047,7 +1144,7 @@ function renderHotspots() {
 
 function renderPanel() {
   const el = $("#panel");
-  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); }
+  if (S.step === NEEDS) { el.innerHTML = needsCard(); afterChatRender(); renderSteps(); }
   else if (S.step === DESIGN) el.innerHTML = S.generating ? progressCard() : optionsView();
   else if (S.step === EDIT) el.innerHTML = S.sel != null ? detailCard() : editHint();
   else el.innerHTML = "";   // shop lives in the left drawer
@@ -1141,12 +1238,9 @@ const ELEPHANT = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" st
   <path d="M3 17v-5c0-3.5 3-6 6.5-6H13c3.9 0 7 3 7 7v3.5c0 1.1.9 2 2 2"/><path d="M3 17h12.5M6 17v3M10 17v3M15 16v4"/>
   <path d="M13 8.5c-1.6.5-2.1 2.6-1 4.2.9 1.2 3 1.1 3.5-.3"/><circle cx="17.2" cy="10.4" r=".6" fill="currentColor"/></svg>`;
 
-// 01 Needs: one centered window (room photo + your furniture + chat), minimizable to an elephant bubble
+// 01 Needs: one centered window (room photo + your furniture + chat); minimized, it's the + left of the bottom input
 function needsCard() {
-  if (S.needsMin) {
-    return `<button class="needs-bubble" data-action="needs-open" title="Open" aria-label="Open the chat">${ELEPHANT}
-      ${S.chat && QUESTIONS[S.chat.q] ? `<i class="dot"></i>` : ""}</button>`;
-  }
+  if (S.needsMin) return "";
   if (!S.chat || (S.chat.q === 0 && S.chat.log.length === 2)) chatStart();   // opening follows the latest photo scan
   const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptCount(), sk = sketched();
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
@@ -1155,7 +1249,7 @@ function needsCard() {
   const strip = !ex ? `<button class="link-btn" data-action="scan">Find furniture in this photo</button>`
     : ex.status === "detecting" ? `<span class="muted"><i class="spin dark"></i> Finding your furniture…</span>`
     : ex.status === "error" ? `<button class="link-btn" data-action="scan-again">Retry furniture scan</button>`
-    : `<div class="fx-head"><span>Your furniture</span><span class="muted">keeping ${kept} of ${total} · tap to ditch</span></div>
+    : `<div class="fx-head"><span>Your furniture</span><span class="muted">${kept ? `keeping ${kept} of ${total} · tap to change` : `${total} found · tap what you keep`}</span></div>
        <div class="fx-strip">${ex.items.map(e => `<button class="fx ${e.keep ? "" : "ditched"}" data-ex="${e.id}" data-action="keep-toggle" data-id="${e.id}"
            title="${esc(cap(e.label))}${e.keep ? " · tap to ditch" : " · tap to keep"}">
            <span class="fx-img">${e.iso ? `<img src="${esc(e.iso)}" alt="">` : e.crop ? `<img src="${esc(e.crop)}" alt=""><i class="shimmer"></i>` : `<i class="shimmer"></i>`}
@@ -1166,14 +1260,14 @@ function needsCard() {
       ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
       ${kept ? `<small>Designing around ${kept} piece${kept > 1 ? "s" : ""} you keep</small>` : ""}
       ${sk.length ? `<small>Sketched: ${esc(sk.map(s => CAT_LABEL[s.category]).join(", "))}</small>` : ""}
-    </div>
-    <button class="btn block" data-action="next">Design my room →</button>` : "";
+    </div>` : "";   // next: the → beside send at the bottom
   return `<div class="card needs-win">
     <div class="nw-head">
       <button class="photo-mini" data-action="upload" id="drop" title="Upload or drop a photo of your room"><img src="${esc(photoSrc())}" alt=""><i>↑</i></button>
-      <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
+      <div class="nw-title"><button class="nw-upload" data-action="upload" title="Upload or drop a photo of your room"><b>${demo ? "Upload your room ↑" : "Your room · change photo ↑"}</b></button>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
           · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
+      ${S.chat.log.length > 2 ? `<button class="icon-btn" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
       <button class="icon-btn" data-action="needs-min" title="Minimize" aria-label="Minimize">–</button>
     </div>
     ${S.sizeOpen ? `<div class="size-row">
@@ -1185,12 +1279,7 @@ function needsCard() {
       ${q ? `<div class="quick">${q.chips().map(c => `<button class="chip ${c.strong ? "on" : ""}" data-action="chat" data-val="${esc(c.val)}" data-label="${esc(c.label)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       ${brief}
     </div>
-    <form class="chat-input" data-chat>
-      <input type="text" placeholder="${q ? "Or just type: budget 2500, seats 4…" : "Add anything else…"}" aria-label="Message">
-      <button class="send" aria-label="Send">↑</button>
-      ${S.chat.log.length > 2 ? `<button type="button" class="restart" data-action="chat-reset" title="Start over" aria-label="Start over">↺</button>` : ""}
-    </form>
-  </div>`;
+  </div>`;   // its input sits at the bottom of the screen (renderSteps)
 }
 function afterChatRender() {
   const log = $(".chat-log");
@@ -1207,7 +1296,7 @@ function progressCard() {
   </div>`;
 }
 function optionsView() {
-  return `<button class="btn sofa-browse" data-action="sofa-browse">Find your sofa ↗</button><div class="options">${S.options.map((o, i) => {
+  return `<div class="options">${S.options.map((o, i) => {
     // sketched pieces first, so what you drew is visible on the card
     const shown = o.items.filter(it => it.sketched).concat(o.items.filter(it => !it.sketched)).slice(0, 4);
     const imgs = shown.map(it => `<img src="${esc(imgOf(view(it)))}" alt="" class="${it.sketched ? "sk-thumb" : ""}">`).join("");
@@ -1217,8 +1306,7 @@ function optionsView() {
       <b>Option ${i + 1} · ${o.name}</b>
       <small>${money(sceneTotal(o.items))} · ${o.items.length} pieces${nSk ? ` · ✎ ${nSk} sketched` : ""}</small>
     </button>`;
-  }).join("")}</div>
-  <button class="btn options-cta" data-action="next">Edit this design →</button>`;
+  }).join("")}</div>`;
 }
 
 /* edit */
@@ -1281,22 +1369,29 @@ function cartRow({ it, i }) {
 }
 
 function renderCart() {
+  const pen = document.getElementById("skfab");   // grab the sketch pen before the rail is rebuilt, then put it back
   const on = S.step >= DESIGN && S.scene && !S.generating;
   const rail = $("#rail"), drawer = $("#drawer"), big = $("#cartx");
   if (!on) S.cart = "closed";
-  rail.hidden = !on;
+  rail.hidden = false;   // the rail is always on the right: shopping list (+ home once there's a design) and the sketch pen
   document.body.classList.toggle("has-rail", !!on);
   drawer.classList.toggle("open", S.cart === "open");
   big.classList.toggle("open", S.cart === "expanded");
+  drawer.inert = S.cart !== "open";
+  big.inert = S.cart !== "expanded";
   document.body.classList.toggle("cart-expanded", S.cart === "expanded");
   document.body.classList.toggle("cart-open", S.cart === "open");
-  if (!on) return;
+  if (!on) {   // no design yet: the list button is there, it just explains it's empty
+    rail.innerHTML = `<button class="rail-btn" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}</button>`;
+    if (pen) rail.append(pen); return;
+  }
   const buy = toBuy(), keep = keeping();
   const keepN = keep.reduce((n, x) => n + (x.it.qty || 1), 0);
   rail.innerHTML = `
     <button class="rail-btn ${S.step === DESIGN ? "on" : ""}" data-action="goto" data-step="${DESIGN}" title="Design options" aria-label="Design options">${ICON.home}</button>
     <button class="rail-btn ${S.cart === "open" ? "on" : ""}" data-action="cart" title="Shopping list" aria-label="Shopping list">${ICON.cart}${buy.length ? `<i class="badge">${buy.length}</i>` : ""}</button>
 `;   // "see everything" lives behind the list's expand button
+  if (pen) rail.append(pen);   // the sketch pen lives in the rail, under the list (sketch.js keeps it up to date)
 
   drawer.innerHTML = `<div class="drawer-head">
       <h2>Shopping list</h2>
@@ -1305,7 +1400,9 @@ function renderCart() {
     </div>
     <p class="sub">${buy.length} to buy${keep.length ? ` · ${keepN} you keep` : ""} · ${esc(S.needs.style.toLowerCase())}</p>
     ${cartSummary()}
-    <div class="drawer-scroll">${S.options[S.opt]?.gaps?.length?`<p class="chat-warning">Nothing fits your needs for: ${S.options[S.opt].gaps.map(c=>CAT_LABEL[c].toLowerCase()).join(', ')}</p>`:''}
+    <button class="btn ghost shop-launch" data-action="shop-view" data-view="room">Explore room view <span aria-hidden="true">↗</span></button>
+    <div class="drawer-scroll">
+      ${S.options[S.opt]?.gaps?.length ? `<p class="chat-warning">Nothing fits your needs for: ${S.options[S.opt].gaps.map(c => CAT_LABEL[c].toLowerCase()).join(", ")}</p>` : ""}
       ${buy.length ? `<label class="field">To buy · ${buy.length}</label><ul class="list">${buy.map(cartRow).join("")}</ul>` : ""}
       ${keep.length ? `<label class="field">Keeping · ${keepN}</label><ul class="list">${keep.map(cartRow).join("")}</ul>` : ""}
     </div>
@@ -1313,10 +1410,6 @@ function renderCart() {
       <span>FF&amp;E schedule</span>
       <button class="btn" data-action="schedule-pdf" title="Print the schedule, or save it as a PDF">PDF</button>
       <button class="btn ghost" data-action="schedule" title="Download the schedule as a spreadsheet file">CSV</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn ghost" data-action="copy">Copy list</button>
-      <button class="btn" data-action="download">scene.json</button>
     </div>`;
 
   // expanded: a frosted-glass window floating over the room (visionOS style), filterable cards, product preview
@@ -1325,20 +1418,26 @@ function renderCart() {
   const f = S.cartFilter || "all", cat = cats.includes(S.cartCat) ? S.cartCat : "all";
   const chip = (key, label) => `<button class="xchip ${f === key ? "on" : ""}" data-action="cart-filter" data-f="${key}">${label}</button>`;
   const pv = S.preview != null && S.scene[S.preview] ? S.preview : null;
+  const roomView = S.cartView === "room" && S.cart === "expanded";
   big.classList.toggle("previewing", pv != null);
-  big.innerHTML = `<div class="x-body">
+  big.innerHTML = `<div class="x-body ${roomView ? "shop-body" : ""}" ${pv != null ? "inert" : ""}>
     <div class="x-head">
       <div><h2>Your room, itemized</h2>
-        <p>${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}</p></div>
+        <p>${roomView ? `${esc(S.options[S.opt]?.name)} · ${esc(ROOMS[S.needs.room])}`
+          : `${money(sceneTotal(S.scene))} to buy · ${buy.length} new piece${buy.length === 1 ? "" : "s"}${keep.length ? ` · ${keepN} you keep` : ""}`}</p></div>
       <div class="x-actions">
-        <button class="xchip" data-action="copy">Copy list</button>
+        <div class="shop-switch" role="group" aria-label="Shopping list view">
+          <button class="xchip ${roomView ? "" : "on"}" data-action="shop-view" data-view="list" aria-pressed="${!roomView}">List</button>
+          <button class="xchip ${roomView ? "on" : ""}" data-action="shop-view" data-view="room" aria-pressed="${roomView}">Room view</button>
+        </div>
+        ${roomView ? "" : `<button class="xchip x-copy" data-action="copy">Copy list</button>
         <button class="xchip" data-action="schedule-pdf" title="Print the FF&amp;E schedule, or save it as a PDF">Schedule PDF</button>
-        <button class="xchip" data-action="schedule" title="Download the FF&amp;E schedule as a spreadsheet file">CSV</button>
+        <button class="xchip" data-action="schedule" title="Download the FF&amp;E schedule as a spreadsheet file">CSV</button>`}
         <button class="icon-btn glass" data-action="cart-collapse" title="Back to list" aria-label="Back to list">⤡</button>
         <button class="icon-btn glass" data-action="cart-close" title="Close" aria-label="Close">×</button>
       </div>
     </div>
-    <div class="x-tools">
+    ${roomView ? shopRoomMarkup() : `<div class="x-tools">
       <div class="x-chips">${chip("all", "All")}${chip("buy", `To buy · ${buy.length}`)}${keep.length ? chip("keep", `Keeping · ${keepN}`) : ""}</div>
       <div class="x-drop ${S.cartMenu ? "open" : ""}">
         <button class="xchip x-drop-btn ${cat !== "all" ? "on" : ""}" data-action="cart-menu">${cat === "all" ? "All categories" : esc(CAT_LABEL[cat] || "Other")}<i><svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg></i></button>
@@ -1347,9 +1446,27 @@ function renderCart() {
       <label class="x-search">${ICON.look}<input type="search" placeholder="Search your room" value="${esc(S.cartQ || "")}" data-cart-search aria-label="Search">
         <button class="x-clear" data-action="cart-clear" aria-label="Clear search" ${S.cartQ ? "" : "hidden"}>×</button></label>
     </div>
-    <div class="x-grid">${cartGrid()}</div>
+    <div class="x-grid">${cartGrid()}</div>`}
   </div>
   ${pv != null ? previewMarkup(S.scene[pv], pv, stars) : ""}`;
+}
+
+function updateShopSelection() {
+  const layoutTop = $(".shop-layout")?.scrollTop;
+  const itemsTop = $(".shop-items")?.scrollTop;
+  renderCart();
+  if (layoutTop) $(".shop-layout").scrollTop = layoutTop;
+  if (itemsTop) $(".shop-items").scrollTop = itemsTop;
+  const button = $(`.shop-body .shop-item[data-id="${S.shopSelected}"]`);
+  button?.focus({ preventScroll: true });
+  button?.scrollIntoView({ block: "nearest" });
+}
+
+function closeCartPreview() {
+  const index = S.preview;
+  S.preview = null; S.previewAlt = null;
+  renderCart();
+  $(`.x-img[data-idx="${index}"]`)?.focus();
 }
 
 const stars = r => {
@@ -1583,6 +1700,7 @@ document.addEventListener("click", e => {
   else if (act === "back") goto(S.step - 1);
   else if (act === "set") { S.needs[a.dataset.key] = a.dataset.val; S.dirty = true; renderPanel(); }
   else if (act === "upload") $("#file").click();
+  else if (act === "download-image") downloadImage();
   else if (act === "demo") {
     if (S.space.photo === "demo") S.space.ex = (S.space.ex + 1) % EXAMPLES.length;
     B.observations=[]; B.annotations=[]; S.last=null; S.renders={}; S.existing=null;
@@ -1591,7 +1709,11 @@ document.addEventListener("click", e => {
     showImage(); render();
     loadBakedFurniture().then(render);
   }
-  else if (act === "option") { S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items); syncLayout(); saveBrief(); render(); renderScene(); }
+  else if (act === "option") {
+    S.opt = +a.dataset.idx; S.scene = structuredClone(S.options[S.opt].items);
+    S.shopSelected = null;
+    syncLayout(); saveBrief(); render(); renderScene();
+  }
   else if (act === "render") renderScene(true);
   else if (act === "chat") {
     const v = a.dataset.val, q = QUESTIONS[S.chat.q];
@@ -1604,6 +1726,7 @@ document.addEventListener("click", e => {
   }
   else if (act === "needs-min") { S.needsMin = true; render(); }
   else if (act === "needs-open") { S.needsMin = false; render(); }
+  else if (act === "needs-toggle") { S.needsMin = !S.needsMin; render(); }
   else if (act === "keep") {
     const e = exById(a.dataset.id); e.keep = a.dataset.keep === "1"; S.dirty = true; renderPanel(); renderBoxes();
   }
@@ -1624,16 +1747,32 @@ document.addEventListener("click", e => {
     setLive(!S.live);
     render(); toast(S.live ? "AI renders on: each render costs about $0.07" : "Demo renders: no AI spend");
   }
-  else if (act === "cart") { S.cart = S.cart === "open" ? "closed" : "open"; renderCart(); }
-  else if (act === "cart-expand") { S.cart = "expanded"; renderCart(); }
+  else if (act === "cart") {
+    if (!(S.step >= DESIGN && S.scene && !S.generating)) { toast(S.generating ? "Your list is on its way: the designs are almost ready." : "Your shopping list fills up once you pick a design. Press → to design your room."); return; }
+    S.cart = S.cart === "open" ? "closed" : "open"; renderCart();
+  }
+  else if (act === "cart-expand") { S.cart = "expanded"; S.cartView = "list"; renderCart(); }
+  else if (act === "shop-view") {
+    S.cart = "expanded"; S.cartView = a.dataset.view; S.cartMenu = false;
+    S.preview = null; S.previewAlt = null;
+    renderCart();
+    $(`#cartx [data-view="${S.cartView}"]`)?.focus();
+  }
+  else if (act === "shop-pick") {
+    S.shopSelected = +a.dataset.id;
+    updateShopSelection();
+  }
   else if (act === "cart-collapse") { S.cart = "open"; S.preview = null; renderCart(); }
   else if (act === "cart-close") { S.cart = "closed"; S.preview = null; renderCart(); }
   else if (act === "cart-filter") { S.cartFilter = a.dataset.f; renderCart(); }
   else if (act === "cart-menu") { S.cartMenu = !S.cartMenu; $(".x-drop")?.classList.toggle("open", S.cartMenu); }
   else if (act === "cart-clear") { S.cartQ = ""; renderCart(); $("[data-cart-search]")?.focus(); }
   else if (act === "cart-cat") { S.cartCat = a.dataset.c; S.cartMenu = false; renderCart(); }
-  else if (act === "cart-preview") { S.preview = +a.dataset.idx; S.previewAlt = null; renderCart(); }
-  else if (act === "cart-preview-close") { S.preview = null; S.previewAlt = null; renderCart(); }
+  else if (act === "cart-preview") {
+    S.preview = +a.dataset.idx; S.previewAlt = null; renderCart();
+    $(".pv-close")?.focus({ preventScroll: true });
+  }
+  else if (act === "cart-preview-close") closeCartPreview();
   else if (act === "pv-finish") {
     const it = S.scene[S.preview]; it.vid = a.dataset.vid || null; render();
     colorPicked(it);
@@ -1644,7 +1783,10 @@ document.addEventListener("click", e => {
     const it = S.scene[+a.dataset.idx], wasOwn = it.own; it.pid = S.previewAlt; it.vid = null; delete it.own; S.previewAlt = null; render();
     if (wasOwn) toast(`Swapped to ${byId[it.pid].name} · click Update render to see it`); else previewPicked(it);
   }
-  else if (act === "cart-item") { S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; render(); }
+  else if (act === "cart-item") {
+    S.sel = +a.dataset.idx; S.step = EDIT; S.cart = "closed"; S.preview = null; S.previewAlt = null;
+    render();
+  }
   else if (act === "copy") {
     const txt = S.scene.filter(it => !it.own).map(it => { const p = view(it); return `${it.qty > 1 ? it.qty + "× " : ""}${p.name} (${p.variant}) — ${money(p.price.amount)} — ${p.url}`; }).join("\n")
       + `\nTotal: ${money(sceneTotal(S.scene))}`;
@@ -1692,6 +1834,17 @@ function loadPhoto(file) {
   };
   r.readAsDataURL(file);
 }
+document.addEventListener("submit", e => {   // the Needs chat input at the bottom
+  if (!e.target.matches("[data-chat]")) return;
+  e.preventDefault();
+  const input = e.target.querySelector("input"), text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  if (S.step !== NEEDS && typeof sendDesigner === "function") { chatDraft = text; sendDesigner(); return; }   // designer.js
+  S.needsMin = false;
+  chatFree(text); render();
+  $(".bottom-chat input")?.focus();
+});
 $("#file").addEventListener("change", e => { const file=e.target.files[0]; e.target.value=""; loadPhoto(file); });
 addEventListener("dragover", e => { if (S.step === NEEDS) { e.preventDefault(); $("#drop")?.classList.add("over"); } });
 addEventListener("dragleave", () => $("#drop")?.classList.remove("over"));
@@ -1723,12 +1876,12 @@ addEventListener("keydown", e => {
   if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
   if (e.key === "ArrowRight") goto(S.step + 1);
   if (e.key === "ArrowLeft") goto(S.step - 1);
-  if (e.key === "Escape" && S.preview != null) { S.preview = null; renderCart(); }
+  if (e.key === "Escape" && S.preview != null) closeCartPreview();
   else if (e.key === "Escape" && S.cart !== "closed") { S.cart = S.cart === "expanded" ? "open" : "closed"; renderCart(); }
   else if (e.key === "Escape" && S.sel != null) { S.sel = null; render(); }
 });
-addEventListener("resize", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
-room.addEventListener("load", () => { renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+addEventListener("resize", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
+room.addEventListener("load", () => { geom(); renderHotspots(); renderMeasure(); renderBoxes(); renderDiagnosis(); });
 
 /* ---------------- boot ---------------- */
 Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/sofa-ontology.json'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})))
@@ -1751,10 +1904,11 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
       S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
-    S.step = S.scene ? Math.min(step||DESIGN, STEPS.length - 1) : NEEDS;
+    S.step = step && S.scene ? Math.min(step, STEPS.length - 1) : NEEDS;   // always open on Needs (a saved design stays loaded); #step=N still deep-links
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
+    if (h.get("cart") === "room" && S.scene) { S.cart = "expanded"; S.cartView = "room"; }
     render();
     const after = () => { if (h.has("render") && S.scene) renderScene(); };   // #step=3&render=1
     if (h.has("scan")) {                                                       // #step=1&scan=1

@@ -44,7 +44,13 @@ def category_sizes():
     return _sizes
 
 
+RUNS = {"base_cabinet": (12, 360)}   # sold in modules: the "width" is the whole run's length, not one module's
+
+
 def clamp_width(cat, w):
+    if cat in RUNS:
+        lo, hi = RUNS[cat]
+        return round(min(max(w or 96, lo), hi))
     lo, mid, hi = category_sizes().get(cat, (None, None, None))
     if not w or w <= 0:
         return round(mid) if mid else None
@@ -54,7 +60,9 @@ def clamp_width(cat, w):
 # ---------------------------------------------------------------- shared prompt (Claude + Gemini)
 
 def instructions():
-    sizes = "\n".join(f"- {c}: {lo:.0f}-{hi:.0f} in wide (typical {mid:.0f})" for c, (lo, mid, hi) in category_sizes().items())
+    sizes = "\n".join(f"- {c}: {lo:.0f}-{hi:.0f} in wide (typical {mid:.0f})"
+                      for c, (lo, mid, hi) in category_sizes().items() if c not in RUNS)
+    sizes += "\n- base_cabinet: a RUN of kitchen base cabinets, 12-360 in long (width_in = the whole run's length)"
     return f"""You read rough sketches on room photos for a furniture design app.
 
 The image is a photo of the user's room. They drew numbered shapes on it (#1, #2, ...), each one where they
@@ -65,7 +73,8 @@ For every shape, decide which ONE product type it stands for. Use:
 - the note first, if there is one ("bench", "something to read under", "desk")
 - the shape: a long low rectangle against a wall reads as a sofa, bench or console; a tall thin vertical line
   as a floor lamp; a circle or blob hanging from the ceiling as a pendant lamp; a flat outline on the floor
-  as a rug; a small square next to a seat as a side table; an L shape as a sofa; a box with a back as a chair
+  as a rug; a small square next to a seat as a side table; an L shape as a sofa; a box with a back as a chair;
+  a straight line along the bottom of a wall (or a long thin strip) as a run of base kitchen cabinets
 - where it sits in the room (floor, wall, ceiling, corner, next to what), and the kind of room
 - its size relative to the room and to the furniture visible in the photo
 Then estimate its real width in inches. The back wall is about the given width; use perspective and the
@@ -175,6 +184,8 @@ def ask_gemini(req):
 
 # note keyword -> category (first match wins, so longer phrases come first)
 CATEGORY_WORDS = [
+    ("kitchen cabinet", "base_cabinet"), ("base cabinet", "base_cabinet"), ("cabinet run", "base_cabinet"),
+    ("countertop", "base_cabinet"), ("counter", "base_cabinet"), ("kitchen", "base_cabinet"),
     ("coffee table", "coffee_table"), ("side table", "side_table"), ("end table", "side_table"),
     ("dining table", "dining_table"), ("dining chair", "dining_chair"), ("office chair", "office_chair"),
     ("desk chair", "office_chair"), ("table lamp", "table_lamp"), ("desk lamp", "table_lamp"),
@@ -203,7 +214,8 @@ LABEL = {"sofa": "sofa", "bed": "bed", "dining_table": "dining table", "desk": "
          "stool_bench": "bench", "armchair": "armchair", "dining_chair": "dining chair", "office_chair": "office chair",
          "side_table": "side table", "nightstand": "nightstand", "cabinet": "sideboard", "dresser": "dresser",
          "shelving": "shelf", "floor_lamp": "floor lamp", "pendant_lamp": "pendant lamp", "rug": "rug",
-         "mirror": "mirror", "table_lamp": "table lamp", "wardrobe": "wardrobe", "tv_stand": "TV stand"}
+         "mirror": "mirror", "table_lamp": "table lamp", "wardrobe": "wardrobe", "tv_stand": "TV stand",
+         "base_cabinet": "run of base cabinets"}
 
 
 def note_category(note):

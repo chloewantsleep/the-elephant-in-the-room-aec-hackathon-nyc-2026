@@ -114,7 +114,8 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= 5000000: return self._json(413, {"error": "Request too large"})
             req = json.loads(self.rfile.read(length))
             return self._json(200, fn(req))
-        except Exception as e:  # surface the reason to the UI
+        except Exception as e:  # surface the reason to the UI (and log it here)
+            print(f"{self.path} failed: {type(e).__name__}: {str(e)[:500]}", file=sys.stderr, flush=True)
             return self._json(503, designer.client_error(e)) if self.path == "/api/chat" else self._json(500, {"error": str(e)})
 
     def log_message(self, fmt, *args):
