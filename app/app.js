@@ -178,11 +178,11 @@ function toast(msg) {
   clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), Math.max(2200, Math.min(7000, msg.length * 45)));
 }
 
-/* ---------------- image <-> screen mapping (object-fit: cover, position 50% 75%) ---------------- */
+/* ---------------- image <-> screen mapping (object-fit: contain, centered: the whole photo shows) ---------------- */
 function geom() {
   const W = innerWidth, H = innerHeight, nw = room.naturalWidth || 1, nh = room.naturalHeight || 1;
-  const sc = Math.max(W / nw, H / nh), dw = nw * sc, dh = nh * sc;
-  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.75, W, H };
+  const sc = Math.min(W / nw, H / nh), dw = nw * sc, dh = nh * sc;
+  return { dw, dh, ox: (W - dw) * 0.5, oy: (H - dh) * 0.5, W, H };
 }
 function toScreen([px, py]) {
   const g = geom();
@@ -501,6 +501,7 @@ async function renderScene(manual = false) {
     return;
   }
   S.rendering = true; S.before = false; render();
+  let stale = false;
   try {
     // sketched pieces in this render? send the sketch itself as a layout guide (sketch.js)
     if (reqObj.items.some(it => it.sketched) && typeof sketchGuide === "function") {
@@ -508,7 +509,7 @@ async function renderScene(manual = false) {
       if (guide) reqObj.layout_guide = guide;
     }
     const j = await apiPost("/api/render", reqObj);
-    if(sig!==sceneSig()){toast('The design changed, so this image doesn’t show it. Render again.');return;}
+    if(sig!==sceneSig()){S.renders[sig]=j.image;stale=true;return;}   // you picked another option meanwhile: keep this one for later, render the new pick next
     rememberRender(sig, j.image);if(typeof logTransition==='function')logTransition('Render updated with the current picks and colors.');
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
     toast(j.cached ? "Loaded saved render" : `${what} in ${(j.ms / 1000).toFixed(1)}s`);
@@ -516,6 +517,7 @@ async function renderScene(manual = false) {
     S.renderError=e.message; if(typeof logTransition==='function')logTransition('Render failed. Your picks are saved, so you can retry.');toast(e.message.slice(0,120));
   } finally {
     S.rendering = false; render();
+    if (stale && S.live) renderScene();
   }
 }
 
