@@ -506,7 +506,7 @@ const CSS =
   ".lcl-full[data-v=v0] .lcl-pv0,.lcl-full[data-v=v1] .lcl-pv1,.lcl-full[data-v=v2] .lcl-pv2{opacity:1}" +
   ".lcl-flick{opacity:0}" +
   ".lcl-full[data-flip] .lcl-flick{opacity:1}" +
-  ".lcl-cap{position:absolute;left:0;right:0;top:50%;margin:0;transform:translateY(-50%);color:#fff;text-align:center;font-weight:400;font-size:clamp(22px,3vw,50px);letter-spacing:-.025em;padding:0 16px;text-shadow:0 1px 30px rgba(0,0,0,.25)}" +
+  ".lcl-cap{position:absolute;left:0;right:0;top:50%;margin:0;transform:translateY(-50%);color:#fff;text-align:center;font-weight:400;font-size:clamp(22px,3vw,50px);letter-spacing:-.025em;padding:0 16px;text-shadow:0 1px 30px rgba(0,0,0,.25);pointer-events:none}" +   // text only: never in the way of the team cards under it
   ".lcl-cap>span>span{opacity:calc(clamp(0, var(--cap,0) * (var(--n) + 6) - var(--i), 1) * var(--capo,1))}" +
   ".lcl-co{position:absolute;inset:0;color:#fff;opacity:clamp(0, var(--c,0) * 3, 1);pointer-events:none}" +
   ".lcl-co[data-live] .lcl-hit,.lcl-ui[data-live] .lcl-hit{pointer-events:auto}" +
