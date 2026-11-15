@@ -296,6 +296,7 @@ function shopRoomMarkup() {
   if (option) option.shopOriginal ??= structuredClone(option.items);
   const original = (option?.shopOriginal || S.scene).map((item, slotId) => ({ ...item, slotId }));
   const ref = shopReference(original);
+  readRenderBoxes(original, ref.image);
   const plan = shopSceneLayout(original, S.space, S.needs.room, ref);
   const demo = S.space.photo === "demo";
   let refSrc = ref.image || (demo ? example().render : photoSrc());
@@ -304,7 +305,8 @@ function shopRoomMarkup() {
   if (noRender) refSrc = photoSrc();
   const refLabel = noRender ? "Room photo · this design has no AI render yet" : refSrc === photoSrc() ? "Original room photo"
     : refSrc.startsWith("assets/demo-render-") ? "Demo reference render" : "Design reference render";
-  const planLabel = ref.demoExact ? "Measured from the demo render" : "Laid out from the design's positions";
+  const planLabel = ref.boxes ? "Positions read from the render" : ref.reading ? "Reading the render…"
+    : ref.demoExact ? "Measured from the demo render" : "Laid out from the design's positions";
 
   return `<div class="shop-layout">
     <section class="shop-plan" aria-label="Isometric room diagram">

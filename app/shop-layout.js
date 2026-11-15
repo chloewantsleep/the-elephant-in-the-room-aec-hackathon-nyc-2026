@@ -83,18 +83,24 @@ function shopSample(ref, item) {
 /* Where each piece sits on the floor, roughly, from where it is in the room photo (item.pos, % of the image).
  * A level default camera (horizon a little above the middle): lower in the picture = nearer, and the
  * left/right offset widens with distance. The result is spread over the floor so front/back and
- * left/right relationships match the picture. Pure geometry, no AI call. */
+ * left/right relationships match the picture.
+ * Every spot is where the piece meets the floor: the bottom of its box. Boxes come from the AI render of this
+ * design when Gemini has read it (renderBoxes, by slot id), else from the photo scan for pieces you keep; a
+ * piece with neither uses its planned spot (item.pos, the center the render was asked to draw it at). */
 const SHOP_HORIZON = .42, SHOP_FAR = .1;
 // -> Map: slotId -> [u, v] (first copy) and "slotId:i" -> [u, v] for every copy with its own spot in the photo
-function shopPhotoAnchors(items) {
+const shopBottom = b => [(b[1] + b[3]) / 20, b[2] / 10];   // box 0-1000 -> bottom middle, image %
+function shopPhotoAnchors(items, renderBoxes = null) {
   const photo = document.getElementById("room");
   const aspect = photo?.naturalWidth && photo?.naturalHeight ? photo.naturalWidth / photo.naturalHeight : 4 / 3;
   const spots = [];   // [key, x, near]
   items.forEach((item, k) => {
     const id = item.slotId ?? k;
     // a piece found in the photo has a box per copy; anything else has one spot
-    const boxes = item.own && typeof exById === "function" ? exById(item.own)?.boxes : null;
-    const pts = boxes?.length ? boxes.map(boxCenter) : Array.isArray(item.pos) ? [item.pos] : [];
+    const seen = renderBoxes?.[id];
+    const boxes = seen?.length ? seen : item.own && typeof exById === "function" ? exById(item.own)?.boxes : null;
+    const pts = boxes?.length ? boxes.map(shopBottom)
+      : Array.isArray(item.pos) ? [[item.pos[0], Math.min(100, item.pos[1] + 6)]] : [];   // center -> about where it stands
     pts.forEach((pos, i) => {
       const u = pos[0] / 100, v = pos[1] / 100;
       const near = Math.max(SHOP_FAR, (v - SHOP_HORIZON) / (1 - SHOP_HORIZON));   // 1 at the bottom edge, small near the horizon
@@ -129,7 +135,7 @@ function shopSceneLayout(items, space, room, ref) {
     "side_table|armchair": 4 };
   const gapBetween = (a, b) => a.id != null && a.id === b.id ? sameDistance
     : PAIRS[`${a.cat}|${b.cat}`] ?? PAIRS[`${b.cat}|${a.cat}`] ?? distance;
-  const fromPhoto = shopPhotoAnchors(items);
+  const fromPhoto = shopPhotoAnchors(items, ref?.boxes);
 
   // A bigger floor when the pieces need it (unless the room was measured): enough area for the footprints,
   // and far enough apart that pieces at their photo spots keep a walkway between them.
@@ -315,5 +321,30 @@ function shopReference(items) {
     ? SHOP_DEMO_LAYOUTS[S.needs.room] : null;
   const demoExact = profile && S.opt === 0 && S.existing?.baked &&
     S.existing.items.every(piece => items.some(item => item.own === piece.id));
-  return { image, profile, demoExact };
+  const read = image && shopRenderBoxes.get(image);
+  return { image, profile, demoExact, boxes: read?.boxes || null, reading: read?.status === "pending" };
+}
+
+// Gemini reads where each piece landed in this design's AI render (boxes only; cached on the server too).
+// Until it answers, or if it can't, the plan uses the planned spots.
+const shopRenderBoxes = new Map();
+async function readRenderBoxes(items, image) {
+  if (!image?.startsWith("data:image/") || image === photoSrc() || shopRenderBoxes.has(image)) return;
+  shopRenderBoxes.set(image, { status: "pending" });
+  try {
+    const locate = items.filter(it => !it.own || exById(it.own)).map(it => {
+      const p = view(it);
+      return { id: it.slotId, category: it.cat, name: [p.name, p.variant].filter(Boolean).join(", ").slice(0, 120), qty: it.qty || 1 };
+    });
+    const pic = new Image(); pic.src = image; await pic.decode();
+    const scale = Math.min(1, 1024 / Math.max(pic.naturalWidth, pic.naturalHeight));
+    const canvas = Object.assign(document.createElement("canvas"),
+      { width: Math.round(pic.naturalWidth * scale), height: Math.round(pic.naturalHeight * scale) });
+    canvas.getContext("2d").drawImage(pic, 0, 0, canvas.width, canvas.height);
+    const res = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), locate });
+    shopRenderBoxes.set(image, { status: "ready", boxes: res.boxes || {} });
+  } catch {
+    shopRenderBoxes.set(image, { status: "failed" });
+  }
+  if (S.cart === "expanded" && S.cartView === "room" && S.preview == null) renderCart();
 }
