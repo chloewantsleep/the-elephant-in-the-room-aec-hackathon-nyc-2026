@@ -608,6 +608,7 @@ function renderSteps() {
   const next = ["Design my room", "Edit this design", "Shop the list"][S.step];
   const input = el.querySelector("input");
   if (!input) el.innerHTML = `<form class="chat-input bottom-chat" data-chat>
+    <button type="button" class="back-arrow" data-action="back">←</button>
     <button type="button" class="needs-plus" data-action="needs-toggle">+</button>
     <input type="text" aria-label="Message">
     <button class="send" aria-label="Send">↑</button>
@@ -618,14 +619,13 @@ function renderSteps() {
   plus.hidden = S.step !== NEEDS; plus.classList.toggle("open", !S.needsMin);
   plus.classList.toggle("dot", !!(S.needsMin && S.chat && QUESTIONS[S.chat.q]));
   plus.title = S.needsMin ? "Open the chat" : "Minimize"; plus.setAttribute("aria-label", plus.title);
+  const back = el.querySelector(".back-arrow");   // go back a step: left end of the bar (Needs has none)
+  back.hidden = S.step === NEEDS; back.title = STEPS[S.step - 1] ? "Back to " + STEPS[S.step - 1] : ""; back.setAttribute("aria-label", back.title || "Back");
   arrow.hidden = !next; arrow.title = next || ""; arrow.setAttribute("aria-label", next || "Next");
   arrow.classList.toggle("ready", S.step !== NEEDS || !(S.chat && QUESTIONS[S.chat.q]));   // Needs: lights up once the brief is done
 }
 function renderSides() {
-  const b = $("#back"), n = $("#next");
-  b.hidden = S.step === 0; n.hidden = S.step === STEPS.length - 1;
-  b.innerHTML = `<span class="chev">‹</span>${STEPS[S.step - 1] || ""}`;
-  n.innerHTML = `${STEPS[S.step + 1] || ""}<span class="chev">›</span>`;
+  // the side Back/Next tabs are gone: back is the ← at the left of the bottom bar, next is the → beside send
 }
 function renderMode() {
   $("#mode").textContent = S.live ? "AI renders on · Gemini" : "Demo renders · AI off";
@@ -667,20 +667,24 @@ function renderHotspots() {
     const p = view(it);
     const label = p.owned ? `${p.name} · yours` : `${p.family || p.name} · ${money(p.price.amount)}`;
     const w = 86 + label.length * 8.2;
-    let flip = x > innerWidth * 0.62, lh = 92, rect;
-    const rectFor = (lh, flip) => {
+    let flip = x > innerWidth * 0.62, lh = 92, rect, below = false;
+    const top = innerHeight * 0.06 + 72, bottom = innerHeight - 110;   // below the top bar, above the chat bar
+    const rectFor = (lh, flip, dn) => {
       const l = flip ? x + 38 - w : x - 38;
-      return { l, r: l + w, b: y - lh - 8, t: y - lh - 8 - 54 };
+      return dn ? { l, r: l + w, t: y + lh + 8, b: y + lh + 8 + 54 } : { l, r: l + w, b: y - lh - 8, t: y - lh - 8 - 54 };
     };
-    for (const tryFlip of [flip, !flip]) {
-      for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
-        rect = rectFor(lh, tryFlip);
-        if (!hit(rect) && rect.t > innerHeight * 0.06 + 72) break;   // stay below the top bar
-      }
-      if (!hit(rect)) { flip = tryFlip; break; }
+    const ok = r => !hit(r) && r.t >= top && r.b <= bottom;
+    search: for (const dn of [false, true]) for (const tryFlip of [flip, !flip]) for (lh = 92; lh <= 92 + 64 * 3; lh += 64) {
+      rect = rectFor(lh, tryFlip, dn);
+      if (ok(rect)) { flip = tryFlip; below = dn; break search; }
     }
+    if (!ok(rect)) { below = y < top + 160; lh = 92; rect = rectFor(lh, flip, below); }   // nothing fits: pick the side with room
+    // keep the label inside the window: slide it sideways, the line stays on the dot
+    const minL = 16, maxR = innerWidth - 84;   // 84: the right rail
+    const dx = rect.l < minL ? minL - rect.l : rect.r > maxR ? Math.max(minL - rect.l, maxR - rect.r) : 0;
+    rect = { ...rect, l: rect.l + dx, r: rect.r + dx };
     placed.push(rect);
-    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""}" data-idx="${i}" style="left:${x}px;top:${y}px;--lh:${lh}px">
+    html.push(`<div class="hs ${S.sel === i ? "sel" : ""} ${flip ? "flip" : ""} ${below ? "below" : ""}" data-idx="${i}" style="left:${x}px;top:${y}px;--lh:${lh}px;--dx:${Math.round(dx)}px">
       <div class="hs-line"></div>
       <button class="hs-pill" data-action="select" data-idx="${i}">
         <img src="${esc(imgOf(p))}" alt="">
