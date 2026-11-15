@@ -4,7 +4,11 @@
  * Deep link: #walkthrough starts it on load.
  */
 (() => {
-  const DWELL = 3200;   // ms a beat stays on screen after its actions, before the next one starts
+  const DWELL = 1500;   // ms a beat stays on screen after its actions, before the next one starts
+  const PACE = 0.6;     // scales every scripted pause (not the app's own render/plan time)
+  const SWAP_RENDER = "assets/walkthrough-swap.jpg";   // the baked AI edit for these swaps (scripts/bake_walkthrough.js)
+  let SWAPS = { sofa: "ikea:s29318319", armchair: "ikea:30533493", rug: "ikea:20595698" };
+  fetch("walkthrough-swaps.json").then(r => r.json()).then(j => { SWAPS = j; }).catch(() => {});
   // one runner at a time: skip/back bump `gen` and queue `pending`; the runner's waits see gen !== live and unwind
   let on = false, beat = 0, fast = false, paused = false, gen = 0, live = 0, running = false, pending = null;
   const $ = s => document.querySelector(s);
@@ -14,6 +18,7 @@
   const check = () => { if (gen !== live) throw "stop"; };
   async function wait(ms) {
     check();
+    ms *= PACE;
     for (let t = 0; t < ms && !fast; ) {
       await sleep(50); check();
       if (!paused) t += 50;
@@ -38,7 +43,7 @@
     const r = el.getBoundingClientRect();
     cursor.style.left = r.left + r.width / 2 + "px"; cursor.style.top = r.top + r.height / 2 + "px";
     cursor.classList.add("show");
-    await wait(fast ? 0 : 750);
+    await wait(fast ? 0 : 700);   // ×PACE, matches the cursor glide
   }
   const find = sel => typeof sel === "function" ? sel() : document.querySelector(sel);
   async function hover(sel, ms = 900) { const el = find(sel); if (el) { await moveTo(el); await wait(ms); } }
@@ -53,11 +58,27 @@
     await wait(after);
   }
   const chip = label => () => [...document.querySelectorAll('.quick [data-action="chat"]')].find(b => b.dataset.label === label || b.dataset.val === label);
-  const sofaPin = () => { const i = (S.scene || []).findIndex(it => it.cat === "sofa"); return i < 0 ? null : document.querySelector(`.hs-pill[data-idx="${i}"]`); };
+  const pin = cat => () => { const i = (S.scene || []).findIndex(it => it.cat === cat); return i < 0 ? null : document.querySelector(`.hs-pill[data-idx="${i}"]`); };
+  // click a piece's pin, then the alternative to swap in (straight through the app if it isn't listed)
+  async function swap(cat, pid) {
+    await tap(pin(cat), 700);
+    const i = S.scene.findIndex(it => it.cat === cat);
+    if (i < 0) return;
+    const alt = `.alt[data-pid="${pid}"]`;
+    await until(() => find(alt), 1200);
+    if (find(alt)) { find(alt).closest("details")?.setAttribute("open", ""); await tap(alt, 700); }
+    else { changeSceneProduct(i, pid, null); render(); }
+  }
+  // the labels button (bottom right): hide every pin to show the whole picture, then bring them back
+  async function fullView(ms) {
+    await tap('[data-action="labels"]', ms);
+    await tap('[data-action="labels"]', 300);
+  }
 
   // back to a clean start: lounge example, nothing kept, demo renders, Needs open
   async function reset() {
-    await until(() => !S.rendering, 3000);   // a demo render still landing from a skipped beat would bring its picture back
+    await until(() => !S.rendering, 3000);
+    document.body.classList.remove("no-labels");   // a demo render still landing from a skipped beat would bring its picture back
     Object.assign(S, { step: NEEDS, needsMin: false, chat: null, options: [], opt: 0, scene: null, sel: null, dirty: true,
       cart: "closed", cartView: "list", preview: null, previewAlt: null, last: null, renders: {}, before: false, live: false,
       existing: null, sizeOpen: false, shopSelected: null });
@@ -69,15 +90,15 @@
   }
 
   const BEATS = [
-    { t: "Start from one photo", s: "Any room. Here: the lounge at the AEC Hackathon venue.",
+    { t: "Start from one photo", s: "here: the lounge at the AEC Hackathon venue",
       run: async () => { await wait(1200); await hover(".photo-mini", 1200); } },
-    { t: "It sees what's already there", s: "Each piece in the photo is found and cut out. Tap to keep it or ditch it.",
+    { t: "It sees what's already there", s: "each piece is found and cut out; keep it or ditch it",
       run: async () => {
         await hover(".fx-strip", 800);
         await tap('.fx[data-id="e1"]', 900);   // keep the glass coffee table…
         await tap('.fx[data-id="e1"]', 500);   // …then start fresh for today's demo
       } },
-    { t: "A 30-second brief", s: "Room, style, budget, what you need. Tap or just type.",
+    { t: "A 30-second brief", s: "room, style, budget, what you need",
       run: async () => {
         await tap(chip("living"), 700);
         await tap(chip("Warm minimal"), 700);
@@ -86,52 +107,56 @@
         await tap(chip("Easy to clean"), 600);
         await tap(chip("__done"), 900);
       } },
-    { t: "Three complete designs", s: "Real products with real prices and sizes, checked against the wall and the budget.",
+    { t: "Three complete designs", s: "real products, real prices, checked against the wall and the budget",
       run: async () => {
         await tap(".next-arrow", 300);
         await until(() => S.step === DESIGN && !S.generating && S.scene);
         await wait(900);
         await hover('.opt[data-idx="1"]', 900); await hover('.opt[data-idx="2"]', 900); await hover('.opt[data-idx="0"]', 600);
       } },
-    { t: "Rendered into your room", s: "The picked pieces, placed in your own photo.",
+    { t: "Rendered into your room", s: "the picked pieces, placed in your own photo",
       run: async () => {
-        await tap('[data-action="render"]', 300);
+        await tap('[data-action="render"]', 200);
         await until(() => !S.rendering && currentRender());
-        await wait(1700);
-        await tap('[data-action="before"]', 1300);   // before…
-        await tap('[data-action="before"]', 600);    // …and after
+        await wait(1000);
+        await tap('[data-action="before"]', 1100);   // before…
+        await tap('[data-action="before"]', 400);    // …and after
       } },
-    { t: "Change anything", s: "Click a piece: why it's there, colorways, and swaps that still fit.",
+    { t: "The whole picture", s: "labels off: this is the render",
+      run: async () => { await fullView(2600); } },
+    { t: "Swap anything", s: "click a piece, pick another that fits: sofa, armchair, rug",
       run: async () => {
-        await tap(sofaPin, 1200);
-        await hover(".selection-reasons", 1200);
-        await hover(".facts .fit", 900);
+        for (const [cat, pid] of Object.entries(SWAPS)) await swap(cat, pid);
+        await tap('[data-action="close"]', 300);
       } },
-    { t: "Shop the list", s: "Every piece with a link to buy, the budget left, and an FF&E schedule for the designer.",
+    { t: "Re-render just what changed", s: "the AI edits only the swapped pieces, everything else stays put",
+      run: async () => {
+        // the baked edit stands in for the live Gemini call (same request, rendered ahead of time)
+        const b = find('[data-action="render"]');
+        if (b) { await moveTo(b); cursor.classList.remove("press"); void cursor.offsetWidth; cursor.classList.add("press"); }
+        S.rendering = true; S.before = false; render();
+        await wait(fast ? 0 : 2200);
+        S.rendering = false; rememberRender(sceneSig(), SWAP_RENDER, true); render();
+        await wait(900);
+        await fullView(2600);
+      } },
+    { t: "Shop the list", s: "every piece with a link to buy, the budget left, an FF&E schedule",
       run: async () => {
         await tap(".next-arrow", 1400);
         await hover("#drawer .amt a", 1000);
         await hover('#drawer [data-action="schedule-pdf"]', 900);
       } },
-    { t: "Your room, itemized", s: "The same design as a plan, every piece numbered against the list.",
+    { t: "Your room, itemized", s: "the same design as a plan, numbered against the list",
       run: async () => { await tap('[data-action="shop-view"][data-view="room"]', 1400); await hover("#cartx .shop-marker", 1000); await hover("#cartx .shop-item", 800); } },
-    { t: "Photo → brief → design → render → shop", s: "The Elephant in the Room.", end: true,
+    { t: "Photo → brief → design → render → shop", s: "The Elephant in the Room", end: true,
       run: async () => { cursor.classList.remove("show"); await tap('[data-action="cart-close"]', 300); cursor.classList.remove("show"); } },
   ];
 
   function caption() {
     const b = BEATS[beat];
-    cap.innerHTML = `<div class="wt-top"><span>${beat + 1} / ${BEATS.length}</span>
-        <span class="wt-ctl"><button data-wt="prev" aria-label="Previous">‹</button><button data-wt="pause" aria-label="${paused ? "Play" : "Pause"}">${paused ? "▶" : "❚❚"}</button><button data-wt="next" aria-label="Next">›</button><button data-wt="stop" aria-label="Stop">×</button></span></div>
-      <b>${b.t}</b><p>${b.s}</p><i class="wt-bar"><i></i></i>`;
+    // a one-line subtitle: step, title, a few words; × stops (keys: Space pause, ← → step, Esc stop)
+    cap.innerHTML = `<span class="wt-n">${beat + 1}/${BEATS.length}</span><b>${b.t}</b><span class="wt-s">${b.s}</span>${paused ? `<span class="wt-n">paused</span>` : ""}<button data-wt="stop" aria-label="Stop the walkthrough">×</button>`;
     cap.classList.toggle("paused", paused);
-  }
-  function bar(ms) {
-    const i = cap.querySelector(".wt-bar i");
-    if (!i) return;
-    i.style.transition = "none"; i.style.width = "0";
-    void i.offsetWidth;
-    i.style.transition = `width ${ms}ms linear`; i.style.width = "100%";
   }
 
   // play from beat `from`: reset, fast-forward through the earlier beats, then play normally
@@ -155,11 +180,11 @@
       await BEATS[b].run();
       if (fast) continue;
       if (BEATS[b].end) break;
-      cap.querySelector(".wt-bar")?.classList.add("go"); bar(DWELL);
       await wait(DWELL);
     }
     cursor.classList.remove("show");
-    cap.classList.add("done");
+    await wait(5000);   // the closing line stays a moment, then the subtitle goes
+    stop();
   }
   function next() {
     if (beat >= BEATS.length - 1) return stop();
@@ -168,7 +193,7 @@
   function prev() { paused = false; play(Math.max(0, beat - 1)); }
   function start() {
     on = true; paused = false; document.body.classList.add("walkthrough");
-    cap.classList.remove("done"); play(0);
+    play(0);
   }
   function stop() {
     pending = null; gen++; on = false; fast = false; paused = false;
