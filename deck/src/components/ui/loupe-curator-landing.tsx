@@ -729,7 +729,6 @@ const THEME =
   ".lcl-room{position:relative;width:min(44vw,calc((var(--h) - 96px) * .893));aspect-ratio:1250/1400}.lcl-room>img{border-radius:26px}" +
   ".lcl-pin{opacity:clamp(0, var(--tc,0) * 12 - var(--i), 1)}.lcl-pin .lcl-hs-pill{padding:8px 16px;cursor:default}" +
   ".lcl-budget{position:absolute;left:14px;bottom:14px;padding:8px 14px;border-radius:999px;background:var(--lime);color:#141414;opacity:clamp(0, var(--tc,0) * 12 - var(--i), 1)}" +
-  ".lcl-brief{position:absolute;left:16px;top:16px;color:#fff;font-size:9.5px;text-shadow:0 1px 8px rgba(0,0,0,.4)}" +
   // 6 · the row the stages shrink into
   ".lcl-row{position:absolute;inset:0;z-index:2;pointer-events:none}" +
   ".lcl-rt{position:absolute;margin:0;opacity:clamp(0, var(--sh,0) * 2.2 - (5 - var(--k)) * .18, 1)}" +
@@ -854,7 +853,6 @@ const THEME =
   "@media (max-width:720px){.lcl-vs-map{height:62vh}.lcl-vs-dot,.lcl-vs-me{width:46%}.lcl-vs-dot b{font-size:17px}.lcl-vs-me b{font-size:22px}.lcl-vs-dot small,.lcl-vs-me small{font-size:12px}.lcl-vs-end{font-size:11px;padding:3px 6px}.lcl-vs-me .lcl-vs-mark{width:30px;padding:7px}}" +
   ".lcl-vs-me .lcl-vs-mark{width:56px;padding:12px;border-radius:50%;background:var(--ink);color:var(--paper);box-sizing:content-box}.lcl-vs-say{margin-top:22px!important}" +
   ".lcl-vs-say{margin:0;color:#fff;font-size:clamp(17px,1.5vw,22px);opacity:var(--vs-head,0);transform:translateY(calc((1 - var(--vs-head,0)) * 16px))}" +
-  ".lcl-vs-after{position:relative;z-index:3;background:var(--paper);padding:2vh clamp(16px,2vw,32px) 0}.lcl-vs-after .lcl-diff{margin:clamp(40px,7vh,90px) auto clamp(72px,12vh,140px)}" +
   ".lcl-steps{list-style:none;max-width:1040px;margin:0 auto;padding:0;counter-reset:st}" +
   ".lcl-steps li{counter-increment:st;display:grid;grid-template-columns:12em minmax(0,1fr) auto;gap:20px;align-items:baseline;padding:16px 0;border-top:1px solid rgba(0,0,0,.1)}.lcl-steps li:last-child{border-bottom:1px solid rgba(0,0,0,.1)}" +
   ".lcl-steps b{font-weight:400;font-size:clamp(18px,1.5vw,22px);letter-spacing:-.02em}.lcl-steps b::before{content:counter(st, decimal-leading-zero) '  ';font:10px ui-monospace,monospace;color:var(--soft);white-space:pre}.lcl-steps span{color:var(--soft);font-size:14.5px}.lcl-steps em{font-style:normal;font-size:10.5px;text-align:right}" +
@@ -865,7 +863,6 @@ const THEME =
   "@keyframes lcl-draw{to{stroke-dashoffset:0}}@keyframes lcl-fade{to{opacity:1}}" +
   ".lcl-mark-end{width:clamp(44px,4.4vw,72px);margin:0 auto 22px}.lcl-mark-end path{stroke-dashoffset:calc(1 - clamp(0, var(--t,0) * 3 - var(--k) * .45, 1))}.lcl-mark-end circle{opacity:clamp(0, var(--t,0) * 3 - 1.2, 1)}" +
   "@media (prefers-reduced-motion:reduce){.lcl-mark-hero path,.lcl-mark-hero circle{animation:none;stroke-dashoffset:0;opacity:1}}" +
-  ".lcl-diff{margin:clamp(72px,12vh,140px) auto;max-width:none;text-align:center;font-size:clamp(26px,3vw,48px);letter-spacing:-.035em;line-height:1.1}" +
   "@media (max-width:720px){.lcl-steps li{grid-template-columns:1fr;gap:2px}.lcl-gr .lcl-need{font-size:12px}}" +
   ".lcl-sh,.lcl-tm-title,.lcl-diff,.lcl-lede,.lcl-note,.lcl-cap{text-wrap:balance}.lcl-cap .lcl-pillbg{border-radius:.7em;padding:.2em .7em}" +
   "@media (max-width:720px){.lcl-probbig{font-size:34px}}" +
@@ -1780,7 +1777,6 @@ export default function LoupeCuratorLanding({
               <span className="lcl-budget lcl-mono" style={{ "--i": 10 } as CSSProperties}>
                 Budget · {usd(BUDGET)} total
               </span>
-              <span className="lcl-brief lcl-mono">Room brief · updates as you talk</span>
             </div>
           </div>
         </div>
@@ -1824,10 +1820,6 @@ export default function LoupeCuratorLanding({
             <i aria-hidden="true" />
             <span>Room</span>
           </h2>
-          <div className="lcl-chips lcl-mono">
-            <span>{GRID.length} pieces from {CATALOG.sources}</span>
-            <span>{usd(total(GRID))} of {usd(BUDGET)} budget</span>
-          </div>
           <p className="lcl-note">The sofa is where it starts. Tables, lights and storage come next.</p>
         </div>
         <div className="lcl-gr">
@@ -1929,7 +1921,6 @@ export default function LoupeCuratorLanding({
                 Room total <b ref={reg("lbTotal")}>{usd(total(GRID))}</b> of {usd(BUDGET)} · sofa and rocking chair kept
               </span>
             </div>
-            <p className="lcl-note">Back angle and cushion feel aren't in the data. Sit-test before you buy.</p>
           </div>
         </div>
       </section>
@@ -1996,13 +1987,6 @@ export default function LoupeCuratorLanding({
             <span className="lcl-zpill">Only one does both.</span>
           </p>
         </div>
-      </section>
-      <section className="lcl-vs-after">
-        <p className="lcl-diff">
-          The picture never invents furniture.
-          <br />
-          Every object in it is a real product with a size, a price and a link.
-        </p>
       </section>
 
       {/* how it understands you: a spoken sentence becomes a decision, then labels, then a pick in the cart; scroll drives it */}
