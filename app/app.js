@@ -194,17 +194,24 @@ const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ?
 // Pieces the user sketched on this photo (sketch.js): [{category, widthIn, pos}]
 const sketched = () => S.sketch?.photoKey === photoKey() ? S.sketch.items : [];
 
-// What to design. No sketch: the room template. A sketch: ONLY the sketched pieces, each at the spot and about the
-// size it was drawn (pieces you chose to keep are still added by planOptions, since they're physically in the room).
-// Budget share per piece comes from the templates (a sofa gets more than a lamp), so prices stay realistic.
+// What to design: the room template plus the sketched pieces. A sketched piece of a type the template already has
+// takes that slot (the template's floor lamp moves to where you drew one); other sketched pieces are added.
+// Each sketched piece goes at the spot and about the size it was drawn. Budget share per piece comes from the
+// templates (a sofa gets more than a lamp), scaled down if the extra pieces push the total over the budget.
 const SHARE = Object.fromEntries(Object.values(TEMPLATES).flat().reverse().map(s => [s.cat, s.share]));
 function slotsWithSketch() {
-  const sk = sketched(), wall = S.space.wallIn;
-  if (!sk.length) return TEMPLATES[S.needs.room];
-  return sk.map((s, n) => ({
-    cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
-    maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall),   // allow pieces a bit bigger than drawn
-  }));
+  const sk = sketched(), wall = S.space.wallIn, tpl = TEMPLATES[S.needs.room];
+  if (!sk.length) return tpl;
+  const slots = tpl.map(s => ({ ...s })), taken = new Set();
+  sk.forEach((s, n) => {
+    const mine = { cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
+                   maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall) };   // allow a bit bigger than drawn
+    const k = slots.findIndex((t, i) => t.cat === s.category && !t.sketched && !taken.has(i));
+    if (k >= 0) { taken.add(k); slots[k] = { ...mine, share: slots[k].share, qty: slots[k].qty }; }
+    else slots.push(mine);
+  });
+  const total = slots.reduce((a, s) => a + s.share, 0);
+  return total > 1 ? slots.map(s => ({ ...s, share: s.share / total })) : slots;
 }
 
 function planOptions() {
@@ -261,7 +268,7 @@ function stagesText() {
     `Reading your needs · ${S.needs.style.toLowerCase()}, ${money(S.needs.budget)}`,
     `Scaling the room · back wall ${inch(S.space.wallIn)}`,
     ...(keptCount() ? [`Keeping ${keptCount()} of your pieces`] : []),
-    ...(sketched().length ? [`Designing only your ${sketched().length} sketched piece${sketched().length > 1 ? "s" : ""}`] : []),
+    ...(sketched().length ? [`Adding your ${sketched().length} sketched piece${sketched().length > 1 ? "s" : ""}`] : []),
     `Searching ${P.length} real products`,
     "Checking fit and budget",
     "Composing 3 options",
@@ -308,7 +315,9 @@ function editsSinceLast() {
   if (dup(L.items) || dup(S.scene)) return null;
   const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
   const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
-  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own;
+  // a piece the sketch moved (newly sketched, or sketched somewhere else) counts as changed, so the render moves it
+  const spot = it => it.sketched ? it.pos.map(Math.round).join() : "";
+  const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own && spot(a) === spot(b);
   const changed = S.scene.filter(it => !before[it.cat] || !same(before[it.cat], it))
     .map(it => ({ ...itemPayload(it), replaces: before[it.cat] ? view(before[it.cat]).name : null }));
   const removed = L.items.filter(it => !now[it.cat]).map(it => ({ category: CAT_LABEL[it.cat], name: view(it).name }));
@@ -330,8 +339,7 @@ function renderRequest() {
   return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
            items: S.scene.filter(it => !it.own).map(itemPayload),
            keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
-           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here),
-           ...(S.scene.some(it => it.sketched) ? { sketch_only: true } : {}) };
+           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
 }
 
 // real = the image truly shows this scene (an AI render), so AI edits can build on it
@@ -700,7 +708,7 @@ function needsCard() {
       <b>${ROOMS[n.room]} · ${esc(n.style)} · ${money(n.budget)}</b>
       ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
       ${kept ? `<small>Designing around ${kept} piece${kept > 1 ? "s" : ""} you keep</small>` : ""}
-      ${sk.length ? `<small>Only your sketch: ${esc(sk.map(s => CAT_LABEL[s.category]).join(", "))}</small>` : ""}
+      ${sk.length ? `<small>Sketched: ${esc(sk.map(s => CAT_LABEL[s.category]).join(", "))}</small>` : ""}
     </div>
     <button class="btn block" data-action="next">Design my room →</button>` : "";
   return `<div class="card needs-win">

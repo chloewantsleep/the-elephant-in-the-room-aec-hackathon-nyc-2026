@@ -124,10 +124,6 @@ def build_prompt(req):
             n = int(k.get("count") or 1)
             spots = "; ".join(where(p) for p in (k.get("positions") or ([k["pos"]] if k.get("pos") else [])))
             lines.append(f"- all {n} x {k.get('label')} ({k.get('category')})" + (f" at: {spots}" if spots else ""))
-    if req.get("sketch_only"):
-        lines += ["", "IMPORTANT: the user sketched exactly which pieces they want. ADD only the products listed above."
-                      " Leave everything else in IMAGE 1 as it is (existing furniture, decor, layout), unless it is"
-                      " listed under REMOVE, or a new product has to stand where it is."]
     if req.get("instruction"):
         lines += ["", "Extra instruction from the user: " + req["instruction"]]
     return "\n".join(lines)

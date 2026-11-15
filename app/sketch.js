@@ -5,7 +5,7 @@
  *   - pick a type on a shape's chip, or
  *   - "Guess with AI" sends the photo with the shapes drawn on to /api/sketch (sketch_ai.py), or
  *   - just press Done: any shape without a type gets a free, instant guess from its size and place (quick: true).
- * Done saves the shapes; the planner (app.js planOptions) then designs only these pieces, where they were drawn.
+ * Done saves the shapes; the planner (app.js planOptions) adds these pieces to the design, where they were drawn.
  * From Design or Edit, Done re-plans right away and lands on Design.
  *
  * Loaded after app.js and uses its globals (S, render, goto, apiPost, toImage, geom, photoKey, CAT_LABEL, ...).
@@ -208,7 +208,7 @@ async function skDone() {
   S.sketch = { photoKey: photoKey(), items };
   S.dirty = true;   // the next design plans around these
   SK.on = false; SK.result = null; SK.marks = [];
-  toast(`Designing only your sketch: ${items.map(it => skLabel(it.category)).join(", ")}`);
+  toast(`Adding your sketch to the design: ${items.map(it => skLabel(it.category)).join(", ")}`);
   if (S.step === NEEDS) render();
   else goto(DESIGN);   // from Design / Edit: re-plan now (goto sees S.dirty)
 }
