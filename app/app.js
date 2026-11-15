@@ -254,10 +254,10 @@ const TEST_SET = [
 const DEMO_LAMP = { pid: "ikea:50513738", similar: ["ikea:70315030", "ikea:20585996"],   // NÖSUND; SINNERLIG, STOCKHOLM 2025
                     strokes: [[[25, 12], [37, 12], [37, 24], [25, 24], [25, 12]]] };   // hanging (on its cord) between the column and the pendant
 function demoSketch(m) {   // called by sketch.js for each shape when the user presses Done
-  if (!ONLY_SKETCH_NEW || S.space.photo !== "demo") return;
+  if (!demoRoom()) return;
   m.cat = "pendant_lamp"; m.strokes = structuredClone(DEMO_LAMP.strokes); m.widthIn = null; m.demoLamp = true;
 }
-const isDemoLamp = it => it.sketched && it.cat === "pendant_lamp" && ONLY_SKETCH_NEW && S.space.photo === "demo";
+const isDemoLamp = it => it.sketched && it.cat === "pendant_lamp" && demoRoom();
 
 // the locked slot this piece belongs to (the test piece itself, or one of its similar products swapped in)
 const lockedSlot = it => S.space.photo === "demo" && !it.own && !it.sketched
@@ -526,7 +526,7 @@ const passcode = {
 };
 
 // VS Code Live Preview serves the page on another local port (3000); the AI server (python server.py) is on 8000
-const API_BASE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port !== (window.ELEPHANT_API_PORT || "8000")
+const API_BASE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port === "3000"   // Live Preview only
   ? `http://127.0.0.1:${window.ELEPHANT_API_PORT || "8000"}` : "";
 async function apiPost(path, obj) {
   const body = JSON.stringify(obj);
@@ -597,16 +597,20 @@ async function renderScene(manual = false) {
     // demo: the sample room's test set (option 1, colors as recommended) is the saved render all demo looks were made on
     const isDemoBase = reqObj.mode !== "edit" && S.space.photo === "demo" && S.space.ex === 0
       && sameItems(S.scene.filter(it => !it.sketched), testScene());
-    if (ONLY_SKETCH_NEW && !toPlace.length) reqObj.cache_only = true;   // only sketches make new renders
-    const j = bigNeeded && ONLY_SKETCH_NEW && isDemoBase ? await apiPost("/api/cached_render", { key: DEMO_BASE })
+    if (demoRoom() && !toPlace.length) reqObj.cache_only = true;   // demo room: only sketches make new renders
+    const fromDemo = bigNeeded && demoRoom() && isDemoBase;
+    const prevShown = reqObj.mode === "edit" ? lastRender().image : null;
+    const demoLine = fromDemo || (!bigNeeded && prevShown && rsOf.has(prevShown));   // a picture of the demo render's lineage
+    const j = fromDemo ? await apiPost("/api/cached_render", { key: DEMO_BASE })
       : bigNeeded ? await apiPost("/api/render", reqObj)
-      : { image: reqObj.mode === "edit" ? lastRender().image : photoSrc(), cached: true, ms: 0 };   // only sketches: add them to what's there
+      : { image: prevShown ? renderSpace(prevShown) : photoSrc(), cached: true, ms: 0 };   // only sketches: add them to what's there
     if(sig!==sceneSig()){S.renders[sig]=j.image;stale=true;return;}   // you picked another option meanwhile: keep this one for later, render the new pick next
     if (toPlace.length) {
       toast(`Adding your ${toPlace.length} sketched piece${toPlace.length > 1 ? "s" : ""}…`);
       j.image = await placeSketched(j.image, toPlace);
       if (sig !== sceneSig()) { toast('The design changed, so this image doesn’t show it. Render again.'); return; }
     }
+    if (demoLine) j.image = await showOnPhoto(j.image);   // shown on the full photo, at the right place
     rememberRender(sig, j.image);if(typeof logTransition==='function')logTransition('Render updated with the current picks and colors.');
     prepareVariants();   // in the background: color crops for instant color switching
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
@@ -631,9 +635,24 @@ let MOCK_VARIANTS = false;
 // DEMO: only sketches make new AI renders. Everything else (full renders, tracking, colors, similar products) comes from
 // what was rendered before (server cache). #newrenders=1 in the URL allows new renders for everything again.
 let ONLY_SKETCH_NEW = true;
+// the demo only applies to the sample lounge; your own photo (and the other example) render as usual
+const demoRoom = () => ONLY_SKETCH_NEW && S.space.photo === "demo" && S.space.ex === 0;
 const DEMO_BASE = "ddfbf2dc833b2419";   // the test-set render (sample room, option 1) all demo colors / swaps were made on
-const cacheOnly = live => (path, body) => apiPost(path, ONLY_SKETCH_NEW && !live ? { ...body, cache_only: true } : body);
+const cacheOnly = live => (path, body) => apiPost(path, demoRoom() && !live ? { ...body, cache_only: true } : body);
 const prepared = new Map();   // render image -> its V, so going back to a picture (e.g. another option) is instant
+// The demo render (and every color / similar product / sketch made on it) was made on the earlier, cropped lounge
+// photo. That crop is this part of the full photo (example-lounge-wide.jpg): all the work stays in the render's own
+// space (so everything comes from the cache) and is pasted onto the full photo only for display.
+const DEMO_SPACE = { x: 0.3306, y: 0, w: 0.6695, h: 1 };
+const rsOf = new Map(), shownOf = new Map();   // shown picture <-> picture in the render's own space
+const renderSpace = img => rsOf.get(img) || img;
+const toShown = ([x, y]) => [DEMO_SPACE.x * 100 + DEMO_SPACE.w * x, DEMO_SPACE.y * 100 + DEMO_SPACE.h * y];
+async function showOnPhoto(rsImg) {   // render-space picture -> the same picture on the full photo
+  if (shownOf.has(rsImg)) return shownOf.get(rsImg);
+  const shown = await Variants.pasteInto(photoSrc(), rsImg, DEMO_SPACE);
+  shownOf.set(rsImg, shown); rsOf.set(shown, rsImg);
+  return shown;
+}
 const VARIANT_MAX = 4;   // colors per product, including the one it was rendered in (also the swatches shown)
 const SIMILAR_MAX = 4;   // similar products listed per piece (also prepared, default color only)
 // V = {base: render image the crops come from, scene: what that render shows, items: {slot index: {pid, from, fromName,
@@ -655,7 +674,7 @@ function similarProducts(it) {
   if (t) return [t.pid, ...t.similar].filter(id => id !== it.pid && byId[id]).map(id => byId[id]).slice(0, SIMILAR_MAX);
   // a sketched piece: 2 similar products in the demo (all of them with real AI renders on, #newrenders=1)
   if (isDemoLamp(it) && it.pid === DEMO_LAMP.pid) return DEMO_LAMP.similar.filter(id => byId[id]).map(id => byId[id]);
-  if (it.sketched) return similarRanked(it).slice(0, ONLY_SKETCH_NEW ? 2 : SIMILAR_MAX);
+  if (it.sketched) return similarRanked(it).slice(0, demoRoom() ? 2 : SIMILAR_MAX);
   return similarRanked(it).slice(0, SIMILAR_MAX);
 }
 function similarRanked(it) {
@@ -681,13 +700,14 @@ const colorsReady = () => variantsCover() && S.scene.every((it, i) => ["same", "
 const REPAIR_MAX = 2;   // extra edit renders to add products the render left out
 async function prepareVariants(depth = 0) {
   const L = lastRender();
-  if (!L?.real || !(S.live || MOCK_VARIANTS) || V?.base === L.image || (L.fromVariants && V)) return;
+  if (!L?.real || !(S.live || MOCK_VARIANTS) || V?.base === renderSpace(L.image) || (L.fromVariants && V)) return;
   // L.items = exactly what this render shows (the scene may have been edited since)
-  if (prepared.has(L.image) && prepared.get(L.image).tracked) {   // seen this picture before: labels + looks right away
-    V = lastV = prepared.get(L.image); S.verifying = false; render(); resumeJobs(V); return;
+  const base = renderSpace(L.image), mapped = base !== L.image;   // mapped: shown on the full photo (demo render)
+  if (prepared.has(base) && prepared.get(base).tracked) {   // seen this picture before: labels + looks right away
+    V = lastV = prepared.get(base); S.verifying = false; render(); resumeJobs(V); return;
   }
   const prev = V || lastV;
-  const run = V = lastV = { base: L.image, scene: structuredClone(L.items), items: {} };
+  const run = V = lastV = { base, mapped, scene: structuredClone(L.items), items: {} };
   prepared.set(run.base, run);
   if (prepared.size > 12) prepared.delete(prepared.keys().next().value);
   // every new product is tracked (labels move onto it); then its colors and similar products are prepared
@@ -744,7 +764,7 @@ async function prepareVariants(depth = 0) {
     // labels: put each pin where the product really is in the render (template positions are only a guess)
     todo.forEach(({ it }, k) => {
       if (!boxes[k]) return;
-      const at = boxCenter(boxes[k]);
+      const at = run.mapped ? toShown(boxCenter(boxes[k])) : boxCenter(boxes[k]);   // label spot on the shown picture
       for (const list of [S.scene, S.options[S.opt]?.items, run.scene])
         list?.filter(x => x.cat === it.cat && x.pid === it.pid && !x.own).forEach(x => { x.at = at.slice(); });   // label spot only (pos is part of sceneSig)
     });
@@ -895,9 +915,10 @@ async function showColors() {
   if (!colorsReady()) return false;
   const sig = sceneSig(), run = V;
   const overlays = S.scene.map((it, i) => lookState(it, i)).filter(l => l.s === "ready").map(l => l.overlay);
-  const img = S.renders[sig] || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
+  let img = S.renders[sig] || (overlays.length ? await Variants.flatten(run.base, overlays) : run.base);
+  if (!S.renders[sig] && run.mapped) img = await showOnPhoto(img);   // the demo render: shown on the full photo
   if (V !== run || sceneSig() !== sig) return false;   // something else changed meanwhile
-  rememberRender(sig, img, true); S.last.fromVariants = true; prepared.set(img, run); S.before = false; render();
+  rememberRender(sig, img, true); S.last.fromVariants = true; prepared.set(renderSpace(img), run); S.before = false; render();
   return true;
 }
 

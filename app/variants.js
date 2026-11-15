@@ -198,5 +198,26 @@
     return c.toDataURL("image/jpeg", 0.93);
   }
 
-  window.Variants = { track, cropForRecolor, recolor, swap, place, sketchBox, makeOverlay, flatten };
+  /* ---------- 6. a picture made on a crop of a photo -> pasted back onto the whole photo ---------- */
+  // sp = {x, y, w, h}: where that crop sits in the photo (fractions). Inner edges are feathered so there's no seam.
+  async function pasteInto(photoSrc, imgSrc, sp) {
+    const [ph, im] = await Promise.all([loadImage(photoSrc), loadImage(imgSrc)]);
+    const W = ph.naturalWidth, H = ph.naturalHeight, c = canvas(W, H), g = c.getContext("2d");
+    g.drawImage(ph, 0, 0);
+    const rx = Math.round(sp.x * W), ry = Math.round(sp.y * H), rw = Math.round(sp.w * W), rh = Math.round(sp.h * H);
+    const t = canvas(rw, rh), tg = t.getContext("2d");
+    tg.drawImage(im, 0, 0, rw, rh);
+    const f = Math.max(8, Math.round(rw * 0.04));
+    tg.globalCompositeOperation = "destination-in";
+    const edges = [[rx > 1, [0, 0, f, 0]], [rx + rw < W - 1, [rw, 0, rw - f, 0]], [ry > 1, [0, 0, 0, f]], [ry + rh < H - 1, [0, rh, 0, rh - f]]];
+    for (const [inner, [x0, y0, x1, y1]] of edges) if (inner) {
+      const grad = tg.createLinearGradient(x0, y0, x1, y1);
+      grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,1)");
+      tg.fillStyle = grad; tg.fillRect(0, 0, rw, rh);
+    }
+    g.drawImage(t, rx, ry);
+    return c.toDataURL("image/jpeg", 0.93);
+  }
+
+  window.Variants = { pasteInto, track, cropForRecolor, recolor, swap, place, sketchBox, makeOverlay, flatten };
 })();

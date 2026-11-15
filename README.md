@@ -31,6 +31,13 @@ Plain HTML/CSS/JS reading `data/products.json`, plus `server.py` (Python standar
 - **Example rooms:** two photos from the hackathon venue (`app/assets/example-lounge.jpg`, `example-bar.jpg`), switchable with *Next example*. The lounge photo is cropped so no one is identifiable.
 - **Demo deep links:** `#step=2&sel=0` opens edit with the first item open. `#room=bedroom&step=3` opens the bedroom list. `#step=0&scan=1` scans the demo room. Add `&render=1` to render on load.
 
+### Instant colors and similar products (`app/variants.js`)
+
+After a render, each new product is found in the picture (`/api/track`), cropped, and pre-rendered in up to 4 colors and 4 similar products (`/api/recolor`, `/api/swap`, one small Gemini edit each). Picking one with the usual color / swap buttons lays that crop over the render right away, with no new render. Sketched pieces are added into a small crop around the sketch (`/api/place`) and get their own colors and similar products.
+
+- **Demo (sample lounge only):** option 1 is a locked test set, and its colors, similar products and a sketched lamp all come from the saved results in `demo-cache/`. Only sketches make new AI calls, and any shape drawn there becomes the demo lamp. Add `#newrenders=1` to the URL to render everything for real. Your own photos and the other example always render as usual.
+- **Quick test:** `#step=2&render=1` opens the sample lounge already rendered. `#variantsmock=1` fakes the AI calls.
+
 ## Pitch deck
 
 **https://elephant-pitch.vercel.app**. A scroll-driven pitch built from `deck/` (its own Vercel project, root directory `deck/`). See [`deck/README.md`](deck/README.md).

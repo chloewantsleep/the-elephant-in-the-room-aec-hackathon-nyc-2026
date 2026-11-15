@@ -66,6 +66,6 @@ async function persistRenderedImage(sig,last){
 }
 async function restoreRenderedImage(){
  if(typeof indexedDB==='undefined')return;
- try{const db=await renderStore(),tx=db.transaction('images'),req=tx.objectStore('images').get('latest');req.onsuccess=()=>{const saved=req.result;if(saved&&S.scene&&saved.last.photoKey===photoKey()&&!(typeof ONLY_SKETCH_NEW!=='undefined'&&ONLY_SKETCH_NEW)){S.last=saved.last;S.renders[saved.sig]=saved.last.image;render();if(typeof prepareVariants==='function')prepareVariants();}};tx.oncomplete=()=>db.close();}catch{}
+ try{const db=await renderStore(),tx=db.transaction('images'),req=tx.objectStore('images').get('latest');req.onsuccess=()=>{const saved=req.result;if(saved&&S.scene&&saved.last.photoKey===photoKey()&&!(typeof demoRoom==='function'&&demoRoom())){S.last=saved.last;S.renders[saved.sig]=saved.last.image;render();if(typeof prepareVariants==='function')prepareVariants();}};tx.oncomplete=()=>db.close();}catch{}
 }
 restoreRenderedImage();

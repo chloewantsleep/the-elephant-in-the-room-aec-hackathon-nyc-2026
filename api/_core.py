@@ -220,8 +220,9 @@ def render(req):
     cache_only = req.pop("cache_only", False)   # not part of the cache key
     key = hashlib.sha1((MODEL + code_version(build_prompt, build_edit_prompt) + json.dumps(req, sort_keys=True)).encode()).hexdigest()[:16]
     cache = os.path.join(RENDERS, "cache", key + ".json")
-    if os.path.exists(cache) and not req.get("fresh"):
-        with open(cache) as f:
+    hit = saved(key + ".json")
+    if hit and not req.get("fresh"):
+        with open(hit) as f:
             return {**json.load(f), "cached": True}
     if cache_only:
         raise RuntimeError(NOT_CACHED)
@@ -272,6 +273,18 @@ CATEGORY_LIST = ("sofa, armchair, bed, dining_table, coffee_table, side_table, d
 
 # prompt versions of saved results from before later prompt edits (demo uses them in cache-only mode)
 LEGACY_CODE = {"recolor": ("2ff1df8299",), "swap": ("811b4881e9",)}
+DEMO_CACHE = os.path.join(ROOT, "demo-cache")   # saved results shipped with the repo for the demo (read-only)
+
+
+def saved(name):
+    """A saved result: this machine's cache first, then the demo results in the repo. None if neither has it."""
+    for folder in (os.path.join(RENDERS, "cache"), DEMO_CACHE):
+        path = os.path.join(folder, name)
+        if os.path.exists(path):
+            return path
+    return None
+
+
 NOT_CACHED = "Not rendered before (demo: only sketches make new renders; add #newrenders=1 to the page URL to allow all)"
 
 
@@ -279,15 +292,16 @@ def cached(kind, payload, fn, cache_only=False):
     """Same input -> same answer, without paying again. cache_only: never call the model, only return a saved answer."""
     key = hashlib.sha1((kind + json.dumps(payload, sort_keys=True)).encode()).hexdigest()[:16]
     path = os.path.join(RENDERS, "cache", f"{kind}-{key}.json")
-    if os.path.exists(path) and not payload.get("fresh"):
-        with open(path) as f:
+    hit = saved(f"{kind}-{key}.json")
+    if hit and not payload.get("fresh"):
+        with open(hit) as f:
             return {**json.load(f), "cached": True}
     if cache_only:
         # demo: results made before a prompt edit are saved under the older prompt version; use them too
         for code in LEGACY_CODE.get(kind, ()):
             old = hashlib.sha1((kind + json.dumps({**payload, "code": code}, sort_keys=True)).encode()).hexdigest()[:16]
-            old_path = os.path.join(RENDERS, "cache", f"{kind}-{old}.json")
-            if os.path.exists(old_path):
+            old_path = saved(f"{kind}-{old}.json")
+            if old_path:
                 with open(old_path) as f:
                     return {**json.load(f), "cached": True}
         raise RuntimeError(NOT_CACHED)
@@ -677,8 +691,8 @@ def cached_render(req):
     key = str(req.get("key", ""))
     if not re.fullmatch(r"[0-9a-f]{16}", key):
         raise ValueError("bad key")
-    path = os.path.join(RENDERS, "cache", key + ".json")
-    if not os.path.exists(path):
+    path = saved(key + ".json")
+    if not path:
         raise RuntimeError("That saved render is not on this computer")
     with open(path) as f:
         d = json.load(f)
