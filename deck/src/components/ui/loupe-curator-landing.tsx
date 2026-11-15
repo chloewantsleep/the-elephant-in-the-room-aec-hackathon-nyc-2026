@@ -355,10 +355,11 @@ const FLOW: [title: string, body: string, tool: string][] = [
 ]
 const REELS: { title: string; src?: string; poster?: string }[] = [
   { title: "Elephant, start to finish", src: "/video/elephant-start-to-finish.mp4", poster: "/video/elephant-start-to-finish.jpg" },
-  { title: "Evaluate your existing space" },
-  { title: "Customize with a sketch" },
-  { title: "Fast local iteration" },
-  { title: "Adaptation" },
+  // feature demos recorded by the team (deck/public/video/README-feature-demos.md)
+  { title: "Evaluate your existing space", src: "/video/1-evaluate-environment.mp4", poster: "/video/1-evaluate-environment.jpg" },
+  { title: "Customize with a sketch", src: "/video/2-sketch.mp4", poster: "/video/2-sketch.jpg" },
+  { title: "Fast local iteration", src: "/video/3-switch.mp4", poster: "/video/3-switch.jpg" },
+  { title: "Plan, list and export", src: "/video/4-multiple-export.mp4", poster: "/video/4-multiple-export.jpg" },
 ]
 const GRID_AFTER = [...AFTER, ...GRID.filter((g) => !GONE.has(g.k))]
 
