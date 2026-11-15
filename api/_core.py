@@ -400,6 +400,24 @@ def clean_boxes(raw, slots):
     return out
 
 
+def clean_others(raw):
+    """Furniture in the render that isn't in the list: [{category, label, boxes, dims_in}]."""
+    cats = set(c.strip() for c in CATEGORY_LIST.split(","))
+    out = []
+    for it in (raw.get("others") if isinstance(raw, dict) else None) or []:
+        if not isinstance(it, dict):
+            continue
+        boxes = clean_boxes([{"id": 0, "boxes": it.get("boxes")}], {0: 12}).get(0)
+        if not boxes:
+            continue
+        cat = it.get("category") if it.get("category") in cats else "other"
+        dims = it.get("dims_in") if isinstance(it.get("dims_in"), dict) else {}
+        dims = {k: float(dims[k]) for k in ("width", "depth", "height")
+                if type(dims.get(k)) in (int, float) and math.isfinite(dims[k]) and 0 < dims[k] < 400}
+        out.append({"category": cat, "label": str(it.get("label") or cat)[:60], "boxes": boxes, "dims_in": dims})
+    return out[:15]
+
+
 def locate_in_render(photo, items):
     """Where each listed piece is in a finished render: one box per visible copy.
 
@@ -418,17 +436,23 @@ def locate_in_render(photo, items):
             "Find each piece of furniture from the list in this room image. For every listed id return the box of each "
             "visible copy (qty says how many there should be; return fewer if fewer are visible, none if it is not in the image). "
             "Boxes are [ymin, xmin, ymax, xmax] normalized to 0-1000 and must tightly cover the whole piece, legs included, "
-            "down to where it touches the floor. Do not box furniture that is not in the list. "
-            'Return JSON: {"items": [{"id": <id>, "boxes": [[ymin, xmin, ymax, xmax], ...]}]}\n'
+            "down to where it touches the floor. "
+            "Separately, list up to 15 OTHER pieces of furniture visible in the room that are not in the list (background "
+            "chairs, stools, tables, sofas, storage, large lamps; not people, plants, decor or small objects), each with category "
+            "(one of [" + CATEGORY_LIST + "]), a short label, one box per visible copy, and its estimated real size in inches.\n"
+            'Return JSON: {"items": [{"id": <id>, "boxes": [[ymin, xmin, ymax, xmax], ...]}], '
+            '"others": [{"category": "...", "label": "...", "boxes": [[ymin, xmin, ymax, xmax], ...], '
+            '"dims_in": {"width": n, "depth": n, "height": n}}]}\n'
             "Furniture: " + json.dumps(listed))
         body = {"contents": [{"role": "user", "parts": [image_part(photo), {"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}
         t0 = time.time()
         res = gemini(f"models/{TEXT_MODEL}:generateContent", body)
         raw = json.loads("".join(p.get("text", "") for p in res["candidates"][0]["content"]["parts"]))
-        return {"boxes": clean_boxes(raw, slots), "model": TEXT_MODEL, "ms": int((time.time() - t0) * 1000)}
+        return {"boxes": clean_boxes(raw, slots), "others": clean_others(raw), "model": TEXT_MODEL,
+                "ms": int((time.time() - t0) * 1000)}
 
-    return cached("render-boxes", {"photo": photo, "items": listed, "m": TEXT_MODEL, "v": 1}, run)
+    return cached("render-boxes", {"photo": photo, "items": listed, "m": TEXT_MODEL, "v": 2}, run)   # v2: + others
 
 
 def inspect_render_layout(photo, layout):

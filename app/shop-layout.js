@@ -60,6 +60,20 @@ const SHOP_COLORS = {
   yellow: "#c4a055", red: "#a56054", orange: "#bc8157", glass: "#c2d2d3",
 };
 const SHOP_HEX = /^#[\da-f]{6}$/i;
+
+// typical size (inches: width, depth, height) when a product or a piece in the picture has no measurement
+const SHOP_TYPICAL = {
+  sofa: [84, 36, 33], armchair: [30, 32, 32], coffee_table: [40, 24, 17], side_table: [18, 18, 22], rug: [96, 60, 1],
+  bed: [64, 84, 40], nightstand: [18, 16, 24], dresser: [48, 18, 32], wardrobe: [40, 24, 78], desk: [48, 24, 30],
+  office_chair: [26, 26, 40], dining_table: [60, 36, 30], dining_chair: [18, 20, 32], stool_bench: [16, 16, 30],
+  shelving: [32, 14, 72], cabinet: [36, 18, 34], tv_stand: [60, 16, 20], floor_lamp: [14, 14, 60], table_lamp: [8, 8, 18],
+  pendant_lamp: [18, 18, 14], mirror: [24, 2, 60], other: [24, 20, 24],
+};
+function shopDims(item) {
+  const dims = view(item)?.dims_in || {}, [tw, td, th] = SHOP_TYPICAL[item.cat] || SHOP_TYPICAL.other;
+  const w = shopPositive(dims.width, tw);
+  return { w, d: shopPositive(dims.depth, dims.width > 0 ? Math.min(w, td) : td), h: shopPositive(dims.height, th) };
+}
 const shopPositive = (n, fallback) => Number.isFinite(n) && n > 0 ? n : fallback;
 const shopColorText = text => String(text || "").toLowerCase().match(/[a-z]+(?:-[a-z]+)*/g)
   ?.map(word => SHOP_COLORS[word]).filter(Boolean) || [];
@@ -143,7 +157,7 @@ function shopSceneLayout(items, space, room, ref) {
     let area = 0;
     items.forEach(item => {
       if (NO_ROOM.has(item.cat)) return;
-      const dims = view(item).dims_in, w = shopPositive(dims.width, 22), d = shopPositive(dims.depth, shopPositive(dims.width, 18));
+      const { w, d } = shopDims(item);
       area += w * d * (item.qty || 1);
       for (let i = 0; i < (item.qty || 1); i++) {
         const uv = fromPhoto.get(`${item.slotId}:${i}`);
@@ -168,11 +182,9 @@ function shopSceneLayout(items, space, room, ref) {
   function arrange() {
     const entries = items.map((item, index) => {
       const sample = shopSample(ref, item);
-      const dimensions = view(item).dims_in;
       const useColor = !ref?.profile || item.own || ref.demoExact;
       return { id: item.slotId, number: index + 1, item, sample, finish: shopFinish(item, useColor ? sample : null),
-        form: sample?.form, w: shopPositive(dimensions.width, 22), d: shopPositive(dimensions.depth, shopPositive(dimensions.width, 18)),
-        h: shopPositive(dimensions.height, 20), pieces: [] };
+        form: sample?.form, ...shopDims(item), pieces: [] };
     });
     const measured = space.confirmed ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
     const fixed = new Map();
@@ -325,7 +337,7 @@ function shopReference(items) {
   const demoExact = profile && S.opt === 0 && S.existing?.baked &&
     S.existing.items.every(piece => items.some(item => item.own === piece.id));
   const read = image && shopRenderBoxes.get(image);
-  return { image, profile, demoExact, boxes: read?.boxes || null, reading: read?.status === "pending" };
+  return { image, profile, demoExact, boxes: read?.boxes || null, others: read?.others || [], reading: read?.status === "pending" };
 }
 
 // Gemini reads where each piece landed in this design's AI render (boxes only; cached on the server too).
@@ -348,7 +360,7 @@ async function readRenderBoxes(items, image) {
       { width: Math.round(pic.naturalWidth * scale), height: Math.round(pic.naturalHeight * scale) });
     canvas.getContext("2d").drawImage(pic, 0, 0, canvas.width, canvas.height);
     const res = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), locate });
-    shopRenderBoxes.set(image, { status: "ready", boxes: res.boxes || {} });
+    shopRenderBoxes.set(image, { status: "ready", boxes: res.boxes || {}, others: res.others || [] });
   } catch {
     shopRenderBoxes.set(image, { status: "failed" });
   }

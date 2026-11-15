@@ -707,6 +707,7 @@ button.mock-tag:hover { opacity: 1; }
 
 .shop-plan .buy { --shop-top: #f6dba1; --shop-left: #ddb46e; --shop-right: #c5995b; --shop-edge: #765235; }
 .shop-plan .owned { --shop-top: #c7e4d4; --shop-left: #99c1ad; --shop-right: #79ad96; --shop-edge: #3d6658; }
+.shop-plan .scene { --shop-top: #e2e0dc; --shop-left: #c4c1bb; --shop-right: #aeaba5; --shop-edge: #6d6a65; }   /* in the render, not in the list */
 .shop-plan .shop-solid, .shop-solid > g {
   --shop-surface: var(--shop-body);
   --shop-top: var(--shop-surface);

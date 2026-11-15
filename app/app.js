@@ -146,6 +146,7 @@ function ownedProduct(e) {
 
 // Product as displayed: the base record, optionally with a colorway applied.
 function view(item) {
+  if (item.extra) return item.extra;   // furniture the render shows that isn't in the list (Shop room view)
   if (item.own) {
     const e = exById(item.own);
     return e ? ownedProduct(e) : ownedProduct({ id: item.own, label: "your piece", category: item.cat });
