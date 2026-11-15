@@ -268,20 +268,23 @@ const GRID: Item[] = [
 ]
 const total = (items: Item[]) => items.reduce((a, it) => a + it.price, 0)
 // 5 · life changes: a lasting change (moving in together, with a cat) re-plans the room; each move says why
-type Move = { op: "Keep" | "Upgrade" | "Add"; it: Item; was?: Item; why: string }
+type Move = { op: "Keep" | "Upgrade" | "Add"; it: Item; was?: Item; why: string; tag?: string }
 const TEODORES = GRID.find((g) => g.k === "dchair") as Item
 const ROCKER = GRID.find((g) => g.k === "poang") as Item
 const BOOKCASE = GRID.find((g) => g.k === "hd-bookcase") as Item
 const ARMCHAIR: Item = { k: "rocksjon-armchair", name: "ROCKSJÖN Armchair", price: 199, spec: "Seat 19⅝″ deep · 18½″ high" }
 const MOVES: Move[] = [
-  { op: "Keep", it: SODERHAMN, why: "Its cover comes off and machine-washes (IKEA documents both). It already suits a cat." },
-  { op: "Keep", it: ROCKER, why: "Still yours, still a reading seat. Now one of two." },
-  { op: "Upgrade", was: TEODORES, it: ARMCHAIR, why: "A spare chair for guests becomes a real seat for someone who lives here." },
-  { op: "Add", it: { ...BOOKCASE, name: "A second StyleWell bookcase" }, why: "Two people’s books, same shelf line, side by side." },
+  { op: "Keep", it: SODERHAMN, why: "Already works: the cover comes off and machine-washes (IKEA documents both).", tag: "covers: washable" },
+  { op: "Keep", it: ROCKER, why: "Already works: still a reading seat, now one of two." },
+  { op: "Upgrade", was: TEODORES, it: ARMCHAIR, why: "The spare guest chair becomes a real seat for someone who lives here.", tag: "seats: 2 people" },
+  { op: "Add", it: { ...BOOKCASE, name: "A second StyleWell bookcase" }, why: "Two people’s books, same shelf line, side by side.", tag: "storage \u2191" },
 ]
 const GONE = new Set(MOVES.flatMap((m) => (m.was ? [m.was.k] : [])))
 const AFTER: Item[] = MOVES.filter((m) => m.op !== "Keep").map((m) => m.it)
 const BUDGET = 2500
+// the life change plays on the room board: checks, one swap, one addition, then the budget moves (scroll phases)
+const LB = { ok1: [0.06, 0.16], ok2: [0.2, 0.3], swap: [0.36, 0.5], add: [0.54, 0.66], budget: [0.7, 0.86] } as const
+const LB_PHASE = ["ok1", "ok2", "swap", "add"] as const
 // screen recordings (16:9); drop the files in deck/public/video/ and set src
 // tech stack: one real labeled record (data/products.json + data/sofa-annotations.json, ikea:s59580059) and the pipeline from the README
 type Label = [attr: string, value: string, status: "documented" | "derived" | "unknown", source?: string]
@@ -660,16 +663,30 @@ const THEME =
   ".lcl-ctag{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:999px;background:var(--lime);color:#141414;font-size:9px}" +
   ".lcl-cwhy{display:block;margin-top:7px;font-size:13.5px;line-height:1.3}" +
   ".lcl-life{position:relative;z-index:5;margin-top:calc(var(--h) * -.7);background:var(--paper);padding:0 clamp(16px,2vw,32px) 24vh}" +
-  ".lcl-moves{list-style:none;max-width:1040px;margin:clamp(28px,5vh,56px) auto 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}" +
-  ".lcl-moves li{display:grid;grid-template-columns:88px minmax(0,1fr) auto;gap:16px;align-items:start;padding:14px;border-radius:20px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.05)}" +
-  ".lcl-mv-pic{position:relative;display:block;width:88px;height:88px;border-radius:14px;overflow:hidden;background:var(--card)}" +
-  ".lcl-mv-body{display:flex;flex-direction:column;gap:3px;min-width:0}.lcl-mv-body i{font-style:normal;align-self:flex-start;margin-bottom:4px;padding:3px 9px;border-radius:999px;font-size:9.5px;background:var(--ink);color:var(--paper)}" +
-  ".lcl-moves li[data-op=Keep] .lcl-mv-body i{background:#2fae5b}.lcl-moves li[data-op=Add] .lcl-mv-body i{background:var(--lime);color:#141414}" +
-  ".lcl-mv-body b{font-weight:400;font-size:16px;letter-spacing:-.01em}.lcl-mv-body s{text-decoration:none;color:var(--soft);font-size:12px}.lcl-mv-body span{color:var(--soft);font-size:13.5px;line-height:1.35}" +
-  ".lcl-moves em{font-style:normal;font-size:11px;white-space:nowrap;padding-top:4px}" +
-  "@media (max-width:860px){.lcl-moves{grid-template-columns:1fr}.lcl-moves li{grid-template-columns:64px minmax(0,1fr) auto}.lcl-mv-pic{width:64px;height:64px}}" +
-  ".lcl-kept{flex-wrap:wrap;align-items:center;max-width:1040px;margin:clamp(24px,4vh,40px) auto 12px}" +
-  ".lcl-kept b{font-weight:500;color:var(--ink);padding:7px 12px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--rule)}" +
+  ".lcl-life>.lcl-story{padding-top:4vh}" +
+  ".lcl-lb{position:relative;height:calc(var(--h) * 3.2)}" +
+  ".lcl-lb-in{position:sticky;top:0;height:var(--h);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;max-width:1240px;margin:0 auto}" +
+  ".lcl-lb-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}" +
+  ".lcl-lbc{position:relative;width:clamp(112px,10.5vw,150px);perspective:900px;transition:none}" +
+  ".lcl-lbc-face{position:relative;display:flex;flex-direction:column;gap:4px;padding:8px;border-radius:16px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.05);backface-visibility:hidden;-webkit-backface-visibility:hidden}" +
+  ".lcl-lbc-pic{position:relative;display:block;aspect-ratio:1;border-radius:11px;overflow:hidden;background:var(--card)}" +
+  ".lcl-lbc-face b{font-weight:400;font-size:11.5px;line-height:1.2;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lcl-lbc-face em{font-style:normal;font-size:9px;color:var(--soft)}" +
+  // who is in focus right now: its card lifts and rings while its phase plays
+  ".lcl-lbc[data-role=ok1]{--on:calc(var(--lb-ok1,0) - var(--lb-ok2,0))}.lcl-lbc[data-role=ok2]{--on:calc(var(--lb-ok2,0) - var(--lb-swap,0))}.lcl-lbc[data-role=swap]{--on:calc(var(--lb-swap,0) - var(--lb-add,0))}.lcl-lbc[data-role=add]{--on:calc(var(--lb-add,0) - var(--lb-budget,0))}" +
+  ".lcl-lbc[data-role] .lcl-lbc-face{box-shadow:0 0 0 calc(var(--on,0) * 2px) #141414,0 calc(var(--on,0) * 18px) calc(var(--on,0) * 40px) rgba(0,0,0,.14)}.lcl-lbc[data-role]{transform:translateY(calc(var(--on,0) * -8px))}" +
+  ".lcl-lbok{position:absolute;left:12px;top:12px;padding:3px 8px;border-radius:999px;background:#2fae5b;color:#fff;font-style:normal;font-size:9px}" +
+  ".lcl-lbc[data-role=ok1] .lcl-lbok{opacity:var(--lb-ok1,0);transform:scale(calc(.6 + var(--lb-ok1,0) * .4))}.lcl-lbc[data-role=ok2] .lcl-lbok{opacity:var(--lb-ok2,0);transform:scale(calc(.6 + var(--lb-ok2,0) * .4))}" +
+  ".lcl-lbc-in{position:relative;transform-style:preserve-3d;transform:rotateY(calc(var(--lb-swap,0) * 180deg))}.lcl-lbc-back{position:absolute;inset:0;transform:rotateY(180deg)}" +
+  ".lcl-lbc-slot{position:absolute;inset:0;display:grid;place-items:center;border:1.5px dashed rgba(0,0,0,.2);border-radius:16px;color:var(--soft);font-size:9px;opacity:calc(1 - var(--lb-add,0))}" +
+  ".lcl-lbc-add .lcl-lbc-face{opacity:var(--lb-add,0);transform:translateY(calc((1 - var(--lb-add,0)) * -40px))}" +
+  ".lcl-lb-caps{position:relative;width:min(760px,100%);height:3.2em}" +
+  ".lcl-lb-cap{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;font-size:clamp(15px,1.3vw,19px);line-height:1.3;opacity:clamp(0, (var(--on,0) - .5) * 6, 1)}" +
+  ".lcl-lb-cap[data-role=ok1]{--on:calc(var(--lb-ok1,0) - var(--lb-ok2,0))}.lcl-lb-cap[data-role=ok2]{--on:calc(var(--lb-ok2,0) - var(--lb-swap,0))}.lcl-lb-cap[data-role=swap]{--on:calc(var(--lb-swap,0) - var(--lb-add,0))}.lcl-lb-cap[data-role=add]{--on:calc(var(--lb-add,0) - var(--lb-budget,0))}" +
+  ".lcl-lb-cap code{flex:none;padding:3px 9px;border-radius:999px;background:var(--lime);color:#141414;font-size:10px}" +
+  ".lcl-lb-bud{display:flex;flex-direction:column;align-items:center;gap:8px;width:min(560px,100%)}.lcl-lb-bud b{font-weight:500;color:var(--ink)}" +
+  ".lcl-lb-bar{position:relative;display:block;width:100%;height:8px;border-radius:4px;background:rgba(0,0,0,.08)}.lcl-lb-bar i{position:absolute;left:0;top:0;bottom:0;width:calc(var(--lb-fill,.885) * 100%);border-radius:4px;background:#2fae5b}.lcl-lb-bar::after{content:'';position:absolute;right:0;top:-4px;bottom:-4px;width:2px;background:var(--ink)}" +
+  ".lcl-lb-in>.lcl-note{text-align:center}" +
+  "@media (max-width:720px){.lcl-lbc:not([data-role]){display:none}.lcl-lbc{width:40vw}.lcl-lb-caps{height:4.6em}.lcl-lb-cap{font-size:14px;flex-direction:column;gap:4px}}" +
   ".lcl-life>.lcl-note{max-width:1040px;margin:0 auto}" +
   ".lcl-ghead .lcl-note{margin-top:4px}" +
   ".lcl-tm-sub{margin:0;max-width:30em;text-align:center;font-size:clamp(16px,1.5vw,24px);line-height:1.3;color:var(--soft);opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 12px))}" +
@@ -793,10 +810,10 @@ const THEME =
   // zoom-out: one sticky stage; the grid scales from the brief tile to the whole wall
   ".lcl-zo{position:relative;z-index:3;height:calc(var(--h) * 4);background:var(--paper)}" +
   ".lcl-zo-in{position:sticky;top:0;height:var(--h);overflow:hidden}" +
-  ".lcl-zo-grid{position:absolute;left:50%;top:50%;display:flex;flex-direction:column;gap:var(--zg);transform-origin:50% 50%}" +
+  ".lcl-zo-grid{position:absolute;left:50%;top:50%;width:calc(var(--zc) * (var(--zw) + var(--zg)) - var(--zg));display:flex;flex-direction:column;gap:var(--zg);transform-origin:50% 50%}" +
   // each row drifts sideways once the view has zoomed out (amplitude follows --z-out, so the brief holds still first)
-  ".lcl-zrow{display:grid;grid-template-columns:repeat(var(--zc),var(--zw));grid-auto-rows:var(--zh);gap:var(--zg);animation:lcl-zdrift var(--dur) ease-in-out infinite alternate}" +
-  "@keyframes lcl-zdrift{from{transform:translateX(calc(var(--dir) * var(--z-out,0) * -260px))}to{transform:translateX(calc(var(--dir) * var(--z-out,0) * 260px))}}" +
+  ".lcl-zrow{--per:calc(var(--zc) * (var(--zw) + var(--zg)));display:grid;grid-template-columns:repeat(calc(var(--zc) * 3),var(--zw));grid-auto-rows:var(--zh);gap:var(--zg);margin-left:calc(-1 * var(--per));animation:lcl-zloop var(--dur) linear infinite}.lcl-zrow-still{animation:none}" +
+  "@keyframes lcl-zloop{from{transform:translateX(0)}to{transform:translateX(calc(var(--dir) * var(--per)))}}" +
   "@media (prefers-reduced-motion:reduce){.lcl-zrow{animation:none}}" +
   ".lcl-zt{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:18px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.05);overflow:hidden;opacity:clamp(0, var(--z-tiles,0) * 4 - var(--d,0) * .45, 1)}" +
   ".lcl-zt-pic{position:relative;display:block;flex:1;min-height:0;border-radius:12px;overflow:hidden;background:var(--card)}" +
@@ -1137,9 +1154,19 @@ export default function LoupeCuratorLanding({
       const gw = ZCOLS * ZTILE.w + (ZCOLS - 1) * ZTILE.gap
       const gh = ZROWS * ZTILE.h + (ZROWS - 1) * ZTILE.gap
       const s0 = Math.min((H * 0.7) / ZTILE.h, (W * 0.88) / ZTILE.w)
-      const s1 = Math.max((W * 1.02) / gw, (H * 1.02) / gh)   // cover: the wall runs past every edge
+      const s1 = H / gh   // exactly ZROWS rows tall: the screen edge lands between rows; rows loop sideways, so width never runs out
       const z = smooth(span(u, ZO.out))
       put(e.zoGrid, "transform", "translate(-50%,-50%) scale(" + (s0 * Math.pow(s1 / s0, z)).toFixed(4) + ")")
+    }
+    if (seen("life") && st.len.lb) {
+      const u = st.still ? 1 : progressFrom(at("lb"), st.len.lb, H)
+      for (const [k, w] of Object.entries(LB)) put(e.lb, "--lb-" + k, smooth(span(u, w)).toFixed(3))
+      const b0 = total(GRID), b1 = total(GRID_AFTER)
+      const t = b0 + (b1 - b0) * smooth(span(u, LB.budget))
+      put(e.lb, "--lb-fill", (t / BUDGET).toFixed(4))
+      const tx = els.current.lbTotal as HTMLElement | null
+      const v = usd(Math.round(t * 100) / 100)
+      if (tx && tx.textContent !== v) tx.textContent = v
     }
     if (seen("life")) put(e.life, "--tc", (st.still ? 1 : clamp01((H * 0.85 - at("life")) / (H * 0.7))).toFixed(3))
 
@@ -1280,6 +1307,9 @@ export default function LoupeCuratorLanding({
       const talk = els.current.talk as HTMLElement | null
       st.off.talk = talk ? st.off.mani + talk.offsetTop : 0
       st.len.talk = talk ? talk.offsetHeight : 0
+      const lb = els.current.lb as HTMLElement | null
+      st.off.lb = lb ? (st.off.life || 0) + lb.offsetTop : 0
+      st.len.lb = lb ? lb.offsetHeight : 0
       // where the sofa lands on screen with the room photo cover-fitted to the stage
       const cs = Math.max(st.W / IMG_RATIO, st.H)
       const iw = IMG_RATIO * cs
@@ -1806,33 +1836,70 @@ export default function LoupeCuratorLanding({
         <div className="lcl-story">
           {chat([
             ["you", "My partner is moving in next month. With her cat."],
-            ["el", "Then the room is for two now, with a cat. I’ll check what already works before buying anything. Budget and the rocking chair stay.", ["seats: 2 people", "covers: washable", "storage \u2191"]],
+            ["el", "Room for two now, and a cat. First, what already works. Budget and the rocking chair stay.", ["seats: 2 people", "covers: washable", "storage \u2191"]],
             ["you", "Yes."],
           ])}
         </div>
-        <ol className="lcl-moves">
-          {MOVES.map((m, i) => (
-            <li key={m.op + m.it.name} data-op={m.op}>
-              <span className="lcl-mv-pic">
-                <Tile k={m.it.k} />
+        <div className="lcl-lb" ref={reg("lb")}>
+          <div className="lcl-lb-in">
+            <div className="lcl-lb-grid">
+              {GRID.map((it) => {
+                const m = MOVES.findIndex((mv) => mv.op !== "Add" && (mv.it.k === it.k || mv.was?.k === it.k))
+                const mv = MOVES[m]
+                if (mv?.op === "Upgrade" && mv.was)
+                  return (
+                    <div key={it.k} className="lcl-lbc lcl-lbc-flip" data-role={LB_PHASE[m]}>
+                      <div className="lcl-lbc-in">
+                        <div className="lcl-lbc-face">
+                          <span className="lcl-lbc-pic"><Tile k={mv.was.k} /></span>
+                          <b>{mv.was.name}</b>
+                          <em className="lcl-mono">{usd(mv.was.price)}</em>
+                        </div>
+                        <div className="lcl-lbc-face lcl-lbc-back">
+                          <span className="lcl-lbc-pic"><Tile k={mv.it.k} /></span>
+                          <b>{mv.it.name}</b>
+                          <em className="lcl-mono">{usd(mv.it.price)}</em>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                return (
+                  <div key={it.k} className="lcl-lbc" data-role={mv ? LB_PHASE[m] : undefined}>
+                    <div className="lcl-lbc-face">
+                      <span className="lcl-lbc-pic"><Tile k={it.k} /></span>
+                      <b>{it.name}</b>
+                      <em className="lcl-mono">{meta(it)}</em>
+                      {mv?.op === "Keep" && <i className="lcl-lbok lcl-mono">✓ Already works</i>}
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="lcl-lbc lcl-lbc-add" data-role="add">
+                <span className="lcl-lbc-slot lcl-mono">Free wall</span>
+                <div className="lcl-lbc-face">
+                  <span className="lcl-lbc-pic"><Tile k={BOOKCASE.k} /></span>
+                  <b>{MOVES[3].it.name}</b>
+                  <em className="lcl-mono">+{usd(BOOKCASE.price)}</em>
+                </div>
+              </div>
+            </div>
+            <div className="lcl-lb-caps">
+              {MOVES.map((mv, k) => (
+                <p key={k} className="lcl-lb-cap" data-role={LB_PHASE[k]}>
+                  {mv.tag && <code className="lcl-mono">{mv.tag}</code>}
+                  <span>{mv.why}</span>
+                </p>
+              ))}
+            </div>
+            <div className="lcl-lb-bud">
+              <span className="lcl-lb-bar"><i /></span>
+              <span className="lcl-mono lcl-cmeta">
+                Room total <b ref={reg("lbTotal")}>{usd(total(GRID))}</b> of {usd(BUDGET)} · sofa and rocking chair kept
               </span>
-              <span className="lcl-mv-body">
-                <i className="lcl-mono">{m.op === "Keep" ? "Already works" : m.op === "Upgrade" ? "Upgrade" : "Add"}</i>
-                <b>{m.it.name}</b>
-                {m.was && <s>instead of {m.was.name}</s>}
-                <span>{m.why}</span>
-              </span>
-              <em className="lcl-mono">{m.op === "Keep" ? "$0" : m.was ? "+" + usd(Math.round((m.it.price - m.was.price) * 100) / 100) : "+" + usd(m.it.price)}</em>
-            </li>
-          ))}
-        </ol>
-        <div className="lcl-chips lcl-mono lcl-kept">
-          <span>Still true</span>
-          <b>Budget {usd(BUDGET)}</b>
-          <b>Sofa and rocking chair kept</b>
-          <b>Room total {usd(total(GRID))} → {usd(total(GRID_AFTER))}</b>
+            </div>
+            <p className="lcl-note">Back angle and cushion feel aren't in the data. Sit-test before you buy.</p>
+          </div>
         </div>
-        <p className="lcl-note">Back angle and cushion feel aren't in the data. Sit-test before you buy.</p>
       </section>
 
       {/* product recordings, 16:9: the whole flow, then four close-ups */}
@@ -1949,48 +2016,54 @@ export default function LoupeCuratorLanding({
       <section className="lcl-zo" ref={reg("zo")}>
         <div className="lcl-zo-in">
           <div className="lcl-zo-grid" ref={reg("zoGrid")} style={{ "--zc": ZCOLS, "--zw": ZTILE.w + "px", "--zh": ZTILE.h + "px", "--zg": ZTILE.gap + "px" } as CSSProperties}>
-            {Array.from({ length: ZROWS }, (_, r) => (
-              <div key={r} className="lcl-zrow" style={{ "--dir": r % 2 ? 1 : -1, "--dur": 14 + ((r * 5) % 9) + "s" } as CSSProperties}>
-                {Array.from({ length: ZCOLS }, (_, c) => {
-                  const i = r * ZCOLS + c
-                  const mid = Math.floor((ZCOLS * ZROWS) / 2)
-                  if (i === mid)
-                    return (
-                      <div key={i} className="lcl-zt lcl-zt-me">
-                        <span className="lcl-zme">
-                          <img src={"/img/team-cut-" + BRIEF_WHO.key + ".webp"} alt="" draggable={false} />
-                          <span>
-                            <b>{BRIEF_WHO.name}’s living brief</b>
-                            <small>{BRIEF_WHO.life}</small>
+            {Array.from({ length: ZROWS }, (_, r) => {
+              const mid = Math.floor((ZCOLS * ZROWS) / 2)
+              const midR = Math.floor(mid / ZCOLS)
+              // three copies of each row so it can loop sideways forever; the brief's row holds still
+              return (
+                <div key={r} className={"lcl-zrow" + (r === midR ? " lcl-zrow-still" : "")} style={{ "--dir": r % 2 ? 1 : -1, "--dur": 46 + ((r * 7) % 19) + "s" } as CSSProperties}>
+                  {Array.from({ length: ZCOLS * 3 }, (_, j) => {
+                    const c = j - ZCOLS
+                    const cm = ((c % ZCOLS) + ZCOLS) % ZCOLS
+                    const i = r * ZCOLS + cm
+                    if (i === mid && c === cm)
+                      return (
+                        <div key={j} className="lcl-zt lcl-zt-me">
+                          <span className="lcl-zme">
+                            <img src={"/img/team-cut-" + BRIEF_WHO.key + ".webp"} alt="" draggable={false} />
+                            <span>
+                              <b>{BRIEF_WHO.name}’s living brief</b>
+                              <small>{BRIEF_WHO.life}</small>
+                            </span>
                           </span>
+                          <ol>
+                            {BRIEF.map(([say, label, got], k) => (
+                              <li key={say} style={{ "--i": k } as CSSProperties}>
+                                <span className="lcl-zq">{say}</span>
+                                <span className="lcl-zgot">
+                                  <code className="lcl-mono">{label}</code>
+                                  <b>✓ {got}</b>
+                                </span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )
+                    const [say, label, tile] = WALL[((i === mid ? i + 3 : i) * 7) % WALL.length]
+                    const d = Math.min(6, Math.hypot(c - (mid % ZCOLS), r - midR))
+                    return (
+                      <div key={j} className="lcl-zt" style={{ "--d": d.toFixed(2) } as CSSProperties} aria-hidden="true">
+                        <span className="lcl-zt-pic">
+                          <Tile k={tile} />
                         </span>
-                        <ol>
-                          {BRIEF.map(([say, label, got], k) => (
-                            <li key={say} style={{ "--i": k } as CSSProperties}>
-                              <span className="lcl-zq">{say}</span>
-                              <span className="lcl-zgot">
-                                <code className="lcl-mono">{label}</code>
-                                <b>✓ {got}</b>
-                              </span>
-                            </li>
-                          ))}
-                        </ol>
+                        <span className="lcl-zq">{say}</span>
+                        <code className="lcl-mono">{label}</code>
                       </div>
                     )
-                  const [say, label, tile] = WALL[(i * 7) % WALL.length]
-                  const d = Math.hypot(c - (mid % ZCOLS), r - Math.floor(mid / ZCOLS))
-                  return (
-                    <div key={i} className="lcl-zt" style={{ "--d": d.toFixed(2) } as CSSProperties} aria-hidden="true">
-                      <span className="lcl-zt-pic">
-                        <Tile k={tile} />
-                      </span>
-                      <span className="lcl-zq">{say}</span>
-                      <code className="lcl-mono">{label}</code>
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+                  })}
+                </div>
+              )
+            })}
           </div>
           <p className="lcl-zcap lcl-zcap1">
             <span className="lcl-zpill">Saved. Next time you choose, Elephant starts from here.</span>
