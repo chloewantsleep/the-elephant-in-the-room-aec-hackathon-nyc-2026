@@ -153,7 +153,7 @@ function view(item) {
            images: { ...p.images, main_local: null, main: v.image || p.images.main }, url: v.url || p.url,
            description: `${p.name} in ${v.variant}` };
 }
-const slotOf = item => TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
+const slotOf = item => item.maxW ? item : TEMPLATES[S.needs.room].find(t => t.cat === item.cat) || { maxW: 1 };
 const maxWidthFor = item => slotOf(item).maxW * S.space.wallIn;
 const fits = (p, item) => p.dims_in.width == null || p.dims_in.width <= maxWidthFor(item);
 const sceneTotal = items => items.reduce((s, it) => s + view(it).price.amount * (it.qty || 1), 0);
@@ -191,14 +191,30 @@ const boxCenter = b => [(b[1] + b[3]) / 20, (b[0] + b[2]) / 20];   // box 0-1000
 const ownedItem = e => ({ cat: CAT_LABEL[e.category] && e.category !== "other" ? e.category : "other", qty: e.count || 1,
                           own: e.id, pid: null, vid: null, pos: boxCenter(e.box) });
 
+// Pieces the user sketched on this photo (sketch.js): [{category, widthIn, pos}]
+const sketched = () => S.sketch?.photoKey === photoKey() ? S.sketch.items : [];
+
+// What to design. No sketch: the room template. A sketch: ONLY the sketched pieces, each at the spot and about the
+// size it was drawn (pieces you chose to keep are still added by planOptions, since they're physically in the room).
+// Budget share per piece comes from the templates (a sofa gets more than a lamp), so prices stay realistic.
+const SHARE = Object.fromEntries(Object.values(TEMPLATES).flat().reverse().map(s => [s.cat, s.share]));
+function slotsWithSketch() {
+  const sk = sketched(), wall = S.space.wallIn;
+  if (!sk.length) return TEMPLATES[S.needs.room];
+  return sk.map((s, n) => ({
+    cat: s.category, share: SHARE[s.category] ?? 0.1, pos: s.pos.slice(), sketched: true, sk: n,
+    maxW: Math.min(1, (s.widthIn || wall * 0.3) * 1.25 / wall),   // allow pieces a bit bigger than drawn
+  }));
+}
+
 function planOptions() {
-  const tpl = TEMPLATES[S.needs.room];
+  const tpl = slotsWithSketch();
   const used = {};
   const kept = keptPieces();
   return STRATEGIES.map(strat => {
     const usedOwn = new Set();
     const items = tpl.map(slot => {
-      const mine = kept.find(e => e.category === slot.cat && !usedOwn.has(e.id));
+      const mine = !slot.sketched && kept.find(e => e.category === slot.cat && !usedOwn.has(e.id));
       if (mine) { usedOwn.add(mine.id); return ownedItem(mine); }   // you already have one: keep it, don't buy
       return null;
     }).map((own, k) => own || tpl[k]).map(slot => {
@@ -213,7 +229,8 @@ function planOptions() {
       const target = budget * strat.target;
       const pick = list.slice().sort((a, b) => Math.abs(a.price.amount - target) - Math.abs(b.price.amount - target))[0];
       (used[slot.cat] = used[slot.cat] || []).push(pick.id);
-      return { cat: slot.cat, qty: slot.qty || 1, pid: pick.id, vid: null, pos: slot.pos.slice() };
+      return { cat: slot.cat, qty: slot.qty || 1, pid: pick.id, vid: null, pos: slot.pos.slice(),
+               ...(slot.sketched ? { maxW: slot.maxW, sketched: true, sk: slot.sk } : {}) };
     });
     kept.filter(e => !usedOwn.has(e.id)).forEach(e => items.push(ownedItem(e)));   // other pieces you keep
     return { name: strat.name, items };
@@ -244,6 +261,7 @@ function stagesText() {
     `Reading your needs · ${S.needs.style.toLowerCase()}, ${money(S.needs.budget)}`,
     `Scaling the room · back wall ${inch(S.space.wallIn)}`,
     ...(keptCount() ? [`Keeping ${keptCount()} of your pieces`] : []),
+    ...(sketched().length ? [`Designing only your ${sketched().length} sketched piece${sketched().length > 1 ? "s" : ""}`] : []),
     `Searching ${P.length} real products`,
     "Checking fit and budget",
     "Composing 3 options",
@@ -256,6 +274,7 @@ function render() {
   document.body.classList.toggle("rendering", S.rendering);
   showImage();
   renderSteps(); renderSides(); renderPanel(); renderHotspots(); renderMeasure(); renderBoxes(); renderTopbar(); renderCart(); renderMode();
+  if (typeof renderSketch === "function") renderSketch();   // sketch.js: shapes drawn on the photo -> furniture types
 }
 
 /* ---------------- real render via server.py -> Gemini ---------------- */
@@ -276,13 +295,17 @@ function showImage() {
 function itemPayload(it) {
   const p = view(it);
   return { name: p.name, variant: p.variant, category: CAT_LABEL[it.cat], qty: it.qty, dims_in: p.dims_in,
-           description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round) };
+           description: p.description, image: p.images.main_local || p.images.main, pos: it.pos.map(Math.round),
+           ...(it.sketched ? { sketched: true } : {}) };
 }
 
 // What changed since the last render? null = too different, do a full render instead.
 function editsSinceLast() {
   const L = lastRender();
   if (!L || L.wallIn !== S.space.wallIn || L.style !== S.needs.style) return null;
+  // the diff below matches pieces by category; with two of the same kind (e.g. a sketched second armchair) do a full render
+  const dup = items => new Set(items.map(it => it.cat)).size !== items.length;
+  if (dup(L.items) || dup(S.scene)) return null;
   const before = Object.fromEntries(L.items.map(it => [it.cat, it]));
   const now = Object.fromEntries(S.scene.map(it => [it.cat, it]));
   const same = (a, b) => a.pid === b.pid && a.vid === b.vid && a.own === b.own;
@@ -307,7 +330,8 @@ function renderRequest() {
   return { ...base, room_image: S.space.photo === "demo" ? "app/" + example().src : S.space.data,
            items: S.scene.filter(it => !it.own).map(itemPayload),
            keep: S.scene.filter(it => it.own && exById(it.own)).map(it => here(exById(it.own))),
-           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here) };
+           remove_existing: ex.filter(e => !S.scene.some(it => it.own === e.id)).map(here),
+           ...(S.scene.some(it => it.sketched) ? { sketch_only: true } : {}) };
 }
 
 // real = the image truly shows this scene (an AI render), so AI edits can build on it
@@ -381,6 +405,11 @@ async function renderScene(manual = false) {
   }
   S.rendering = true; S.before = false; render();
   try {
+    // sketched pieces in this render? send the sketch itself as a layout guide (sketch.js)
+    if (reqObj.items.some(it => it.sketched) && typeof sketchGuide === "function") {
+      const guide = await sketchGuide();
+      if (guide) reqObj.layout_guide = guide;
+    }
     const j = await apiPost("/api/render", reqObj);
     rememberRender(sig, j.image);
     const what = reqObj.mode === "edit" ? `Updated ${reqObj.items.length + reqObj.removed.length} piece(s)` : "Rendered";
@@ -538,7 +567,7 @@ function renderHotspots() {
       <div class="hs-line"></div>
       <button class="hs-pill" data-action="select" data-idx="${i}">
         <img src="${esc(imgOf(p))}" alt="">
-        <span><small>${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}</small><b>${esc(label)}</b></span>
+        <span><small>${CAT_LABEL[it.cat]}${it.qty > 1 ? " × " + it.qty : ""}${it.sketched ? " · ✎ sketched" : ""}</small><b>${esc(label)}</b></span>
       </button>
       <div class="hs-dot" data-drag="${i}" title="Drag to place"></div>
     </div>`);
@@ -649,7 +678,7 @@ function needsCard() {
       ${S.chat && QUESTIONS[S.chat.q] ? `<i class="dot"></i>` : ""}</button>`;
   }
   if (!S.chat || (S.chat.q === 0 && S.chat.log.length === 2)) chatStart();   // opening follows the latest photo scan
-  const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptCount();
+  const sp = S.space, q = QUESTIONS[S.chat.q], n = S.needs, kept = keptCount(), sk = sketched();
   const ex = S.existing?.photoKey === photoKey() ? S.existing : null;
   const demo = sp.photo === "demo";
   const total = ex ? ex.items.reduce((m, e) => m + (e.count || 1), 0) : 0;
@@ -666,6 +695,7 @@ function needsCard() {
       <b>${ROOMS[n.room]} · ${esc(n.style)} · ${money(n.budget)}</b>
       ${n.notes ? `<small>${esc(n.notes)}</small>` : ""}
       ${kept ? `<small>Designing around ${kept} piece${kept > 1 ? "s" : ""} you keep</small>` : ""}
+      ${sk.length ? `<small>Only your sketch: ${esc(sk.map(s => CAT_LABEL[s.category]).join(", "))}</small>` : ""}
     </div>
     <button class="btn block" data-action="next">Design my room →</button>` : "";
   return `<div class="card needs-win">
@@ -673,7 +703,7 @@ function needsCard() {
       <button class="photo-mini" data-action="upload" id="drop" title="Upload or drop a photo of your room"><img src="${esc(photoSrc())}" alt=""><i>↑</i></button>
       <div class="nw-title"><b>${demo ? "Upload your room" : "Your room"}</b>
         <span>${demo ? `<button class="link-btn" data-action="demo">Example: ${esc(example().name.toLowerCase())} ↻</button>` : `<button class="link-btn" data-action="demo">Use an example</button>`}
-          · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button></span></div>
+          · <button class="link-btn" data-action="size">${S.sizeOpen ? "Hide size" : "Room size"}</button>${sk.length ? ` · <button class="link-btn" data-sk="remove">Remove sketch</button>` : ""}</span></div>
       <button class="icon-btn" data-action="needs-min" title="Minimize" aria-label="Minimize">–</button>
     </div>
     ${S.sizeOpen ? `<div class="size-row">
@@ -708,11 +738,14 @@ function progressCard() {
 }
 function optionsView() {
   return `<div class="options">${S.options.map((o, i) => {
-    const imgs = o.items.slice(0, 4).map(it => `<img src="${esc(imgOf(view(it)))}" alt="">`).join("");
+    // sketched pieces first, so what you drew is visible on the card
+    const shown = o.items.filter(it => it.sketched).concat(o.items.filter(it => !it.sketched)).slice(0, 4);
+    const imgs = shown.map(it => `<img src="${esc(imgOf(view(it)))}" alt="" class="${it.sketched ? "sk-thumb" : ""}">`).join("");
+    const nSk = o.items.filter(it => it.sketched).length;
     return `<button class="opt ${S.opt === i ? "on" : ""}" data-action="option" data-idx="${i}">
       <div class="grid">${imgs}</div>
       <b>Option ${i + 1} · ${o.name}</b>
-      <small>${money(sceneTotal(o.items))} · ${o.items.length} pieces</small>
+      <small>${money(sceneTotal(o.items))} · ${o.items.length} pieces${nSk ? ` · ✎ ${nSk} sketched` : ""}</small>
     </button>`;
   }).join("")}</div>
   <button class="btn options-cta" data-action="next">Edit this design →</button>`;
