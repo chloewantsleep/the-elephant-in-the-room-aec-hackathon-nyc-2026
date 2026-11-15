@@ -1468,7 +1468,7 @@ Promise.all(['../data/products.json','../data/sofa-annotations.json','../schema/
       S.options = planOptions(); S.opt = Math.min(+h.get("opt") || 0, 2); S.scene = structuredClone(S.options[S.opt].items); S.dirty = false;
       if (h.has("sel")) S.sel = +h.get("sel");
     }
-    S.step = S.scene ? Math.min(step||DESIGN, STEPS.length - 1) : NEEDS;
+    S.step = step && S.scene ? Math.min(step, STEPS.length - 1) : NEEDS;   // always open on Needs (a saved design stays loaded); #step=N still deep-links
     if (S.step === SHOP) S.cart = "open";
     if (h.has("live")) S.live = true;
     if (["open", "expanded"].includes(h.get("cart"))) S.cart = h.get("cart");   // #step=3&cart=expanded
