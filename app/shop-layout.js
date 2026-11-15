@@ -87,6 +87,19 @@ function shopSceneLayout(items, space, room, ref) {
   let depth = Math.max(36, shopPositive(space.depthIn, 132), profile?.depth || 0);
   const distance = 5;
 
+  // measured from the render's perspective (floor-geometry.js): these pieces go exactly where the picture has them
+  const rowsFor = () => items.map(item => {
+    const dims = view(item).dims_in;
+    return { key: item.slotId, cat: item.cat, w: shopPositive(dims.width, 22), d: shopPositive(dims.depth, shopPositive(dims.width, 18)),
+      edges: ref?.items?.[item.slotId]?.edges || [] };
+  });
+  const measuredRender = ref?.room && ref.imageW && typeof FloorGeometry !== "undefined"
+    ? FloorGeometry.plan(ref.room, ref.imageW, ref.imageH, rowsFor(), space.confirmed ? space.wallIn : 0) : null;
+  if (measuredRender) {
+    width = Math.max(36, measuredRender.width);
+    depth = Math.max(36, space.confirmed ? Math.max(space.depthIn, measuredRender.depth) : measuredRender.depth);
+  }
+
   function arrange() {
     const entries = items.map((item, index) => {
       const sample = shopSample(ref, item);
@@ -96,7 +109,7 @@ function shopSceneLayout(items, space, room, ref) {
         form: sample?.form, w: shopPositive(dimensions.width, 22), d: shopPositive(dimensions.depth, shopPositive(dimensions.width, 18)),
         h: shopPositive(dimensions.height, 20), pieces: [] };
     });
-    const measured = space.confirmed ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
+    const measured = space.confirmed && !measuredRender ? LayoutEngine.plan(entries.map(row => row.item), space, view) : null;
     const fixed = new Map();
     const occupied = [];
     if (measured?.ready) {
@@ -148,6 +161,15 @@ function shopSceneLayout(items, space, room, ref) {
       const [u, v, direction = 0] = item.sketched ? imageAnchor : anchors[cat] || imageAnchor;
       const qty = item.qty || 1;
       for (let i = 0; i < qty; i++) {
+        const seen = measuredRender?.pieces.get(`${row.id}:${i}`);
+        if (seen) {
+          const t = seen.turn, rw = t % 2 ? d : w, rd = t % 2 ? w : d;
+          const piece = { x: Math.min(width - rw / 2, Math.max(rw / 2, seen.x)), y: Math.min(depth - rd / 2, Math.max(rd / 2, seen.y)),
+            z, turn: t, w, d, h, rw, rd };
+          row.pieces.push(piece);
+          if (cat !== "rug" && !(z > 0)) occupied.push(piece);   // other pieces keep clear of it; it is never moved
+          continue;
+        }
         const confirmed = fixed.get(`${row.id}:${i}`);
         if (confirmed) {
           row.pieces.push({ ...confirmed, z, w, d, h });
@@ -196,7 +218,7 @@ function shopSceneLayout(items, space, room, ref) {
 
   for (;;) {
     const placed = arrange();
-    if (placed) return { width, depth, items: placed };
+    if (placed) return { width, depth, items: placed, measured: !!measuredRender };
     width = Math.ceil(width * 1.16);
     depth = Math.ceil(depth * 1.16);
   }
@@ -233,7 +255,7 @@ async function loadShopReference(items, ref) {
     });
     canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
     const result = await apiPost("/api/detect", { photo: canvas.toDataURL("image/jpeg", .88), layout });
-    shopReferenceCache.set(ref.image, { ...result, image: ref.image, status: "ready" });
+    shopReferenceCache.set(ref.image, { ...result, image: ref.image, imageW: image.naturalWidth, imageH: image.naturalHeight, status: "ready" });
   } catch {
     shopReferenceCache.set(ref.image, { image: ref.image, status: "unavailable" });
   }

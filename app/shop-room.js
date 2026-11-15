@@ -304,6 +304,7 @@ function shopRoomMarkup() {
   const refLabel = refSrc === photoSrc() ? "Original room photo"
     : refSrc.startsWith("assets/demo-render-") ? "Demo reference render" : "Design reference render";
   const planLabel = ref.status === "pending" ? "Matching render…"
+    : plan.measured ? "Measured from the render's perspective"
     : ref.status === "ready" || ref.demoExact ? "Estimated from render" : "Estimated layout · Product finishes";
 
   return `<div class="shop-layout">

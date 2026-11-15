@@ -282,12 +282,21 @@ def detect(req):
 
 
 def clean_render_layout(raw, slots):
-    """Keep only valid finishes and floor anchors for items in this render."""
+    """Keep only valid finishes, image points and floor anchors for items in this render.
+
+    Image points are [x, y] in 0-1000 of the image width/height (x first). The browser turns them into
+    a floor plan with a homography (app/floor-geometry.js); `positions` is the model's own plan guess,
+    kept only as a fallback when the room lines can't be read.
+    """
     hex_color = re.compile(r"#[a-fA-F0-9]{6}").fullmatch
+    num = lambda n, lo, hi: type(n) in (float, int) and math.isfinite(n) and lo <= n <= hi
 
     def colors(record, keys):
         return {key: record[key] for key in keys
                 if isinstance(record.get(key), str) and hex_color(record[key])}
+
+    def point(p, lo=-100, hi=1100):
+        return [float(p[0]), float(p[1])] if isinstance(p, list) and len(p) == 2 and all(num(n, lo, hi) for n in p) else None
 
     raw = raw if isinstance(raw, dict) else {}
     items = {}
@@ -301,15 +310,30 @@ def clean_render_layout(raw, slots):
             if not isinstance(p, list) or len(p) != 3:
                 continue
             x, y, turn = p
-            if any(type(n) not in (float, int) or not math.isfinite(n) or not 0 <= n <= 1 for n in (x, y)):
+            if not num(x, 0, 1) or not num(y, 0, 1):
                 continue
             positions.append([x, y, turn if type(turn) is int and 0 <= turn <= 3 else 0])
-        items[item["id"]] = {**colors(item, ("body", "detail")), "positions": positions[:slots[item["id"]]]}
-    return {**colors(raw, ("floor", "leftWall", "rightWall")), "items": items}
+        edges = []
+        proposed = item.get("edges")
+        for e in proposed if isinstance(proposed, list) else []:
+            if not isinstance(e, dict):
+                continue
+            a, b = point(e.get("left")), point(e.get("right"))
+            turn = e.get("turn")
+            if a and b:
+                edges.append({"left": a, "right": b, "turn": turn if type(turn) is int and 0 <= turn <= 3 else 0})
+        items[item["id"]] = {**colors(item, ("body", "detail")), "positions": positions[:slots[item["id"]]],
+                             "edges": edges[:slots[item["id"]]]}
+    room = raw.get("room") if isinstance(raw.get("room"), dict) else {}
+    corners = {k: point(room.get(k), -3000, 4000) for k in ("back_left", "back_right", "left_near", "right_near")}
+    out = {**colors(raw, ("floor", "leftWall", "rightWall")), "items": items}
+    if all(corners.values()):
+        out["room"] = corners
+    return out
 
 
 def inspect_render_layout(photo, layout):
-    """Estimate a floor layout and representative material colors from a final render."""
+    """Read the room's floor lines and where each piece meets the floor in a final render (image points only)."""
     if not isinstance(photo, str) or not photo.startswith("data:image/"):
         raise ValueError("Expected a rendered image.")
     if not isinstance(layout, list) or any(not isinstance(it, dict) or type(it.get("id")) is not int for it in layout):
@@ -319,23 +343,31 @@ def inspect_render_layout(photo, layout):
     def run():
         prompt = (
             "Read the finished room image and match only the furniture in the provided list. "
-            "Return a single JSON object with optional floor, leftWall and rightWall colors as #RRGGBB, "
-            "and items, an array of objects with id (the provided integer), body (main material #RRGGBB), "
-            "detail (secondary material #RRGGBB, optional), and positions (one [x,y,turn] for each visible instance). "
-            "Reconstruct an approximate overhead plan: x from the room's left wall to its right wall, "
-            "y from the back wall to the front. Both are 0 to 1 in room coordinates, not pixel positions. "
-            "Use furniture centers projected onto the floor. Infer depth from perspective and occlusion, "
-            "and preserve front/back and left/right relationships. Estimate orientation as 0 when facing front, "
-            "1 left, 2 back, or 3 right. Use representative midtone colors from the image, excluding highlights and shadows. "
-            "Skip any furniture you cannot identify. No prose.\nFurniture: " + json.dumps(layout)
+            "All image points are [x, y] with x FIRST, from 0 (left edge) to 1000 (right edge), "
+            "and y from 0 (top edge) to 1000 (bottom edge). Points may lie outside 0-1000 when they are out of frame.\n"
+            "Return a single JSON object:\n"
+            "- floor, leftWall, rightWall: representative midtone colors #RRGGBB (no highlights or shadows).\n"
+            "- room: the lines where the walls meet the floor. back_left = image point of the corner where the back wall, "
+            "left wall and floor meet; back_right = the same on the right; left_near = another point on the left wall's floor line, "
+            "as close to the camera as it is visible; right_near = the same for the right wall. If a wall is out of frame or the "
+            "room is open on that side, extend the floor edge where that wall would be, keeping it parallel to the opposite wall.\n"
+            "- items: array of {id (the provided integer), body (main material #RRGGBB), detail (secondary #RRGGBB, optional), "
+            "edges, positions}. edges: one object per visible instance, {left: [x,y], right: [x,y], turn}. left/right are the two "
+            "ends of the piece's bottom edge nearest the camera, exactly where it touches the floor (for legs, where the front legs "
+            "stand). For a rug use its near edge. For a pendant or ceiling lamp, or a wall-mounted piece, use the points on the "
+            "floor directly below the two ends of its near edge. turn is the piece's orientation: 0 facing the camera, 1 facing "
+            "left, 2 facing the back wall, 3 facing right. positions: one [x,y,turn] per instance, your own overhead-plan guess "
+            "with x from the left wall to the right wall and y from the back wall to the front, both 0 to 1.\n"
+            "Be precise with edges: they are measured, not guessed. Skip furniture you cannot identify. No prose.\n"
+            "Furniture: " + json.dumps(layout)
         )
         body = {"contents": [{"role": "user", "parts": [image_part(photo), {"text": prompt}]}],
-                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.15}}
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}
         res = gemini(f"models/{TEXT_MODEL}:generateContent", body)
         raw = json.loads("".join(p.get("text", "") for p in res["candidates"][0]["content"]["parts"]))
         return clean_render_layout(raw, slots)
 
-    return cached("render-layout", {"photo": photo, "items": layout, "m": TEXT_MODEL, "v": 1}, run)
+    return cached("render-layout", {"photo": photo, "items": layout, "m": TEXT_MODEL, "v": 2}, run)   # v2: image points
 
 
 def isolate(req):
