@@ -33,14 +33,15 @@ export const INTRO = {
   lineOut: [0.02, 0.05],
   open: [0.045, 0.08],
   flip: NEVER,              // no flicking through photos
-  grow: [0.07, 0.17],       // the gap grows into the team (the event asks for the team up front)
-  teamIn: [0.14, 0.19],     // names fade in, then hold
-  shrink: [0.27, 0.31],     // the team shrinks back into the small window…
-  close: [0.305, 0.32],      // …and closes
+  grow: [0.07, 0.15],       // the gap grows into the team collage (the event asks for the team up front)
+  morph: [0.165, 0.235],    // each person steps out of the collage into their card, one after another
+  teamIn: [0.215, 0.25],    // card glass, names and title fade in, then hold
+  shrink: [0.29, 0.32],     // the team shrinks back into the small window…
+  close: [0.315, 0.33],      // …and closes
   para: NEVER,
   paraOut: NEVER,
-  reopen: [0.32, 0.335],     // a small window opens again…
-  regrow: [0.335, 0.44],     // …and zooms out as your room
+  reopen: [0.33, 0.345],     // a small window opens again…
+  regrow: [0.345, 0.44],     // …and zooms out as your room
   caption: [0.45, 0.51],
   captionOut: [0.53, 0.555],
   callouts: [0.555, 0.6],
@@ -393,6 +394,16 @@ const TEAM: { name: string; url: string; key: string }[] = [
   { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
   { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },
 ]
+// where each person stands in the team collage (/img/team-collage.jpg), as fractions of it: the box their cut-out
+// fills when laid over the collage (matched against the collage; same order as TEAM)
+const TEAM_AT: Record<string, { x: number; y: number; w: number; h: number }> = {
+  yimeng: { x: 0.0494, y: -0.0256, w: 0.1704, h: 0.758 },
+  yu: { x: 0.2045, y: 0.4141, w: 0.1275, h: 0.5885 },
+  chloe: { x: 0.333, y: 0.3843, w: 0.1421, h: 0.4905 },
+  jiahao: { x: 0.5841, y: 0.5262, w: 0.099, h: 0.3846 },
+  shicong: { x: 0.6839, y: 0.3393, w: 0.1203, h: 0.5622 },
+  han: { x: 0.879, y: 0.5083, w: 0.1065, h: 0.4891 },
+}
 const COL_SPEED = [0, 0.16, 0.06, 0.22, 0.1, 0.26]
 const PILE_KINDS = ["armchair", "sofa", "rug", "shelf", "coffee", "pendant", "floorlamp", "side", "mirror", "cabinet", "dchair", "stool", "desk", "bed", "dresser", "nightstand", "sofa", "armchair"]
 const BITS = [
@@ -639,14 +650,18 @@ const THEME =
   // meet the team: a layer inside the growing gap photo, then it fades into the room photo
   ".lcl-track{position:relative}.lcl-anchor{position:absolute;left:0;width:1px;height:1px}" +
   ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(8px,1.6vh,16px);padding:0 clamp(16px,5vw,80px);background:var(--paper);color:var(--ink);opacity:var(--tm,1);pointer-events:none}" +
-  ".lcl-tm-label{color:var(--soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase}" +
-  ".lcl-tm-title{margin:0 0 clamp(10px,2.4vh,26px);font-weight:400;font-size:clamp(28px,3.6vw,58px);letter-spacing:-.04em;line-height:1}" +
+  ".lcl-tm-label{color:var(--soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:var(--tn,0)}" +
+  // the collage, centered in the team layer; it fades as the people leave it. The cut-outs fly on top (positioned per frame)
+  ".lcl-tm-col{position:absolute;left:50%;top:50%;width:min(94%,1500px,calc(78vh * 2000 / 751));aspect-ratio:2000/751;transform:translate(-50%,-50%);opacity:var(--tcol,1);pointer-events:none}" +
+  ".lcl-tm-col>img{display:block;width:100%;height:100%;mix-blend-mode:multiply}" +
+  ".lcl-tm-fl{position:absolute;left:0;top:0;z-index:2;transform-origin:0 0;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16))}" +
+  ".lcl-tm-title{margin:0 0 clamp(10px,2.4vh,26px);font-weight:400;font-size:clamp(28px,3.6vw,58px);letter-spacing:-.04em;line-height:1;opacity:var(--tn,0)}" +
   ".lcl-tm-row{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(10px,1.4vw,22px);width:100%;max-width:1400px;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 16px))}" +
   ".lcl-tm-card{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--ink);text-decoration:none}" +
   ".lcl-tm-fig{position:relative;display:block;width:100%;aspect-ratio:3/4;max-height:52vh;border-radius:22px;overflow:hidden;" +
   "background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 34px rgba(0,0,0,.06);" +
   "transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}" +
-  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));opacity:var(--tcut,1);transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
   ".lcl-tm-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
   ".lcl-tm-card:hover .lcl-tm-fig,.lcl-tm-card:focus-visible .lcl-tm-fig{transform:translateY(-8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 30px 60px rgba(0,0,0,.16)}" +
   ".lcl-tm-card:hover .lcl-tm-photo,.lcl-tm-card:focus-visible .lcl-tm-photo{opacity:1;transform:none}" +
@@ -1120,6 +1135,31 @@ export default function LoupeCuratorLanding({
       put(I, "--tm", String(tm))
       put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
       put(e.team, "visibility", tm ? "visible" : "hidden")
+      // the collage -> the cards: each cut-out flies from where that person stands in the collage to its card slot
+      const mo = span(p, INTRO.morph), landed = p >= INTRO.teamIn[1]
+      put(I, "--tcol", (1 - span(p, [INTRO.morph[0], INTRO.morph[0] + 0.025])).toFixed(3))
+      put(I, "--tcut", landed ? "1" : "0")
+      const team = e.team as HTMLElement | null, col = e.tmCol as HTMLElement | null
+      if (team && col && tm && mo > 0 && !landed) {
+        const tr = team.getBoundingClientRect(), k0 = team.offsetWidth / (tr.width || 1), cr = col.getBoundingClientRect()
+        const figs = team.querySelectorAll(".lcl-tm-fig")
+        team.querySelectorAll<HTMLImageElement>(".lcl-tm-fl").forEach((fl, j) => {
+          const at = TEAM_AT[fl.dataset.fl || ""], fig = figs[j] as HTMLElement | undefined
+          if (!at || !fig || !fl.naturalWidth) return
+          // from: the person's box on the collage; to: where the card draws its cut-out (padding 10% 8%, contain)
+          const a = { x: cr.left + at.x * cr.width, y: cr.top + at.y * cr.height, w: at.w * cr.width, h: at.h * cr.height }
+          const fr = fig.getBoundingClientRect(), ar = fl.naturalWidth / fl.naturalHeight
+          const cw = fr.width * 0.84, ch = fr.height - fr.width * 0.2
+          const bw = cw / ch > ar ? ch * ar : cw, bh = bw / ar
+          const b = { x: fr.left + fr.width * 0.08 + (cw - bw) / 2, y: fr.top + fr.width * 0.1 + (ch - bh) / 2, w: bw, h: bh }
+          const n = TEAM.length, len = (INTRO.morph[1] - INTRO.morph[0]) * 0.55, t0 = INTRO.morph[0] + (j / (n - 1)) * (INTRO.morph[1] - INTRO.morph[0] - len)
+          const t = smooth(span(p, [t0, t0 + len]))
+          const x = lerp(a.x, b.x, t) - tr.left, y = lerp(a.y, b.y, t) - tr.top - Math.sin(t * Math.PI) * cr.height * 0.12, w = lerp(a.w, b.w, t)
+          put(fl, "width", (w * k0).toFixed(1) + "px")
+          put(fl, "transform", "translate3d(" + (x * k0).toFixed(1) + "px," + (y * k0).toFixed(1) + "px,0)")
+          put(fl, "opacity", span(p, [INTRO.morph[0], INTRO.morph[0] + 0.012]).toFixed(3))
+        })
+      } else if (team) team.querySelectorAll<HTMLElement>(".lcl-tm-fl").forEach((fl) => put(fl, "opacity", "0"))
       put(e.team, "pointerEvents", tm && span(p, INTRO.teamIn) > 0.5 && p < INTRO.shrink[0] ? "auto" : "none")
       put(I, "--cap", span(p, INTRO.caption).toFixed(3))
       put(I, "--capo", (1 - span(p, INTRO.captionOut)).toFixed(3))
@@ -1662,7 +1702,7 @@ export default function LoupeCuratorLanding({
 
       {/* 1 · intro: the photo field, the gap, the curator */}
       <section className="lcl-track" ref={reg("intro")} style={{ "--len": TRACK.intro } as CSSProperties}>
-        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.22).toFixed(2) + ")" } as CSSProperties} />
+        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.26).toFixed(2) + ")" } as CSSProperties} />
         <div className="lcl-stage" ref={reg("introStage")}>
           {FIELD_KINDS.map((k, j) => (
             <div key={j} className="lcl-th" data-th="">
@@ -1691,6 +1731,13 @@ export default function LoupeCuratorLanding({
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
               {/* meet the team: inside the growing window, right after the opening line */}
               <div className="lcl-tm" ref={reg("team")}>
+                {/* first the whole team as one collage; then each person flies out of it into their card */}
+                <div className="lcl-tm-col" ref={reg("tmCol")} aria-hidden="true">
+                  <img src="/img/team-collage.jpg" alt="" draggable={false} />
+                </div>
+                {TEAM.map((m) => (
+                  <img key={m.key} className="lcl-tm-fl" data-fl={m.key} src={"/img/team-cut-" + m.key + ".webp"} alt="" aria-hidden="true" draggable={false} />
+                ))}
                 <span className="lcl-mono lcl-tm-label">Meet the team</span>
                 <h2 className="lcl-tm-title">The people behind {brand}</h2>
                 <div className="lcl-tm-row">
