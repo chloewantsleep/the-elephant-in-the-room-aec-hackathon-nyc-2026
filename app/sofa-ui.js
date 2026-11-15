@@ -12,7 +12,7 @@ function sofaReason(result){
  const keys={side_lounge:'seat_width',cross_legged:'seat_depth',upright_chat:'seat_depth',frequent_rising:'seat_height',overnight_guests:'sleeper',easy_clean:'washable_cover'};
  const fact=result.evidence.find(e=>e.requirement===goal.id&&e.key===keys[goal.value]);
  if(!fact)return 'The feature that matters to you still needs checking.';
- const reasons={side_lounge:'侧靠阅读：优先较宽可用座面',cross_legged:'盘腿阅读：比较后优先较深座面',upright_chat:'端正交谈：优先较浅座面',frequent_rising:'经常起身：优先较高座面',overnight_guests:'留宿：可展开为床',easy_clean:'清洁：厂商标注面套可机洗'};
+ const reasons={side_lounge:'Leaning sideways to read: favors a wider usable seat',cross_legged:'Sitting cross-legged: favors a deeper seat',upright_chat:'Sitting up to talk: favors a shallower seat',frequent_rising:'Getting up often: favors a higher seat',overnight_guests:'Overnight guests: opens into a bed',easy_clean:'Easy cleaning: maker lists a machine-washable cover'};
  if(fact.alignment>=.5)return reasons[goal.value]+(typeof fact.value==='number'?` — ${inch(fact.value)}.`:'.');
  return `${SOFA_LABELS[fact.key]}: ${typeof fact.value==='boolean'?(fact.value?'yes':'no'):inch(fact.value)} — a compromise for this habit.`;
 }

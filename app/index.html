@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="floating-chat.css">
 </head>
-<body class="conversation-workspace">
+<body>
   <main id="stage">
     <img id="backdrop" src="assets/example-lounge.jpg" alt="" aria-hidden="true">
     <!-- The list panels live beside the room view; opening them pushes the view aside instead of covering it. -->
@@ -24,8 +24,10 @@
       <div id="measure" hidden></div>
       <div id="boxes"></div>
       <div id="hotspots"></div>
+      <canvas id="sketch" hidden aria-label="Sketch layer: draw on the room"></canvas>
 
       <div class="frame">
+        <button id="skfab" class="sk-fab" data-sk="enter" hidden aria-label="Sketch furniture"></button>
         <div class="brand">The Elephant in the Room</div>
         <div id="topbar" class="topbar" hidden></div>
         <button id="mode" class="mock-tag" data-action="live" title="Switch between demo renders and live AI renders"></button>
@@ -34,6 +36,7 @@
         <button class="side side-right" id="next" data-action="next"></button>
 
         <section id="panel"></section>
+        <section id="sketchbar" hidden aria-label="Sketch tools"></section>
         <nav id="rail" class="rail" hidden aria-label="Shortcuts"></nav>
 
         <nav id="steps" class="pill-row" aria-label="Pipeline steps"></nav>
@@ -45,6 +48,7 @@
     <div id="toast" class="pill pill-static" hidden></div>
   </main>
   <input id="context-file" type="file" accept="image/*" hidden>
+  <section id="sheet" aria-hidden="true"></section>   <!-- the FF&E schedule as a page for paper; filled only while printing -->
   <input id="file" type="file" accept="image/*" hidden>
   <script src="sofa-matcher.js"></script>
   <script src="brief-engine.js"></script>
@@ -54,5 +58,6 @@
   <script src="app.js"></script>
   <script src="docked-chat.js"></script>
   <script src="design-workflow.js"></script>
+  <script src="sketch.js"></script>
 </body>
 </html>

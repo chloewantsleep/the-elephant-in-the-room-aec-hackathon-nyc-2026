@@ -13,7 +13,7 @@ test('merged planner keeps owned furniture while ranking new sofas from the brie
 });
 test('floating conversation remains available throughout the main workflow',()=>{
  const c=app();vm.runInContext(`S.space.photo='upload';B.requirements=[{status:'confirmed'}];`,c);
- for(const step of [0,1,2,3]){vm.runInContext('S.step='+step,c);const html=vm.runInContext('designerCard()',c);assert.match(html,/告诉设计师/);assert.match(html,/收起聊天/);assert.doesNotMatch(html,/data-mode=|chat-menu|开始新的空间|layout-open|看看摆放草案/);assert.doesNotMatch(html,/data-step=/);}
+ for(const step of [0,1,2,3]){vm.runInContext('S.step='+step,c);const html=vm.runInContext('designerCard()',c);assert.match(html,/Tell the designer/);assert.match(html,/Collapse chat/);assert.doesNotMatch(html,/data-mode=|chat-menu|开始新的空间|layout-open|看看摆放草案/);assert.doesNotMatch(html,/data-step=/);}
  assert.equal(vm.runInContext('designReady()',c),false);
 });
 test('brief correction preserves an explicitly kept sofa',()=>{

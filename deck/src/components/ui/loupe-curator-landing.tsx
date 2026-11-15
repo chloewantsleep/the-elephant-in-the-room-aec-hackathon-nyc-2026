@@ -22,22 +22,27 @@ export const progressFrom = (top: number, height: number, stage: number) => {
 }
 
 /** Track lengths, in stage heights. */
-export const TRACK = { intro: 8, words: 3.4, zoom: 7, pile: 3.6 } as const
+export const TRACK = { intro: 9, words: 3.4, zoom: 7, pile: 3.6 } as const
 /** The panel after a pinned stage slides over its last stage-height of travel; the story is over by then. */
 export const coverAt = (len: number) => 1 - 1 / (len - 1)
 
 export const INTRO = {
-  fly: [0, 0.21],
-  lineOut: [0.04, 0.11],
-  open: [0.09, 0.16],
-  flip: [0.09, 0.18],
-  grow: [0.17, 0.33],   // the gap grows into the team collage
-  teamIn: [0.29, 0.36], // names fade in
-  teamOut: [0.46, 0.52], // the team crossfades into the room photo
-  caption: [0.52, 0.6],
-  captionOut: [0.64, 0.68],
-  callouts: [0.67, 0.76],
-  strip: [0.7, 0.84],
+  fly: [0, 0.184],
+  lineOut: [0.035, 0.096],
+  open: [0.079, 0.14],
+  flip: [0.079, 0.158],
+  grow: [0.149, 0.289],  // the gap grows into the team
+  teamIn: [0.254, 0.315], // names fade in
+  shrink: [0.385, 0.43],  // the team shrinks back into the small window…
+  close: [0.43, 0.455],   // …and closes
+  para: [0.46, 0.555],    // the manifesto inks in on the paper
+  paraOut: [0.555, 0.575],
+  reopen: [0.565, 0.59],  // a window opens again…
+  regrow: [0.59, 0.645],  // …and zooms out as the room photo
+  caption: [0.64, 0.7],
+  captionOut: [0.72, 0.75],
+  callouts: [0.75, 0.82],
+  strip: [0.78, 0.9],
 } as const
 export const ZOOM = { open: [0.02, 0.08], grow: [0.08, 0.2], ui: [0.18, 0.26], drum: [0.26, 0.8] } as const
 export const PILE = { ink: [0, 0.26], drop: [0.06, 0.5], swap: [0.56, 0.68], type: [0.64, 0.8] } as const
@@ -193,7 +198,7 @@ const CURATORS: Curator[] = [
   {
     name: "01 · Needs",
     bio: "Snap your room and chat. We find what you already own and turn each piece into a product shot. Keep it or ditch it.",
-    tags: ["Room photo", "Chat", "Keep / Ditch"],
+    tags: ["Take a photo", "Chat your needs", "What to keep"],
     deck: ["armchair", "coffee", "floorlamp", "rug", "pendant"],
   },
   {
@@ -242,14 +247,14 @@ const GRID: [string, string, string][] = [
   ["stool", "TJUSIG Bench with shoe storage", "IKEA \u00b7 $69.99"],
   ["dchair", "TEODORES Chair", "IKEA \u00b7 $55"]
 ]
-// Meet the team: one tape collage, names placed under each figure (left to right)
-const TEAM: { name: string; url: string; x: number }[] = [
-  { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", x: 13.5 },        // chandelier
-  { name: "Yu Chen", url: "https://www.linkedin.com/in/yu-chen-2a586b249/", x: 27 },         // orchid vase
-  { name: "Chloe", url: "https://www.linkedin.com/in/jiayueni/", x: 40 },                    // bookshelf
-  { name: "Jiahao Li", url: "https://www.linkedin.com/in/jiahao-li-no-on/", x: 62.5 },       // chair at the desk
-  { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", x: 74 },          // cat tree
-  { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", x: 92.5 },     // office chair
+// Meet the team: each member's cut-out (from the tape collage) on a glass card; hover shows their photo
+const TEAM: { name: string; url: string; key: string }[] = [
+  { name: "Yimeng Ding", url: "https://www.linkedin.com/in/yimeng-ding/", key: "yimeng" },
+  { name: "Yu Chen", url: "https://www.linkedin.com/in/yu-chen-2a586b249/", key: "yu" },
+  { name: "Chloe", url: "https://www.linkedin.com/in/jiayueni/", key: "chloe" },
+  { name: "Jiahao Li", url: "https://www.linkedin.com/in/jiahao-li-no-on/", key: "jiahao" },
+  { name: "Shicong Cao", url: "https://www.linkedin.com/in/shicong-cao/", key: "shicong" },
+  { name: "Han Zhao", url: "https://www.linkedin.com/in/han-zhao-52b78a249/", key: "han" },
 ]
 const GRID_TOTAL = "$2,492"
 const COL_SPEED = [0, 0.2, 0.07, 0.28]
@@ -479,6 +484,11 @@ const THEME =
   ".lcl-root[data-golden]{--lime:#f6b444}" +
   ".lcl-img.lcl-prod{background:transparent;padding:6%;filter:drop-shadow(0 16px 18px rgba(0,0,0,.16))}" +
   ".lcl-th>img,.lcl-ft>img,.lcl-sc,.lcl-tile,.lcl-fly{box-shadow:none}" +
+  ".lcl-th{pointer-events:none}" +
+  ".lcl-para-in{position:absolute;left:50%;top:50%;z-index:150;transform:translate(-50%,-50%);width:min(21em,calc(100% - 40px));max-width:none;text-align:left;pointer-events:none}" +
+  // the manifesto moved into the intro, so the three picks sit as a centered row
+  ".lcl-mani{grid-template-columns:1fr}.lcl-mani .lcl-col{display:grid;grid-template-columns:repeat(3,1fr);align-items:start;gap:clamp(12px,1.6vw,24px);width:100%;max-width:1040px;margin:0 auto;padding-top:16vh}" +
+  "@media (max-width:720px){.lcl-mani .lcl-col{grid-template-columns:1fr 1fr;padding-top:8vh}}" +   // the hero's flying products are decoration; never block clicks/hover underneath
   ".lcl-pic{border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}" +
   ".lcl-nav,.lcl-chip,.lcl-fcard,.lcl-plus,.lcl-grid{backdrop-filter:blur(26px) saturate(1.1);-webkit-backdrop-filter:blur(26px) saturate(1.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 12px 34px rgba(0,0,0,.08)}" +
   ".lcl-nav{border-radius:999px;padding-left:20px}.lcl-btn{border-radius:999px}.lcl-chip{border-radius:999px}.lcl-plus{border-radius:50%}" +
@@ -487,18 +497,22 @@ const THEME =
   ".lcl-clab{border-radius:999px}" +
   // meet the team: a layer inside the growing gap photo, then it fades into the room photo
   ".lcl-track{position:relative}.lcl-anchor{position:absolute;left:0;width:1px;height:1px}" +
-  ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(10px,2vh,22px);padding:0 clamp(16px,5vw,80px);background:#f6f4f0;opacity:var(--tm,1);pointer-events:none}" +
-  ".lcl-tm-label{color:#8a8a8a;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:var(--tn,0)}" +
-  ".lcl-tm-art{position:relative;width:100%;max-width:min(1500px,calc(70vh * 2.36))}" +
-  ".lcl-tm-art img{display:block;width:100%;height:auto;border-radius:18px}" +
-  ".lcl-tm-pin{position:absolute;top:8%;bottom:6%;width:11%;transform:translateX(-50%);border-radius:16px;transition:background .25s,box-shadow .25s}" +
-  ".lcl-tm-pin:hover{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1.5px rgba(20,20,20,.55)}" +
-  ".lcl-tm-names{position:relative;width:100%;max-width:min(1500px,calc(70vh * 2.36));height:46px;margin:0;padding:0;list-style:none;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 10px))}" +
-  ".lcl-tm-names li{position:absolute;left:var(--x);top:0;transform:translateX(-50%);white-space:nowrap}" +
-  ".lcl-tm-names a{display:flex;flex-direction:column;align-items:center;gap:2px;color:#141414;text-decoration:none;font-size:clamp(12px,1.1vw,17px)}" +
-  ".lcl-tm-names a .lcl-mono{color:#8a8a8a;font-size:10px;letter-spacing:.06em;transition:color .2s}" +
-  ".lcl-tm-names a:hover .lcl-mono{color:#141414}" +
-  "@media (max-width:720px){.lcl-tm-pin{display:none}.lcl-tm-names{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}.lcl-tm-names li{position:static;transform:none}.lcl-tm-names a{align-items:flex-start}}" +
+  ".lcl-tm{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(8px,1.6vh,16px);padding:0 clamp(16px,5vw,80px);background:var(--paper);color:var(--ink);opacity:var(--tm,1);pointer-events:none}" +
+  ".lcl-tm-label{color:var(--soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase}" +
+  ".lcl-tm-title{margin:0 0 clamp(10px,2.4vh,26px);font-weight:400;font-size:clamp(28px,3.6vw,58px);letter-spacing:-.04em;line-height:1}" +
+  ".lcl-tm-row{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(10px,1.4vw,22px);width:100%;max-width:1400px;opacity:var(--tn,0);transform:translateY(calc((1 - var(--tn,0)) * 16px))}" +
+  ".lcl-tm-card{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--ink);text-decoration:none}" +
+  ".lcl-tm-fig{position:relative;display:block;width:100%;aspect-ratio:3/4;max-height:52vh;border-radius:22px;overflow:hidden;" +
+  "background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 14px 34px rgba(0,0,0,.06);" +
+  "transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}" +
+  ".lcl-tm-cut{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10% 8%;box-sizing:border-box;filter:drop-shadow(0 14px 14px rgba(0,0,0,.16));transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .2s,transform .45s cubic-bezier(.2,.8,.2,1)}" +
+  ".lcl-tm-card:hover .lcl-tm-fig,.lcl-tm-card:focus-visible .lcl-tm-fig{transform:translateY(-8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),0 30px 60px rgba(0,0,0,.16)}" +
+  ".lcl-tm-card:hover .lcl-tm-photo,.lcl-tm-card:focus-visible .lcl-tm-photo{opacity:1;transform:none}" +
+  ".lcl-tm-card:hover .lcl-tm-cut,.lcl-tm-card:focus-visible .lcl-tm-cut{opacity:0;transform:scale(.96)}" +
+  ".lcl-tm-card b{font-weight:400;font-size:clamp(13px,1.15vw,18px);letter-spacing:-.01em;border-bottom:1px solid transparent;transition:border-color .2s}" +
+  ".lcl-tm-card:hover b{border-color:currentColor}" +
+  "@media (max-width:720px){.lcl-tm-row{grid-template-columns:repeat(3,1fr)}.lcl-tm-fig{max-height:24vh}}" +
   ".lcl-root .lcl-btn-lime,.lcl-root .lcl-plus[data-on],.lcl-root .lcl-clab{background:var(--lime);color:#141414}"
 
 const FONTS =
@@ -642,6 +656,15 @@ export default function LoupeCuratorLanding({
     toastTimer.current = window.setTimeout(() => setToast((t) => ({ ...t, on: false })), 2600)
   }
 
+  // decode the team photos up front so hovering a card swaps instantly
+  useEffect(() => {
+    TEAM.forEach((m) => {
+      const im = new Image()
+      im.src = "/img/team-" + m.key + ".jpg"
+      im.decode?.().catch(() => {})
+    })
+  }, [])
+
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return
     const rm = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -688,7 +711,7 @@ export default function LoupeCuratorLanding({
         st.clock += dt / 1000
         again = true
       }
-      const fade = 1 - span(p, [0.115, 0.2])
+      const fade = 1 - span(p, [0.1, 0.175])
       const cam = span(p, INTRO.fly) * FIELD.travel + st.clock * FIELD.idle
       const tw = st.tw
       st.thumbs.forEach((el, j) => {
@@ -709,18 +732,26 @@ export default function LoupeCuratorLanding({
       put(I, "--l1", l1.toFixed(3))
       put(e.l1, "filter", l1 > 0 && l1 < 1 ? "blur(" + (l1 * 10).toFixed(1) + "px)" : "none")
       const w0 = Math.min(W * 0.14, 190)
-      const b = zoomBox(span(p, INTRO.open), span(p, INTRO.grow), W, H, w0, w0 * 0.62)
+      // grow -> (team) -> shrink back to the small window -> regrow (room photo)
+      const g1 = span(p, INTRO.grow)
+      const op = clamp01(span(p, INTRO.open) - span(p, INTRO.close) + span(p, INTRO.reopen))
+      const b = zoomBox(op, clamp01(g1 - span(p, INTRO.shrink) + span(p, INTRO.regrow)), W, H, w0, w0 * 0.62)
+      const bWords = zoomBox(span(p, INTRO.open), g1, W, H, w0, w0 * 0.62)   // the headline stays pushed out
       put(e.portrait, "clipPath", insetOf(b, W, H))
       put(e.portrait, "visibility", b.w < 1 ? "hidden" : "visible")
       put(e.portrait, "transform", "translate3d(0," + (-span(p, [coverAt(TRACK.intro), 1]) * H * 0.32).toFixed(1) + "px,0)")
       put(e.portraitIn, "transform", "scale(" + coverScale(b, W, H).toFixed(4) + ")")
-      put(I, "--g", b.w.toFixed(1) + "px")
+      put(I, "--g", bWords.w.toFixed(1) + "px")
       // keep the headline centered while the gap is closed; drift back to the true center as it opens
       put(e.l2, "transform", "translate(" + (st.l2dx * (1 - smooth(span(p, INTRO.open)))).toFixed(1) + "px,-50%)")
-      const tm = 1 - span(p, INTRO.teamOut)
+      // swap team -> room while the window is at its smallest
+      const tm = p < INTRO.close[1] ? 1 : 0   // the window is closed in between, so just swap
       put(I, "--tm", tm.toFixed(3))
       put(I, "--tn", span(p, INTRO.teamIn).toFixed(3))
       put(e.team, "visibility", tm > 0.001 ? "visible" : "hidden")
+      const pa = span(p, INTRO.para), po = 1 - span(p, INTRO.paraOut)
+      put(e.para, "--t", pa.toFixed(3))
+      put(e.para, "opacity", (Math.min(span(p, [INTRO.close[1], INTRO.para[0] + 0.01]), po)).toFixed(3))
       put(e.team, "pointerEvents", tm > 0.5 && span(p, INTRO.teamIn) > 0.5 ? "auto" : "none")
       put(I, "--cap", span(p, INTRO.caption).toFixed(3))
       put(I, "--capo", (1 - span(p, INTRO.captionOut)).toFixed(3))
@@ -962,9 +993,10 @@ export default function LoupeCuratorLanding({
     const st = s.current
     const base = absTop()
     const stops = [
-      base + st.off.intro + 0.4 * travel("intro"),
-      base + st.off.intro + 0.58 * travel("intro"),
-      base + st.off.intro + 0.8 * travel("intro"),
+      base + st.off.intro + 0.34 * travel("intro"),
+      base + st.off.intro + 0.54 * travel("intro"),
+      base + st.off.intro + 0.7 * travel("intro"),
+      base + st.off.intro + 0.84 * travel("intro"),
       base + st.off.mani + st.H,
       base + st.off.grid + st.H * 0.3,
       ...(st.len.words ? [base + st.off.words + 0.45 * travel("words")] : []),
@@ -1125,7 +1157,7 @@ export default function LoupeCuratorLanding({
 
       {/* 1 · intro: the photo field, the gap, the curator */}
       <section className="lcl-track" ref={reg("intro")} style={{ "--len": TRACK.intro } as CSSProperties}>
-        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.4).toFixed(2) + ")" } as CSSProperties} />
+        <i id="team" className="lcl-anchor" style={{ top: "calc(var(--h) * " + ((TRACK.intro - 1) * 0.34).toFixed(2) + ")" } as CSSProperties} />
         <div className="lcl-stage" ref={reg("introStage")}>
           {FIELD_KINDS.map((k, j) => (
             <div key={j} className="lcl-th" data-th="">
@@ -1139,6 +1171,27 @@ export default function LoupeCuratorLanding({
             <span className="lcl-wl" ref={reg("wl")}>{words("and Elephant makes it", 0.85, 0.16)}</span>
             <span className="lcl-wr" ref={reg("wr")}>{words("come true", 1.45, 0.16)}</span>
           </p>
+          {/* the manifesto, between the team and the room photo */}
+            <p className="lcl-para lcl-para-in" ref={reg("para")} style={{ "--n": inkN, opacity: 0 } as CSSProperties}>
+              {paraWords.map((w, i) => (
+                <span key={"a" + i} className="lcl-ink" style={{ "--i": i } as CSSProperties}>
+                  {w}{" "}
+                </span>
+              ))}
+              <span className="lcl-box" style={{ "--i": paraWords.length + boxWords.length - 1 } as CSSProperties}>
+                {boxWords.map((w, i) => (
+                  <span key={"b" + i} className="lcl-ink" style={{ "--i": paraWords.length + i } as CSSProperties}>
+                    {w}
+                    {i < boxWords.length - 1 ? " " : ""}
+                  </span>
+                ))}
+              </span>{" "}
+              {tailWords.map((w, i) => (
+                <span key={"c" + i} className="lcl-ink" style={{ "--i": paraWords.length + boxWords.length + i } as CSSProperties}>
+                  {w}{" "}
+                </span>
+              ))}
+            </p>
           <div className="lcl-full" ref={reg("portrait")} data-v="v0" style={{ clipPath: "inset(50%)" }}>
             <div className="lcl-zin" ref={reg("portraitIn")}>
               {CURATORS.map((cu, k) => (
@@ -1149,19 +1202,18 @@ export default function LoupeCuratorLanding({
               <img className="lcl-img lcl-flick" ref={reg("flick")} src={IMG[FLICK[0]]} alt="" draggable={false} />
               <div className="lcl-tm" ref={reg("team")}>
                 <span className="lcl-mono lcl-tm-label">Meet the team</span>
-                <div className="lcl-tm-art">
-                  <img src="/img/team.jpg" alt="Tape collage of the six team members in a furnished room" draggable={false} />
-                  {TEAM.map((m) => (
-                    <a key={m.name} className="lcl-tm-pin" href={m.url} target="_blank" rel="noopener noreferrer" style={{ left: m.x + "%" } as CSSProperties} data-cursor="LinkedIn" aria-label={m.name + " on LinkedIn"} />
+                <h2 className="lcl-tm-title">The people behind {brand}</h2>
+                <div className="lcl-tm-row">
+                  {TEAM.map((m, k) => (
+                    <a key={m.key} className="lcl-tm-card" href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn" style={{ "--k": k } as CSSProperties}>
+                      <span className="lcl-tm-fig">
+                        <img className="lcl-tm-cut" src={"/img/team-cut-" + m.key + ".webp"} alt="" draggable={false} />
+                        <img className="lcl-tm-photo" src={"/img/team-" + m.key + ".jpg"} alt={m.name} decoding="async" draggable={false} />
+                      </span>
+                      <b>{m.name}</b>
+                    </a>
                   ))}
                 </div>
-                <ul className="lcl-tm-names">
-                  {TEAM.map((m) => (
-                    <li key={m.name} style={{ "--x": m.x + "%" } as CSSProperties}>
-                      <a href={m.url} target="_blank" rel="noopener noreferrer" data-cursor="LinkedIn">{m.name}<span className="lcl-mono">LinkedIn ↗</span></a>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
             <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="316 real products plus your own. Real sizes and real prices.">
@@ -1205,28 +1257,8 @@ export default function LoupeCuratorLanding({
         </div>
       </section>
 
-      {/* 2 · manifesto, slides over the pinned intro */}
+      {/* 2 · the picks column, slides over the pinned intro (the manifesto moved into the intro) */}
       <section className="lcl-mani" ref={reg("mani")}>
-        <p className="lcl-para" style={{ "--n": inkN } as CSSProperties}>
-          {paraWords.map((w, i) => (
-            <span key={"a" + i} className="lcl-ink" style={{ "--i": i } as CSSProperties}>
-              {w}{" "}
-            </span>
-          ))}
-          <span className="lcl-box" style={{ "--i": paraWords.length + boxWords.length - 1 } as CSSProperties}>
-            {boxWords.map((w, i) => (
-              <span key={"b" + i} className="lcl-ink" style={{ "--i": paraWords.length + i } as CSSProperties}>
-                {w}
-                {i < boxWords.length - 1 ? " " : ""}
-              </span>
-            ))}
-          </span>{" "}
-          {tailWords.map((w, i) => (
-            <span key={"c" + i} className="lcl-ink" style={{ "--i": paraWords.length + boxWords.length + i } as CSSProperties}>
-              {w}{" "}
-            </span>
-          ))}
-        </p>
         <div className="lcl-col">{PICKS.map((it, k) => card(it, "pick" + k, k === PICKS.length - 1 ? "flySrc" : undefined))}</div>
       </section>
 

@@ -19,6 +19,17 @@ import _designer as designer
 ROOT = core.ROOT
 
 
+def sketch(req):
+    """POST /api/sketch -> read the user's marks (Claude, Gemini or simple rules; see sketch_ai.py)."""
+    import sketch_ai
+    return sketch_ai.read_sketch(req)
+
+
+def sketch_engine():
+    import sketch_ai
+    return sketch_ai.engine()
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
@@ -33,14 +44,16 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/api/health":
-            return self._json(200, {"key": bool(core.KEY), "model": core.MODEL})
+            return self._json(200, {"key": bool(core.KEY), "model": core.MODEL,
+                                    "sketch_engine": sketch_engine()})
         rel = os.path.relpath(self.translate_path(self.path), ROOT)
         if rel.startswith("..") or any(part.startswith(".") and part != "." for part in rel.split(os.sep)):
             return self._json(404, {"error": "not found"})  # never serve .env, .git, or anything outside the repo
         return super().do_GET()
 
     def do_POST(self):
-        fn = {"/api/chat": designer.chat, "/api/render": core.render, "/api/detect": core.detect, "/api/isolate": core.isolate}.get(self.path)
+        fn = {"/api/chat": designer.chat, "/api/render": core.render, "/api/detect": core.detect, "/api/isolate": core.isolate,
+              "/api/sketch": sketch}.get(self.path)
         if not fn:
             return self._json(404, {"error": "not found"})
         try:
@@ -54,7 +67,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(503, designer.client_error(e)) if self.path == "/api/chat" else self._json(500, {"error": str(e)})
 
     def log_message(self, fmt, *args):
-        if "/api/" in str(args[0] if args else ""):
+        if "/api/" in (str(args[0]) if args else ""):   # args[0] is an HTTPStatus on errors (e.g. a 404 for favicon.ico)
             super().log_message(fmt, *args)
 
 
@@ -72,5 +85,6 @@ if __name__ == "__main__":
         print(f"done in {out['ms'] / 1000:.1f}s -> {out['file']}")
     else:
         port = int(os.environ.get("PORT", 8000))
-        print(f"Serving http://localhost:{port}/app/   (Gemini key: {'yes' if core.KEY else 'MISSING'}, model: {core.MODEL})")
+        print(f"Serving http://localhost:{port}/app/   (Gemini key: {'yes' if core.KEY else 'MISSING'}, model: {core.MODEL},"
+              f" sketches read by: {sketch_engine()})")
         ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()

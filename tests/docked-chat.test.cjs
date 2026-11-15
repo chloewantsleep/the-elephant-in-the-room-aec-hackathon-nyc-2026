@@ -8,7 +8,7 @@ test('idle dock shows original input primitive, no full conversation or stale st
  const c=dock();c.B.history=[{role:'assistant',text:'old reply'}];c.B.events=[{text:'old activity',time:0}];
  assert.equal(vm.runInContext('dockProgress()',c),'');
  const html=vm.runInContext('dockForm()',c);
- assert.match(html,/class="chat-input"/);assert.match(html,/<input id="designer-message"/);assert.match(html,/aria-label="语音输入"/);
+ assert.match(html,/class="chat-input"/);assert.match(html,/<input id="designer-message"/);assert.match(html,/aria-label="Voice input"/);
  assert.doesNotMatch(html,/<textarea|dock-expand|dock-collapse/);
 });
 test('catalogue selection becomes the same object context used by the capsule',()=>{
