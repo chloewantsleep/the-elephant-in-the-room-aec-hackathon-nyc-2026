@@ -202,9 +202,9 @@ const usd = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigi
 const meta = (it: Item) => (it.owned ? "Already yours · $0" : (it.shop || "IKEA") + " · " + usd(it.price))
 /** The catalog on main: two retailers, one product schema. */
 const CATALOG = { total: 371, sources: "IKEA + Home Depot" } as const
-const SOURCES: [string, number][] = [
-  ["IKEA", 316],
-  ["Home Depot", 55],
+const SOURCES: [string, number, string][] = [
+  ["IKEA", 316, "/img/logos/ikea.svg"],
+  ["The Home Depot", 55, "/img/logos/homedepot.svg"],
 ]
 
 // 2 · your room, and the sofas that can drop into the same spot
@@ -218,32 +218,14 @@ const SWAPS: Swap[] = [
 const ROOM_IMGS = ["curator-0", "hl-1", "hl-2", "hl-3", "hl-4", "hl-5", "hl-6", "hl-7", "hl-8"]
 /** Where the sofa sits in these frames (fractions of the image), and its rough extent for the highlight. */
 const SOFA_AT = { u: 0.27, v: 0.66, ru: 0.23, rv: 0.1 } as const
+// the sofa in the wide band under the four steps (photo coordinates)
+const HST_SOFA = { u: 0.3, v: 0.62, ru: 0.27, rv: 0.11 } as const
 const IMG_RATIO = 1250 / 1400
 
 // 3 · the talk track opens on the problem alone; it lifts away over this window, then the talk plays
-const TALK_PROB = [0.1, 0.24]
-// 3 · "Hey Elephant…": what you say, what Elephant decides, and where it lands on the room
+const TALK_PROB = [0.45, 1]
+// a chat line: who, what they said, and what Elephant turned it into
 type Line = [string, string, string[]?]
-const TALK: Line[] = [
-  ["you", "Hey Elephant, we\u2019ve got to refine our room."],
-  ["you", "I curl up with a book."],
-  ["el", "Legs tucked up, or stretched out?", ["posture unclear", "ask, don\u2019t assume"]],
-  ["you", "Tucked up."],
-  ["el", "Seat depth first, then seat width.", ["seat_depth \u2191 \u00d73", "seat_width \u2191 \u00d71"]],
-  ["you", "Keep the rocking chair."],
-  ["el", "Kept, in every option.", ["rocking chair: keep", "$0, not in cart"]],
-  ["you", "It\u2019s too dark to read at night."],
-  ["el", "Adding light where you read.", ["lamp", "aim at the sofa"]],
-  ["you", "All in, under $2,500."],
-  ["el", "Every pick now checks the total.", ["total \u2264 $2,500"]],
-]
-/** Decisions pinned on the room: [after TALK line, u, v, category, decision, flip]. */
-const PINS: [number, number, number, string, string, boolean, number][] = [
-  [4, 0.27, 0.62, "Sofa", "Seat depth first, then width", false, 54],
-  [6, 0.84, 0.74, "Rocking chair", "Kept \u00b7 yours", true, 54],
-  [8, 0.525, 0.3, "Lamp", "Light the reading spot", false, 44],   // on the rattan pendant over the coffee table
-]
-
 // 4 · the comparison: the sofa you have, then real candidates; the last one flies into the room's list
 const HYLTARP: Item = { k: "hyltarp", name: "HYLTARP Sectional", price: 0, owned: true, spec: "Seat 23⅝″ deep", why: "Keep it if that’s deep enough.", checks: ["Costs nothing", "Already in place", "Rocking chair still fits"] }
 const STOCKHOLM25: Item = { k: "stockholm25", name: "STOCKHOLM 2025 Sofa", price: 1999, spec: "Seat 27⅛″ deep · 84⅝″ wide", why: "Deeper, but most of the budget.", checks: ["Deeper than yours", "Wide seat"] }
@@ -351,6 +333,12 @@ const FLOW: [title: string, body: string, tool: string][] = [
   ["Match", "Ranks real products against the labels.", "Sofa ontology on Schema.org · rules"],
   ["Show", "Renders the picture from the product list.", "Gemini 3.1 Flash Image · " + (RENDER.secs || "—") + " s · $" + (RENDER.usd || "—") + " per render"],
   ["Shop", "List, budget, FF&E schedule.", "Python + Vercel functions · plain JS"],
+]
+// stores the README plans next (not in the catalog yet), shown greyed as "next up"
+const NEXT_STORES: [string, string][] = [
+  ["Target", "/img/logos/target.svg"],
+  ["Wayfair", "/img/logos/wayfair.svg"],
+  ["Shopify brands", "/img/logos/shopify.svg"],
 ]
 // QR codes at the end (public/img/qr-*.svg, made with the qrcode npm CLI)
 const QRS: [label: string, src: string, href: string][] = [
@@ -528,7 +516,7 @@ const CSS =
   ".lcl-sc{position:absolute;inset:0;padding:0;border:0;background:none;cursor:pointer;z-index:calc(10 - var(--k));box-shadow:0 10px 26px rgba(0,0,0,.28);transform:translateY(calc((1 - var(--up)) * 160%)) translateX(calc(var(--k) * (-100% - 4px) * var(--fan))) rotate(calc((1 - var(--fan)) * var(--k) * -5deg));transition:transform .2s}" +
   ".lcl-sc:hover{transform:translateY(calc((1 - var(--up)) * 160% - 8px)) translateX(calc(var(--k) * (-100% - 4px) * var(--fan)))}" +
   /* manifesto */
-  ".lcl-mani{position:relative;z-index:2;margin-top:calc(var(--h) * -1);background:var(--paper);display:grid;grid-template-columns:1fr minmax(200px,23vw);gap:5vw;padding:clamp(20px,2.4vw,40px) clamp(16px,2vw,32px) 30vh}" +
+  ".lcl-mani{position:relative;z-index:2;margin-top:0;background:var(--paper);display:grid;grid-template-columns:1fr minmax(200px,23vw);gap:5vw;padding:clamp(20px,2.4vw,40px) clamp(16px,2vw,32px) 30vh}" +
   ".lcl-mani::after{content:\"\";position:absolute;inset:0;background:#000;opacity:calc(var(--dim,0) * .14);pointer-events:none}" +
   ".lcl-para{position:sticky;top:clamp(20px,5vh,56px);align-self:start;margin:0;max-width:21em;font-weight:400;font-size:clamp(26px,3.15vw,54px);line-height:1.17;letter-spacing:-.028em}" +
   ".lcl-ink{opacity:calc(.24 + .76 * clamp(0, var(--t,0) * (var(--n) + 4) - var(--i), 1))}" +
@@ -734,7 +722,8 @@ const THEME =
   ".lcl-sc{background:#fff;border-radius:12px;overflow:hidden}.lcl-sc .lcl-img.lcl-white{mix-blend-mode:normal}.lcl-sc[data-on]{outline:2px solid var(--lime);outline-offset:3px}" +
   // 3 · the talk: spoken lines in pills (as in the app's chat), decisions pinned on the room
   ".lcl-say{display:inline}.lcl-chat li:not([data-el]) .lcl-say{padding:.3em .85em;border-radius:999px;background:var(--ink);color:var(--paper)}" +
-  ".lcl-talk{position:relative;height:calc(var(--h) * 4.2)}" +
+  ".lcl-pb{position:relative;z-index:2;margin-top:calc(var(--h) * -1);background:var(--paper)}" +
+  ".lcl-talk{position:relative;height:calc(var(--h) * 2)}" +
   ".lcl-probbig{position:sticky;top:0;z-index:1;height:var(--h);margin:0 0 calc(var(--h) * -1);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 clamp(16px,4vw,64px);font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:1.02;letter-spacing:-.045em;text-wrap:balance;pointer-events:none;opacity:calc(1 - var(--pq,0));transform:translateY(calc(var(--pq,0) * -14vh))}" +
   ".lcl-talk-in{opacity:var(--pq,0);transform:translateY(calc((1 - var(--pq,0)) * 10vh))}" +
   ".lcl-talk-in{position:sticky;top:0;height:var(--h);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:clamp(20px,4vw,64px);max-width:1240px;margin:0 auto;padding:0 clamp(0px,2vw,24px)}" +
@@ -775,6 +764,7 @@ const THEME =
   ".lcl-src-card b{font-weight:500;font-size:clamp(16px,1.4vw,22px);letter-spacing:-.02em}.lcl-src-card small{color:var(--soft);font-size:9.5px}" +
   ".lcl-src-one{background:var(--lime);box-shadow:none}.lcl-src-one small{color:#141414;opacity:.7}" +
   ".lcl-src-more{background:transparent;box-shadow:none;border:1.5px dashed rgba(20,20,20,.22)}.lcl-src-more b{color:var(--soft)}" +
+  ".lcl-src-logo img{height:34px;width:auto;max-width:130px;object-fit:contain;align-self:flex-start}.lcl-src-next{display:flex;align-items:center;gap:14px}.lcl-src-next img{height:24px;width:auto;max-width:96px;filter:grayscale(1);opacity:.55}" +
   ".lcl-src-arrow{display:grid;place-items:center;width:32px}.lcl-src-arrow svg{width:14px;height:14px}" +
   // what a piece checks off: a green tick per need it meets
   ".lcl-checks{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px}" +
@@ -822,8 +812,19 @@ const THEME =
   ".lcl-hrank li{display:grid;grid-template-columns:1fr auto;gap:4px 8px;font-size:13.5px}.lcl-hrank i{grid-column:1 / -1;order:3;height:6px;border-radius:3px;background:rgba(0,0,0,.08);overflow:hidden;position:relative}" +
   ".lcl-hrank i::after{content:'';position:absolute;inset:0;width:calc(var(--w) * var(--h-rank,0) * 100%);background:var(--ink);border-radius:3px}.lcl-hrank li:first-child i::after{background:#2fae5b}.lcl-hrank em{font-style:normal;color:var(--soft);font-size:10px}" +
   ".lcl-hc4>.lcl-cmeta:not(:first-child){opacity:clamp(0, var(--h-rank,0) * 3 - 1, 1)}" +
-  ".lcl-hbuy{display:flex;align-items:center;gap:10px;margin-top:6px;padding:8px 14px 8px 8px;border-radius:999px;background:var(--ink);color:var(--paper);opacity:var(--h-buy,0);transform:translateY(calc((1 - var(--h-buy,0)) * 30px)) scale(calc(.9 + var(--h-buy,0) * .1))}" +
-  ".lcl-hbuy-pic{position:relative;flex:none;width:40px;height:40px;border-radius:50%;overflow:hidden;background:#fff}.lcl-hbuy>span{display:flex;flex-direction:column}.lcl-hbuy b{font-weight:400;font-size:14px}.lcl-hbuy em{font-style:normal;font-size:9.5px;color:rgba(255,255,255,.7)}" +
+  ".lcl-how-head .lcl-lede{margin:8px auto 0}" +
+  ".lcl-how-in{gap:clamp(14px,2.6vh,28px)!important}.lcl-hc{min-height:0!important}" +
+  // the room under the steps: the photo is cropped to a wide band centred on the sofa; overlays use the photo's own coordinates
+  ".lcl-hst{position:relative;width:100%;height:clamp(220px,36vh,420px);border-radius:22px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.1)}" +
+  ".lcl-hst-in{position:absolute;left:0;width:100%;aspect-ratio:976/1093;top:50%;transform:translateY(-62%)}" +
+  ".lcl-hst-in>img{position:absolute;inset:0;width:100%;height:100%}.lcl-hst-after{opacity:var(--h-buy,0)}" +
+  ".lcl-hst-ring{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:3px solid var(--lime);box-shadow:0 0 0 999px rgba(0,0,0,calc(var(--h-mark,0) * .35 * (1 - var(--h-buy,0))));opacity:calc(var(--h-mark,0) * (1 - var(--h-buy,0)))}" +
+  ".lcl-hst-tag{position:absolute;left:30%;top:14%;transform:translate(-50%,0);padding:8px 16px;border-radius:999px;white-space:nowrap;font-size:clamp(13px,1.1vw,16px);box-shadow:0 10px 30px rgba(0,0,0,.2)}" +
+  ".lcl-hst-say{background:var(--ink);color:var(--paper);opacity:calc(var(--h-quote,0) - var(--h-decision,0))}" +
+  ".lcl-hst-pin{background:var(--lime);color:#141414;opacity:calc(var(--h-decision,0) - var(--h-labels,0))}" +
+  ".lcl-hst-lab{background:#fff;color:#141414;box-shadow:inset 0 0 0 2px #d9534f,0 10px 30px rgba(0,0,0,.2);opacity:calc(var(--h-labels,0) - var(--h-buy,0))}" +
+  ".lcl-hst-buy{background:#2fae5b;color:#fff;opacity:var(--h-buy,0);transform:translate(-50%,calc((1 - var(--h-buy,0)) * 16px))}" +
+  "@media (max-width:860px){.lcl-hst{display:none}.lcl-hst-tag{font-size:11px;padding:6px 10px;white-space:normal;width:max-content;max-width:70vw}}" +
   // the travelling chips: column centres sit at 12.5% / 37.5% / 62.5% of the row
   ".lcl-hfly{position:absolute;top:120px;z-index:5;padding:8px 16px;border-radius:999px;background:var(--lime);color:#141414;font-size:13px;font-weight:500;white-space:nowrap;pointer-events:none;box-shadow:0 10px 26px rgba(0,0,0,.12);transform:translate(-50%,-50%)}" +
   ".lcl-hfly1{left:calc(12.5% + var(--h-toDecision,0) * 25%);top:calc(110px - sin(calc(var(--h-toDecision,0) * 180deg)) * 60px);opacity:calc(clamp(0, var(--h-toDecision,0) * 12, 1) * clamp(0, (1 - var(--h-toDecision,0)) * 12, 1))}" +
@@ -1184,12 +1185,13 @@ export default function LoupeCuratorLanding({
       flag(e.callouts, "data-live", c > 0.6)
     }
 
+    if (seen("pb")) {
+      const tr = st.still ? 1 : progressFrom(at("talk"), st.len.talk || 0, H)
+      put(e.talk, "--pq", smooth(clamp01((tr - TALK_PROB[0]) / (TALK_PROB[1] - TALK_PROB[0]))).toFixed(3))
+    }
     // 3 · the talk lands on the room; 4 · the grid panel rises; the last pick flies into the grid
     if (seen("mani") || seen("grid")) {
       put(e.mani, "--t", clamp01((H * 0.7 - at("mani")) / (H * 1.6)).toFixed(3))
-      const tr = st.still ? 1 : progressFrom(at("talk"), st.len.talk || 0, H)
-      put(e.talk, "--pq", smooth(clamp01((tr - TALK_PROB[0]) / (TALK_PROB[1] - TALK_PROB[0]))).toFixed(3))
-      put(e.talk, "--tc", (clamp01((tr - TALK_PROB[1]) / (1 - TALK_PROB[1])) * 1.15).toFixed(3))
       const gTop = at("grid")
       put(e.mani, "--dim", smooth(clamp01((H - gTop) / H)).toFixed(3))
       const k = st.still ? (gTop < H * 0.5 ? 1 : 0) : clamp01((H * 0.95 - gTop) / (H * 0.75))
@@ -1366,14 +1368,14 @@ export default function LoupeCuratorLanding({
       const stage = els.current.introStage as HTMLElement | null
       st.W = root.clientWidth
       st.H = stage ? stage.clientHeight : window.innerHeight
-      for (const k of ["intro", "mani", "grid", "life", "words", "zoom", "pile", "foot", "how", "zo", "vs"]) {
+      for (const k of ["intro", "mani", "grid", "life", "words", "zoom", "pile", "foot", "how", "zo", "vs", "pb"]) {
         const el = els.current[k] as HTMLElement | null
         st.off[k] = el ? el.offsetTop : 0   // (measured per section)
         st.len[k] = el ? el.offsetHeight : 0
       }
       // the talk sits inside the comparison section, so its offset is the section's plus its own
       const talk = els.current.talk as HTMLElement | null
-      st.off.talk = talk ? st.off.mani + talk.offsetTop : 0
+      st.off.talk = talk ? (st.off.pb || 0) + talk.offsetTop : 0
       st.len.talk = talk ? talk.offsetHeight : 0
       const lb = els.current.lb as HTMLElement | null
       st.off.lb = lb ? (st.off.life || 0) + lb.offsetTop : 0
@@ -1752,8 +1754,8 @@ export default function LoupeCuratorLanding({
               </div>
 
             </div>
-            <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="Start with your room. No empty room required.">
-              <span className="lcl-pillbg">{letters("Start with your room. No empty room required.", "cap").map((el, i) => (i === 21 ? <br key="capbr" /> : el))}</span>
+            <p className="lcl-cap" style={{ "--n": 60 } as CSSProperties} aria-label="Start with your room. It doesn’t have to be empty.">
+              <span className="lcl-pillbg">{letters("Start with your room. It doesn’t have to be empty.", "cap").map((el, i) => (i === 21 ? <br key="capbr" /> : el))}</span>
             </p>
             <div className="lcl-co" ref={reg("callouts")}>
               {/* hover the sofa: it lights up; pick another and it drops into the same spot */}
@@ -1787,45 +1789,175 @@ export default function LoupeCuratorLanding({
         </div>
       </section>
 
-      {/* 4 + 5 · a habit becomes a design condition, then a comparison; slides over the pinned intro */}
-      <section className="lcl-mani" ref={reg("mani")}>
+      {/* 3 · the problem holds the screen alone, then lifts away into how Elephant understands you */}
+      <section className="lcl-pb" ref={reg("pb")}>
         <div className="lcl-talk" ref={reg("talk")}>
-          {/* the problem holds the screen alone, then lifts away and the talk comes in */}
           <h2 className="lcl-probbig">
             A sofa can look perfect
             <br />
             and still be wrong for how you live.
           </h2>
-          <div className="lcl-talk-in">
-            <div className="lcl-talk-l">
-              <h2 className="lcl-sh">
-                More than picking furniture.
-                <br />
-                {brand} picks for how you live.
-              </h2>
-              <p className="lcl-lede">It listens for what you really need, turns it into design decisions, and keeps them.</p>
-              {chat(TALK)}
+        </div>
+      </section>
+
+      {/* how it understands you: a spoken sentence becomes a decision, then labels, then a pick in the cart; scroll drives it */}
+      <section className="lcl-how" ref={reg("how")}>
+        <div className="lcl-how-in">
+          <div className="lcl-how-head">
+            <h2 className="lcl-sh">
+              More than picking furniture.
+              <br />
+              {brand} picks for how you live.
+            </h2>
+            <p className="lcl-lede">It listens for what you really need, turns it into design decisions, and keeps them.</p>
+          </div>
+          <div className="lcl-how-cols">
+            <div className="lcl-hc lcl-hc1">
+              <span className="lcl-mono lcl-cmeta">01 · You say</span>
+              <p className="lcl-hq">
+                <span className="lcl-say">
+                  I <mark>curl up</mark> with a book.
+                </span>
+              </p>
+              <p className="lcl-hel">Tucked up, or stretched out?</p>
+              <p className="lcl-hq lcl-hq2">
+                <span className="lcl-say">
+                  <mark>Tucked up.</mark>
+                </span>
+              </p>
             </div>
-            <div className="lcl-room">
-              <img className="lcl-img" src={IMG["hl-1"]} alt="The room being refined" draggable={false} />
-              {PINS.map(([after, u, v, cat, text, flip, lh]) => (
-                <div key={cat} className={"lcl-hs lcl-pin" + (flip ? " lcl-flip" : "")} style={{ left: u * 100 + "%", top: v * 100 + "%", "--i": after, "--lh": lh + "px" } as CSSProperties}>
-                  <i className="lcl-hs-line" />
-                  <span className="lcl-hs-pill">
-                    <span>
-                      <small>{cat}</small>
-                      <b>{text}</b>
-                    </span>
-                  </span>
-                  <i className="lcl-hs-dot" />
-                </div>
-              ))}
-              <span className="lcl-budget lcl-mono" style={{ "--i": 10 } as CSSProperties}>
-                Budget · {usd(BUDGET)} total
+            <div className="lcl-hc lcl-hc2">
+              <span className="lcl-mono lcl-cmeta">02 · Design decision</span>
+              <b className="lcl-mono lcl-htag">habit: cross_legged</b>
+              <p className="lcl-hdec">Usable seat depth first, then seat width. Not the sofa’s outside depth.</p>
+              <span className="lcl-hw lcl-mono">
+                <b>seat_depth ×3</b>
+                <b>seat_width ×1</b>
               </span>
             </div>
+            <div className="lcl-hc lcl-hc3">
+              <span className="lcl-mono lcl-cmeta">03 · Product labels</span>
+              <div className="lcl-hrec">
+                <b>{SODERHAMN.name}</b>
+                <ul className="lcl-mono">
+                  {HOW_LABELS.map(([a, v, st, hit]) => (
+                    <li key={a} data-st={st} data-hit={hit ? "" : undefined}>
+                      <span>{a}</span>
+                      <b>{v}</b>
+                    </li>
+                  ))}
+                </ul>
+                <small className="lcl-mono">Quoted from ikea.com</small>
+              </div>
+            </div>
+            <div className="lcl-hc lcl-hc4">
+              <span className="lcl-mono lcl-cmeta">04 · Match & buy</span>
+              <ol className="lcl-hrank">
+                {HOW_RANK.map(([n, v], i) => (
+                  <li key={n} style={{ "--w": (v / HOW_RANK[0][1]).toFixed(3) } as CSSProperties}>
+                    <span>
+                      {i + 1}. {n}
+                    </span>
+                    <i />
+                    <em className="lcl-mono">{v}″ seat</em>
+                  </li>
+                ))}
+              </ol>
+              <small className="lcl-mono lcl-cmeta">of 27 sofas with a documented seat depth</small>
+            </div>
+            {/* what travels between the columns */}
+            <span className="lcl-hfly lcl-hfly1 lcl-mono">tucked up</span>
+            <span className="lcl-hfly lcl-hfly2 lcl-mono">seat_depth</span>
+            <span className="lcl-hfly lcl-hfly3 lcl-mono">seat_width</span>
+          </div>
+          {/* the room under the steps: each step shows up on the photo (your sofa today, then the pick in its place) */}
+          <div className="lcl-hst">
+            <div className="lcl-hst-in">
+              <img className="lcl-img" src={IMG["hl-1"]} alt="Your room, with your HYLTARP sofa" draggable={false} />
+              <img className="lcl-img lcl-hst-after" src={IMG["hl-7"]} alt={SODERHAMN.name + " in your room"} draggable={false} />
+              <i className="lcl-hst-ring" style={{ left: HST_SOFA.u * 100 + "%", top: HST_SOFA.v * 100 + "%", width: HST_SOFA.ru * 200 + "%", height: HST_SOFA.rv * 200 + "%" } as CSSProperties} />
+            </div>
+            <span className="lcl-hst-tag lcl-hst-say">“I curl up with a book.”</span>
+            <span className="lcl-hst-tag lcl-hst-pin lcl-mono">Seat depth first, then width</span>
+            <span className="lcl-hst-tag lcl-hst-lab lcl-mono">Your sofa · seat_depth 23⅝″ · too shallow to tuck up</span>
+            <span className="lcl-hst-tag lcl-hst-buy lcl-mono">
+              ✓ {SODERHAMN.name} · seat 36⅝″ · {usd(SODERHAMN.price)}, within {usd(BUDGET)}
+            </span>
           </div>
         </div>
+      </section>
+
+      {/* the one example is saved to your brief; then the view zooms out to every need, every room */}
+      <section className="lcl-zo" ref={reg("zo")}>
+        <div className="lcl-zo-in">
+          <div className="lcl-zo-grid" ref={reg("zoGrid")} style={{ "--zc": ZCOLS, "--zw": ZTILE.w + "px", "--zh": ZTILE.h + "px", "--zg": ZTILE.gap + "px" } as CSSProperties}>
+            {Array.from({ length: ZROWS }, (_, r) => {
+              const mid = Math.floor((ZCOLS * ZROWS) / 2)
+              const midR = Math.floor(mid / ZCOLS)
+              // three copies of each row so it can loop sideways forever; the brief's row holds still
+              return (
+                <div key={r} className={"lcl-zrow" + (r === midR ? " lcl-zrow-still" : "")} style={{ "--dir": r % 2 ? 1 : -1, "--dur": 46 + ((r * 7) % 19) + "s" } as CSSProperties}>
+                  {Array.from({ length: ZCOLS * 3 }, (_, j) => {
+                    const c = j - ZCOLS
+                    const cm = ((c % ZCOLS) + ZCOLS) % ZCOLS
+                    const i = r * ZCOLS + cm
+                    if (i === mid && c === cm)
+                      return (
+                        <div key={j} className="lcl-zt lcl-zt-me">
+                          <span className="lcl-zme">
+                            <img src={"/img/team-cut-" + BRIEF_WHO.key + ".webp"} alt="" draggable={false} />
+                            <span>
+                              <b>Persona · {BRIEF_WHO.name}</b>
+                              <small>{BRIEF_WHO.life}</small>
+                            </span>
+                          </span>
+                          <ol>
+                            {BRIEF.map(([say, label, got], k) => (
+                              <li key={say} style={{ "--i": k } as CSSProperties}>
+                                <span className="lcl-zq">{say}</span>
+                                <span className="lcl-zgot">
+                                  <code className="lcl-mono">{label}</code>
+                                  <b>✓ {got}</b>
+                                </span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )
+                    const [say, label, tile] = WALL[((i === mid ? i + 3 : i) * 7) % WALL.length]
+                    const d = Math.min(6, Math.hypot(c - (mid % ZCOLS), r - midR))
+                    return (
+                      <div key={j} className="lcl-zt" style={{ "--d": d.toFixed(2) } as CSSProperties} aria-hidden="true">
+                        <span className="lcl-zt-pic">
+                          <Tile k={tile} />
+                        </span>
+                        <span className="lcl-zq">{say}</span>
+                        <code className="lcl-mono">{label}</code>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+          <p className="lcl-zcap lcl-zcap1">
+            <span className="lcl-zpill">Saved. Next time you choose, Elephant starts from here.</span>
+          </p>
+          <p className="lcl-zcap lcl-zcap2">
+            <span className="lcl-zpill">That was one need. It works the same for every piece, in every room.</span>
+          </p>
+          <h2 className="lcl-zhead">
+            <span className="lcl-zpill">
+              Every piece is described in words,
+              <br />
+              so your words can find it.
+            </span>
+          </h2>
+        </div>
+      </section>
+
+      {/* 4 · then it goes shopping: where the list comes from; the last pick flies into the room below */}
+      <section className="lcl-mani" ref={reg("mani")}>
         <div className="lcl-story lcl-cmp">
           <h2 className="lcl-sh">
             Then it goes shopping.
@@ -1833,16 +1965,20 @@ export default function LoupeCuratorLanding({
             Real stores, checked against your words.
           </h2>
           <div className="lcl-src">
-            {SOURCES.map(([name, n]) => (
-              <span key={name} className="lcl-src-card">
-                <b>{name}</b>
+            {SOURCES.map(([name, n, logo]) => (
+              <span key={name} className="lcl-src-card lcl-src-logo">
+                <img src={logo} alt={name} draggable={false} />
                 <small className="lcl-mono">{n} products</small>
               </span>
             ))}
-            {/* the catalog today is these two; the schema is store-agnostic, so more stores plug in the same way */}
+            {/* the catalog today is these two; the schema is store-agnostic, so the next stores plug in the same way */}
             <span className="lcl-src-card lcl-src-more">
-              <b>+ more stores</b>
-              <small className="lcl-mono">Same schema, next up</small>
+              <span className="lcl-src-next">
+                {NEXT_STORES.map(([name, logo]) => (
+                  <img key={name} src={logo} alt={name} title={name} draggable={false} />
+                ))}
+              </span>
+              <small className="lcl-mono">Next up · same schema</small>
             </span>
             <i className="lcl-src-arrow" aria-hidden="true">
               <Chevron d="M4.5 3L7.5 6L4.5 9" />
@@ -2032,156 +2168,6 @@ export default function LoupeCuratorLanding({
           <p className="lcl-vs-say">
             <span className="lcl-zpill">Only one does both.</span>
           </p>
-        </div>
-      </section>
-
-      {/* how it understands you: a spoken sentence becomes a decision, then labels, then a pick in the cart; scroll drives it */}
-      <section className="lcl-how" ref={reg("how")}>
-        <div className="lcl-how-in">
-          <div className="lcl-how-head">
-            <span className="lcl-mono lcl-cmeta">Under the hood</span>
-            <h2 className="lcl-sh">So how does it understand you?</h2>
-          </div>
-          <div className="lcl-how-cols">
-            <div className="lcl-hc lcl-hc1">
-              <span className="lcl-mono lcl-cmeta">01 · You say</span>
-              <p className="lcl-hq">
-                <span className="lcl-say">
-                  I <mark>curl up</mark> with a book.
-                </span>
-              </p>
-              <p className="lcl-hel">Tucked up, or stretched out?</p>
-              <p className="lcl-hq lcl-hq2">
-                <span className="lcl-say">
-                  <mark>Tucked up.</mark>
-                </span>
-              </p>
-            </div>
-            <div className="lcl-hc lcl-hc2">
-              <span className="lcl-mono lcl-cmeta">02 · Design decision</span>
-              <b className="lcl-mono lcl-htag">habit: cross_legged</b>
-              <p className="lcl-hdec">Usable seat depth first, then seat width. Not the sofa’s outside depth.</p>
-              <span className="lcl-hw lcl-mono">
-                <b>seat_depth ×3</b>
-                <b>seat_width ×1</b>
-              </span>
-            </div>
-            <div className="lcl-hc lcl-hc3">
-              <span className="lcl-mono lcl-cmeta">03 · Product labels</span>
-              <div className="lcl-hrec">
-                <span className="lcl-hrec-pic">
-                  <Tile k={SODERHAMN.k} />
-                </span>
-                <b>{SODERHAMN.name}</b>
-                <ul className="lcl-mono">
-                  {HOW_LABELS.map(([a, v, st, hit]) => (
-                    <li key={a} data-st={st} data-hit={hit ? "" : undefined}>
-                      <span>{a}</span>
-                      <b>{v}</b>
-                    </li>
-                  ))}
-                </ul>
-                <small className="lcl-mono">Quoted from ikea.com</small>
-              </div>
-            </div>
-            <div className="lcl-hc lcl-hc4">
-              <span className="lcl-mono lcl-cmeta">04 · Match & buy</span>
-              <ol className="lcl-hrank">
-                {HOW_RANK.map(([n, v], i) => (
-                  <li key={n} style={{ "--w": (v / HOW_RANK[0][1]).toFixed(3) } as CSSProperties}>
-                    <span>
-                      {i + 1}. {n}
-                    </span>
-                    <i />
-                    <em className="lcl-mono">{v}″ seat</em>
-                  </li>
-                ))}
-              </ol>
-              <small className="lcl-mono lcl-cmeta">of 27 sofas with a documented seat depth</small>
-              <span className="lcl-hbuy">
-                <span className="lcl-hbuy-pic">
-                  <Tile k={SODERHAMN.k} />
-                </span>
-                <span>
-                  <b>In your room</b>
-                  <em className="lcl-mono">{usd(SODERHAMN.price)} · within {usd(BUDGET)}</em>
-                </span>
-              </span>
-            </div>
-            {/* what travels between the columns */}
-            <span className="lcl-hfly lcl-hfly1 lcl-mono">tucked up</span>
-            <span className="lcl-hfly lcl-hfly2 lcl-mono">seat_depth</span>
-            <span className="lcl-hfly lcl-hfly3 lcl-mono">seat_width</span>
-          </div>
-        </div>
-      </section>
-
-      {/* the one example is saved to your brief; then the view zooms out to every need, every room */}
-      <section className="lcl-zo" ref={reg("zo")}>
-        <div className="lcl-zo-in">
-          <div className="lcl-zo-grid" ref={reg("zoGrid")} style={{ "--zc": ZCOLS, "--zw": ZTILE.w + "px", "--zh": ZTILE.h + "px", "--zg": ZTILE.gap + "px" } as CSSProperties}>
-            {Array.from({ length: ZROWS }, (_, r) => {
-              const mid = Math.floor((ZCOLS * ZROWS) / 2)
-              const midR = Math.floor(mid / ZCOLS)
-              // three copies of each row so it can loop sideways forever; the brief's row holds still
-              return (
-                <div key={r} className={"lcl-zrow" + (r === midR ? " lcl-zrow-still" : "")} style={{ "--dir": r % 2 ? 1 : -1, "--dur": 46 + ((r * 7) % 19) + "s" } as CSSProperties}>
-                  {Array.from({ length: ZCOLS * 3 }, (_, j) => {
-                    const c = j - ZCOLS
-                    const cm = ((c % ZCOLS) + ZCOLS) % ZCOLS
-                    const i = r * ZCOLS + cm
-                    if (i === mid && c === cm)
-                      return (
-                        <div key={j} className="lcl-zt lcl-zt-me">
-                          <span className="lcl-zme">
-                            <img src={"/img/team-cut-" + BRIEF_WHO.key + ".webp"} alt="" draggable={false} />
-                            <span>
-                              <b>{BRIEF_WHO.name}’s living brief</b>
-                              <small>{BRIEF_WHO.life}</small>
-                            </span>
-                          </span>
-                          <ol>
-                            {BRIEF.map(([say, label, got], k) => (
-                              <li key={say} style={{ "--i": k } as CSSProperties}>
-                                <span className="lcl-zq">{say}</span>
-                                <span className="lcl-zgot">
-                                  <code className="lcl-mono">{label}</code>
-                                  <b>✓ {got}</b>
-                                </span>
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      )
-                    const [say, label, tile] = WALL[((i === mid ? i + 3 : i) * 7) % WALL.length]
-                    const d = Math.min(6, Math.hypot(c - (mid % ZCOLS), r - midR))
-                    return (
-                      <div key={j} className="lcl-zt" style={{ "--d": d.toFixed(2) } as CSSProperties} aria-hidden="true">
-                        <span className="lcl-zt-pic">
-                          <Tile k={tile} />
-                        </span>
-                        <span className="lcl-zq">{say}</span>
-                        <code className="lcl-mono">{label}</code>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })}
-          </div>
-          <p className="lcl-zcap lcl-zcap1">
-            <span className="lcl-zpill">Saved. Next time you choose, Elephant starts from here.</span>
-          </p>
-          <p className="lcl-zcap lcl-zcap2">
-            <span className="lcl-zpill">That was one need. It works the same for every piece, in every room.</span>
-          </p>
-          <h2 className="lcl-zhead">
-            <span className="lcl-zpill">
-              Every piece is described in words,
-              <br />
-              so your words can find it.
-            </span>
-          </h2>
         </div>
       </section>
 
