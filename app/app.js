@@ -977,10 +977,6 @@ function renderCart() {
       <span>FF&amp;E schedule</span>
       <button class="btn" data-action="schedule-pdf" title="Print the schedule, or save it as a PDF">PDF</button>
       <button class="btn ghost" data-action="schedule" title="Download the schedule as a spreadsheet file">CSV</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn ghost" data-action="copy">Copy list</button>
-      <button class="btn" data-action="download">scene.json</button>
     </div>`;
 
   // expanded: a frosted-glass window floating over the room (visionOS style), filterable cards, product preview
